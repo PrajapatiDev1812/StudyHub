@@ -37,6 +37,12 @@ urlpatterns = [
     # Assessments APIs (tests, questions, options, attempts)
     path('api/', include('assessments.urls')),
 
+    # Notifications APIs
+    path('api/notifications/', include('notifications.urls')),
+
+    # AI APIs
+    path('api/ai/', include('ai.urls')),
+
     # Swagger Documentation
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),

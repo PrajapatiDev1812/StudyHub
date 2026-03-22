@@ -7,6 +7,7 @@ from .views import (
     TopicViewSet,
     ContentViewSet,
     MyCoursesView,
+    DashboardView,
 )
 
 router = DefaultRouter()
@@ -19,6 +20,9 @@ urlpatterns = [
     # Student's enrolled courses
     path('my-courses/', MyCoursesView.as_view(), name='my-courses'),
 
-    # All router-generated CRUD + custom actions (enroll, unenroll, students)
+    # Student's Dashboard
+    path('dashboard/', DashboardView.as_view(), name='dashboard'),
+
+    # All router-generated CRUD + custom actions (enroll, unenroll, students, analytics, mark_complete)
     path('', include(router.urls)),
 ]

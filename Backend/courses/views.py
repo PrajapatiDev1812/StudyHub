@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 
 from accounts.permissions import IsAdmin
-from .models import Course, Subject, Topic, Content, Enrollment
+from .models import Course, Subject, Topic, Content, Enrollment, Progress
 from .serializers import (
     CourseSerializer,
     CourseListSerializer,
@@ -15,6 +15,7 @@ from .serializers import (
     TopicListSerializer,
     ContentSerializer,
     EnrollmentSerializer,
+    ProgressSerializer,
 )
 
 
@@ -160,6 +161,31 @@ class CourseViewSet(viewsets.ModelViewSet):
         serializer = EnrollmentSerializer(enrollments, many=True)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    def analytics(self, request, pk=None):
+        """
+        GET /api/courses/{id}/analytics/
+        Admin view for course engagement analytics.
+        """
+        course = self.get_object()
+
+        if request.user.role != 'admin':
+            return Response(
+                {'error': 'Only admins can view course analytics.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        total_enrollments = course.enrollments.count()
+        total_content = Content.objects.filter(topic__subject__course=course).count()
+        total_completions = Progress.objects.filter(content__topic__subject__course=course).count()
+
+        return Response({
+            'course': course.name,
+            'total_enrollments': total_enrollments,
+            'total_content_items': total_content,
+            'total_content_completions': total_completions,
+        })
+
 
 # ---------- My Courses (Student's enrolled courses) ----------
 class MyCoursesView(generics.ListAPIView):
@@ -248,3 +274,67 @@ class ContentViewSet(viewsets.ModelViewSet):
         if topic_id:
             qs = qs.filter(topic_id=topic_id)
         return qs
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def mark_complete(self, request, pk=None):
+        """
+        POST /api/contents/{id}/mark_complete/
+        Mark a content item as completed by the student.
+        """
+        content = self.get_object()
+
+        if request.user.role != 'student':
+            return Response(
+                {'error': 'Only students can mark content as complete.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        progress, created = Progress.objects.get_or_create(
+            student=request.user,
+            content=content,
+        )
+
+        if created:
+            return Response(
+                {'message': f'Marked "{content.title}" as complete.'},
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {'message': 'Content was already marked as complete.'},
+            status=status.HTTP_200_OK,
+        )
+
+
+# ---------- Dashboard (Student) ----------
+class DashboardView(generics.RetrieveAPIView):
+    """
+    GET /api/dashboard/
+    Student dashboard with progress % and recent activity.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        if request.user.role != 'student':
+            return Response(
+                {'error': 'Only students have a dashboard.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        enrolled_courses = Course.objects.filter(enrollments__student=request.user)
+        total_content_in_enrolled = Content.objects.filter(topic__subject__course__in=enrolled_courses).count()
+        completed_content = Progress.objects.filter(student=request.user).count()
+
+        progress_percentage = 0
+        if total_content_in_enrolled > 0:
+            progress_percentage = round((completed_content / total_content_in_enrolled) * 100, 2)
+
+        recent_activity = Progress.objects.filter(student=request.user).order_by('-completed_at')[:5]
+        serializer = ProgressSerializer(recent_activity, many=True)
+
+        return Response({
+            'enrolled_courses_count': enrolled_courses.count(),
+            'total_content_to_complete': total_content_in_enrolled,
+            'completed_content_count': completed_content,
+            'overall_progress_percentage': progress_percentage,
+            'recent_activity': serializer.data,
+        })

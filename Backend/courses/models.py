@@ -1,5 +1,20 @@
 from django.db import models
 from django.conf import settings
+import os
+from django.core.exceptions import ValidationError
+
+
+def validate_file_extension(value):
+    ext = os.path.splitext(value.name)[1]
+    valid_extensions = ['.pdf', '.mp4', '.txt', '.doc', '.docx']
+    if not ext.lower() in valid_extensions:
+        raise ValidationError('Unsupported file extension. Allowed: pdf, mp4, txt, doc, docx.')
+
+
+def validate_file_size(value):
+    filesize = value.size
+    if filesize > 50 * 1024 * 1024:
+        raise ValidationError("Maximum allowed file size is 50MB.")
 
 # Create your models here.
 
@@ -64,7 +79,12 @@ class Content(models.Model):
         ]
     )
 
-    file = models.FileField(upload_to='course_files/', blank=True, null=True)
+    file = models.FileField(
+        upload_to='course_files/', 
+        blank=True, 
+        null=True,
+        validators=[validate_file_extension, validate_file_size]
+    )
 
     text_content = models.TextField(blank=True)
 
