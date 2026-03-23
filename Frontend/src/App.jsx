@@ -30,6 +30,8 @@ import ManageTopics from './pages/admin/ManageTopics';
 import ManageContent from './pages/admin/ManageContent';
 import ManageTests from './pages/admin/ManageTests';
 import ManageQuestions from './pages/admin/ManageQuestions';
+import TestAnalytics from './pages/admin/TestAnalytics';
+import StudentList from './pages/admin/StudentList';
 
 // Shared CSS
 import './pages/student/Student.css';
@@ -82,6 +84,8 @@ function App() {
           <Route path="/admin/content" element={<AdminRoute><ManageContent /></AdminRoute>} />
           <Route path="/admin/tests" element={<AdminRoute><ManageTests /></AdminRoute>} />
           <Route path="/admin/tests/:testId/questions" element={<AdminRoute><ManageQuestions /></AdminRoute>} />
+          <Route path="/admin/tests/:id/analytics" element={<AdminRoute><TestAnalytics /></AdminRoute>} />
+          <Route path="/admin/courses/:id/students" element={<AdminRoute><StudentList /></AdminRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
