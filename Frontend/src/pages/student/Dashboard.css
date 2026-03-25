@@ -1,3 +1,8 @@
+/* ═══════════════════════════════════════════
+   Student Dashboard Styles
+   ═══════════════════════════════════════════ */
+
+/* ── Progress Bar ── */
 .progress-bar-bg {
   width: 100%;
   height: 10px;
@@ -13,6 +18,137 @@
   transition: width 0.8s ease;
 }
 
+/* ── Circular Progress Ring ── */
+.progress-ring { display: block; margin: 0 auto; }
+
+.progress-ring-text {
+  fill: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+}
+
+.stat-card-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ── Progress Section (clickable) ── */
+.progress-section { margin-bottom: 24px; }
+
+.progress-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-section-header.clickable {
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s;
+}
+
+.progress-section-header.clickable:hover { opacity: 0.85; }
+
+.progress-section-header h3 {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.text-muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.expand-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expand-arrow {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  transition: transform 0.3s ease;
+}
+
+.expand-arrow.open { transform: rotate(180deg); }
+
+/* ── Graph Expand / Collapse ── */
+.graph-expand {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease, opacity 0.4s ease;
+  opacity: 0;
+}
+
+.graph-expand.open {
+  max-height: 600px;
+  opacity: 1;
+}
+
+/* ── Graph Tabs ── */
+.progress-graph-wrapper { margin-top: 20px; }
+
+.graph-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.graph-tab {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.graph-tab:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.graph-tab.active {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* ── SVG Chart ── */
+.graph-container {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  padding: 8px;
+}
+
+.line-chart {
+  width: 100%;
+  height: auto;
+}
+
+.axis-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-family: 'Inter', sans-serif;
+}
+
+.no-data-text {
+  fill: var(--text-muted);
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ── Activity ── */
 .activity-list {
   display: flex;
   flex-direction: column;
@@ -29,9 +165,7 @@
   border: 1px solid var(--border-color);
 }
 
-.activity-icon {
-  font-size: 1.1rem;
-}
+.activity-icon { font-size: 1.1rem; }
 
 .activity-title {
   font-size: 0.9rem;

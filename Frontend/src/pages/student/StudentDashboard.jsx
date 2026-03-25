@@ -1,19 +1,79 @@
 import { useEffect, useState } from 'react';
 import api from '../../services/api';
+import ProgressGraph, { TABS } from './ProgressGraph';
 import './Dashboard.css';
+
+/* ── Circular Progress Ring (pure SVG) ── */
+function ProgressRing({ percent = 0, size = 140, stroke = 10 }) {
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percent / 100) * circumference;
+
+  return (
+    <svg className="progress-ring" width={size} height={size}>
+      <circle
+        cx={size / 2} cy={size / 2} r={radius}
+        fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke}
+      />
+      <circle
+        cx={size / 2} cy={size / 2} r={radius}
+        fill="none" stroke="url(#progressGradient)" strokeWidth={stroke}
+        strokeDasharray={circumference} strokeDashoffset={offset}
+        strokeLinecap="round"
+        style={{ transition: 'stroke-dashoffset 1.2s ease', transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+      />
+      <defs>
+        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#6c63ff" />
+          <stop offset="100%" stopColor="#3b82f6" />
+        </linearGradient>
+      </defs>
+      <text x="50%" y="50%" textAnchor="middle" dy="0.35em" className="progress-ring-text">
+        {percent}%
+      </text>
+    </svg>
+  );
+}
 
 export default function StudentDashboard() {
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingOverview, setLoadingOverview] = useState(true);
+  const [graphOpen, setGraphOpen] = useState(false);
+
+  // Graph state lifted up to sync with pie chart
+  const [activeTab, setActiveTab] = useState(0); 
+  const [periodData, setPeriodData] = useState(null);
+  const [loadingPeriod, setLoadingPeriod] = useState(false);
 
   useEffect(() => {
     api.get('/dashboard/')
       .then((res) => setData(res.data))
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => setLoadingOverview(false));
   }, []);
 
-  if (loading) return <div className="spinner" />;
+  useEffect(() => {
+    setLoadingPeriod(true);
+    api.get(`/progress-history/?days=${activeTab}`)
+      .then(res => setPeriodData(res.data))
+      .catch(() => setPeriodData(null))
+      .finally(() => setLoadingPeriod(false));
+  }, [activeTab]);
+
+  if (loadingOverview) return <div className="spinner" />;
+
+  // Overview stats
+  const completed = data?.completed_content_count || 0;
+  const total = data?.total_content_to_complete || 0;
+
+  // Sync pie chart and progress bar with either total or period gained based on tab
+  const activeTabLabel = TABS.find(t => t.days === activeTab)?.label || 'All';
+  const isAllTime = activeTab === 0;
+
+  const displayProgress = periodData?.period_progress_gained ?? data?.overall_progress_percentage ?? 0;
+  const displayCompleted = periodData?.period_completed ?? completed;
+  const displayTotal = periodData?.total_content ?? total;
+  const pieChartTitle = isAllTime ? "OVERALL PROGRESS" : `${activeTabLabel.toUpperCase()} PROGRESS`;
 
   return (
     <div className="fade-in">
@@ -29,27 +89,46 @@ export default function StudentDashboard() {
         </div>
         <div className="stat-card">
           <div className="stat-label">Completed Content</div>
-          <div className="stat-value">{data?.completed_content_count || 0}</div>
+          <div className="stat-value">{completed}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Total Content</div>
-          <div className="stat-value">{data?.total_content_to_complete || 0}</div>
+          <div className="stat-value">{total}</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-label">Overall Progress</div>
-          <div className="stat-value">{data?.overall_progress_percentage || 0}%</div>
+        <div className="stat-card stat-card-ring">
+          <div className="stat-label">{pieChartTitle}</div>
+          <ProgressRing percent={displayProgress} size={100} stroke={8} />
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="glass-card" style={{ marginBottom: 24 }}>
-        <h3 style={{ marginBottom: 12, fontSize: '1rem' }}>📈 Overall Progress</h3>
-        <div className="progress-bar-bg">
-          <div className="progress-bar-fill" style={{ width: `${data?.overall_progress_percentage || 0}%` }} />
+      {/* ── Clickable Overall Progress → expands graph ── */}
+      <div className="glass-card progress-section">
+        <div
+          className="progress-section-header clickable"
+          onClick={() => setGraphOpen(!graphOpen)}
+        >
+          <div>
+            <h3>📈 {isAllTime ? "Overall Progress" : `${activeTabLabel} Progress`}</h3>
+            <p className="text-muted">{displayCompleted} of {displayTotal} content items completed</p>
+          </div>
+          <span className={`expand-arrow ${graphOpen ? 'open' : ''}`}>▼</span>
         </div>
-        <p style={{ marginTop: 8, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-          {data?.completed_content_count || 0} of {data?.total_content_to_complete || 0} content items completed
-        </p>
+
+        <div className="progress-bar-bg" style={{ marginTop: 12 }}>
+          <div className="progress-bar-fill" style={{ width: `${displayProgress}%` }} />
+        </div>
+
+        {/* Expandable Graph */}
+        <div className={`graph-expand ${graphOpen ? 'open' : ''}`}>
+          {graphOpen && (
+            <ProgressGraph 
+              activeTab={activeTab} 
+              setActiveTab={setActiveTab} 
+              points={periodData?.history || []} 
+              loading={loadingPeriod} 
+            />
+          )}
+        </div>
       </div>
 
       {/* Recent Activity */}

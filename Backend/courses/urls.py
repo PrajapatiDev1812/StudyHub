@@ -8,6 +8,7 @@ from .views import (
     ContentViewSet,
     MyCoursesView,
     DashboardView,
+    ProgressHistoryView,
 )
 
 router = DefaultRouter()
@@ -22,6 +23,9 @@ urlpatterns = [
 
     # Student's Dashboard
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
+
+    # Progress history for graph
+    path('progress-history/', ProgressHistoryView.as_view(), name='progress-history'),
 
     # All router-generated CRUD + custom actions (enroll, unenroll, students, analytics, mark_complete)
     path('', include(router.urls)),

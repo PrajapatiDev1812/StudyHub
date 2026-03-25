@@ -3,6 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Q
+from django.utils import timezone
+from datetime import timedelta
 
 from accounts.permissions import IsAdmin
 from .models import Course, Subject, Topic, Content, Enrollment, Progress
@@ -337,4 +339,75 @@ class DashboardView(generics.RetrieveAPIView):
             'completed_content_count': completed_content,
             'overall_progress_percentage': progress_percentage,
             'recent_activity': serializer.data,
+        })
+
+
+# ---------- Progress History (time-series for graph) ----------
+class ProgressHistoryView(generics.GenericAPIView):
+    """
+    GET /api/progress-history/?days=7
+    Returns daily cumulative progress % for the authenticated student.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        days = int(request.query_params.get('days', 7))
+        now = timezone.now()
+        
+        all_progress = Progress.objects.filter(student=request.user)
+        
+        if days == 0:
+            # "All" time tab selected — find earliest progress record
+            first_progress = all_progress.order_by('completed_at').first()
+            if first_progress:
+                start_date = first_progress.completed_at.date()
+                days = (now.date() - start_date).days
+                # Ensure we show at least a 7-day window even if they just started
+                if days < 7:
+                    days = 7
+                    start_date = (now - timedelta(days=7)).date()
+            else:
+                # Default to 30 days if no progress yet
+                days = 30
+                start_date = (now - timedelta(days=30)).date()
+        else:
+            start_date = (now - timedelta(days=days)).date()
+
+        enrolled_courses = Course.objects.filter(enrollments__student=request.user)
+        total_content = Content.objects.filter(
+            topic__subject__course__in=enrolled_courses
+        ).count()
+
+        if total_content == 0:
+            result = []
+            for i in range(days + 1):
+                d = start_date + timedelta(days=i)
+                if d <= now.date():
+                    result.append({'date': d.isoformat(), 'progress': 0})
+            return Response({
+                "history": result,
+                "period_completed": 0,
+                "total_content": 0,
+                "period_progress_gained": 0
+            })
+
+        result = []
+        for i in range(days + 1):
+            d = start_date + timedelta(days=i)
+            if d > now.date():
+                break
+            completed_by_day = all_progress.filter(completed_at__date__lte=d).count()
+            pct = round((completed_by_day / total_content) * 100, 1)
+            result.append({'date': d.isoformat(), 'progress': pct})
+
+        start_completions = all_progress.filter(completed_at__date__lt=start_date).count()
+        end_completions = all_progress.filter(completed_at__date__lte=now.date()).count()
+        period_completed = end_completions - start_completions
+        period_gained = round((period_completed / total_content) * 100, 1)
+
+        return Response({
+            "history": result,
+            "period_completed": period_completed,
+            "total_content": total_content,
+            "period_progress_gained": period_gained
         })
