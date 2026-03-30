@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from .models import AdminContentChunk, StudentContentChunk, StudentNote
+from .models import (
+    AdminContentChunk, StudentContentChunk, StudentNote,
+    ChatSession, ChatMessage, ChatAttachment,
+)
 
 
 class AdminContentChunkSerializer(serializers.ModelSerializer):
@@ -50,7 +53,63 @@ class ChatRequestSerializer(serializers.Serializer):
     subject = serializers.CharField(max_length=200, required=False, default='')
     topic = serializers.CharField(max_length=200, required=False, default='')
     debug = serializers.BooleanField(default=False)
+    session_id = serializers.UUIDField(required=False, allow_null=True)
 
 
 class DebugRetrievalRequestSerializer(serializers.Serializer):
     query = serializers.CharField(max_length=5000)
+
+
+# ─────────────────────────────────────────────
+# Chat History Serializers
+# ─────────────────────────────────────────────
+
+class ChatAttachmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatAttachment
+        fields = ['id', 'file', 'file_name', 'file_type', 'file_size', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    attachments = ChatAttachmentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ChatMessage
+        fields = ['id', 'session', 'role', 'content', 'feedback', 'attachments', 'created_at']
+        read_only_fields = ['id', 'session', 'created_at']
+
+
+class ChatSessionSerializer(serializers.ModelSerializer):
+    message_count = serializers.SerializerMethodField()
+    last_message_preview = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChatSession
+        fields = [
+            'id', 'title', 'is_pinned', 'mode', 'level',
+            'message_count', 'last_message_preview',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_message_count(self, obj):
+        return obj.messages.count()
+
+    def get_last_message_preview(self, obj):
+        last_msg = obj.messages.order_by('-created_at').first()
+        if last_msg:
+            return last_msg.content[:100]
+        return ''
+
+
+class ChatSessionUpdateSerializer(serializers.ModelSerializer):
+    """Used for PATCH operations (rename, pin/unpin)."""
+    class Meta:
+        model = ChatSession
+        fields = ['title', 'is_pinned', 'mode', 'level']
+
+
+class MessageFeedbackSerializer(serializers.Serializer):
+    feedback = serializers.ChoiceField(choices=['good', 'bad', ''])
+

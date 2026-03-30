@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.conf import settings
 from courses.models import Course, Subject, Topic, Content
@@ -108,3 +109,121 @@ class StudentContentChunk(models.Model):
 
     def __str__(self):
         return f"[{self.user.username}] {self.title} — chunk {self.chunk_index}"
+
+
+# ─────────────────────────────────────────────
+# Chat History Models
+# ─────────────────────────────────────────────
+
+class ChatSession(models.Model):
+    """
+    Represents a single conversation thread between a student and the AI.
+    Stores the auto-generated title, pin status, and timestamps.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='chat_sessions',
+    )
+    title = models.CharField(
+        max_length=500, default='New Chat',
+        help_text="Auto-generated from the first question, or user-renamed",
+    )
+    is_pinned = models.BooleanField(default=False)
+    mode = models.CharField(
+        max_length=20, default='student_mode',
+        choices=[
+            ('student_mode', 'Student Mode'),
+            ('teacher_mode', 'Teacher Mode'),
+            ('exam_mode', 'Exam Mode'),
+        ],
+    )
+    level = models.CharField(
+        max_length=20, default='beginner',
+        choices=[
+            ('beginner', 'Beginner'),
+            ('medium', 'Medium'),
+            ('advance', 'Advanced'),
+        ],
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_pinned', '-updated_at']
+        verbose_name = 'Chat Session'
+        verbose_name_plural = 'Chat Sessions'
+
+    def __str__(self):
+        return f"[{self.user.username}] {self.title}"
+
+
+class ChatMessage(models.Model):
+    """
+    A single message within a chat session.
+    Role is either 'user' or 'ai'.
+    """
+    ROLE_CHOICES = [
+        ('user', 'User'),
+        ('ai', 'AI'),
+    ]
+    FEEDBACK_CHOICES = [
+        ('good', 'Good Response'),
+        ('bad', 'Bad Response'),
+    ]
+
+    session = models.ForeignKey(
+        ChatSession, on_delete=models.CASCADE,
+        related_name='messages',
+    )
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    content = models.TextField()
+    feedback = models.CharField(
+        max_length=10, choices=FEEDBACK_CHOICES,
+        blank=True, null=True,
+        help_text="Student feedback on AI response (thumbs up/down)",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Chat Message'
+        verbose_name_plural = 'Chat Messages'
+
+    def __str__(self):
+        return f"[{self.role}] {self.content[:50]}..."
+
+
+class ChatAttachment(models.Model):
+    """
+    Files uploaded by the student in a chat message.
+    Supports images, PDFs, Word docs, PPTs, and videos.
+    """
+    FILE_TYPE_CHOICES = [
+        ('image', 'Image'),
+        ('pdf', 'PDF'),
+        ('doc', 'Word Document'),
+        ('ppt', 'Presentation'),
+        ('video', 'Video'),
+        ('other', 'Other'),
+    ]
+
+    message = models.ForeignKey(
+        ChatMessage, on_delete=models.CASCADE,
+        related_name='attachments',
+    )
+    file = models.FileField(upload_to='chat_attachments/%Y/%m/')
+    file_name = models.CharField(max_length=500)
+    file_type = models.CharField(max_length=10, choices=FILE_TYPE_CHOICES, default='other')
+    file_size = models.PositiveIntegerField(
+        default=0, help_text="File size in bytes"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Chat Attachment'
+        verbose_name_plural = 'Chat Attachments'
+
+    def __str__(self):
+        return f"{self.file_name} ({self.file_type})"
+

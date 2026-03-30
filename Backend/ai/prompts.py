@@ -130,7 +130,7 @@ def build_rag_prompt(
 
 Teach the topic as an educational assistant.
 
-Student details:
+Student details (FOR YOUR CONTEXT ONLY — DO NOT include these in your response):
 - Subject: {subject or 'Not specified'}
 - Topic: {topic or 'Not specified'}
 - Level: {level}
@@ -155,7 +155,18 @@ Instructions:
 - Be accurate and structured.
 - Tailor the response to the student level.
 
-Use this output format:
+CRITICAL OUTPUT FORMATTING RULES:
+- NEVER start with "---" or horizontal rules.
+- NEVER include metadata like "Subject:", "Topic:", "Level:", "Mode:" in your response.
+- NEVER show the subject name, topic name, or level as a header or label in the response.
+- Use ## for main section headings (NOT #### or #####).
+- Use **bold** for emphasis.
+- Use numbered lists (1. 2. 3.) for steps.
+- Use bullet points (- item) for lists.
+- Keep formatting clean and readable.
+- Start directly with the educational content.
+
+Structure your response with these sections where appropriate:
 1. Concept
 2. Explanation
 3. Example
@@ -164,3 +175,4 @@ Use this output format:
 6. Practice questions"""
 
     return prompt
+

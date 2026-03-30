@@ -4,13 +4,19 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from django.shortcuts import get_object_or_404
 from courses.models import Content
 
-from .models import StudentNote
+from .models import StudentNote, ChatSession, ChatMessage, ChatAttachment
 from .serializers import (
     ChatRequestSerializer,
     DebugRetrievalRequestSerializer,
     StudentNoteSerializer,
+    ChatSessionSerializer,
+    ChatSessionUpdateSerializer,
+    ChatMessageSerializer,
+    MessageFeedbackSerializer,
 )
 from .retrieval import retrieve_relevant_chunks
 from .prompts import BASE_SYSTEM_INSTRUCTION, build_rag_prompt, MODE_PROMPTS
@@ -23,13 +29,32 @@ logger = logging.getLogger(__name__)
 DEBUG_RAG = os.getenv('DEBUG_RAG', 'False').lower() in ('true', '1', 'yes')
 
 
+def _generate_chat_title(message: str) -> str:
+    """Use Gemini to generate a short title for a chat session."""
+    try:
+        prompt = (
+            f"Generate a very short title (max 6 words) for a chat that starts with "
+            f"this question. Return ONLY the title, no quotes, no explanation:\n\n"
+            f"{message[:200]}"
+        )
+        title = generate_response(prompt=prompt, system_instruction="You are a title generator. Return only the title text, nothing else.")
+        # Clean up: remove quotes, newlines, limit length
+        title = title.strip().strip('"\'').strip()
+        if len(title) > 80:
+            title = title[:77] + '...'
+        return title or message[:50]
+    except Exception:
+        # Fallback: use first 50 chars of message
+        return message[:50] + ('...' if len(message) > 50 else '')
+
+
 class ChatbotView(APIView):
     """
     POST /api/ai/chat/
 
     Main RAG-powered AI chatbot.
-    Accepts: message, mode, level, subject, topic, debug
-    Returns: AI response + optional debug info
+    Accepts: message, mode, level, subject, topic, debug, session_id
+    Returns: AI response + session info + optional debug info
     """
     permission_classes = [IsAuthenticated]
 
@@ -45,6 +70,37 @@ class ChatbotView(APIView):
         subject = data.get('subject', '')
         topic = data.get('topic', '')
         show_debug = data.get('debug', False) or DEBUG_RAG
+        session_id = data.get('session_id')
+
+        # ── Session Management ──
+        session = None
+        is_new_session = False
+
+        if session_id:
+            # Continue existing session
+            try:
+                session = ChatSession.objects.get(id=session_id, user=request.user)
+            except ChatSession.DoesNotExist:
+                return Response(
+                    {'error': 'Chat session not found.'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            # Create a new session
+            session = ChatSession.objects.create(
+                user=request.user,
+                title='New Chat',
+                mode=mode,
+                level=level,
+            )
+            is_new_session = True
+
+        # Save user message
+        user_msg = ChatMessage.objects.create(
+            session=session,
+            role='user',
+            content=message,
+        )
 
         # ── Step 1: Retrieve relevant chunks ──
         retrieval = retrieve_relevant_chunks(
@@ -60,7 +116,7 @@ class ChatbotView(APIView):
 
         # Debug logging
         if show_debug:
-            logger.info(f"── RAG Debug ──")
+            logger.info(f"-- RAG Debug --")
             logger.info(f"Query: {message[:80]}")
             logger.info(f"Mode: {mode} | Level: {level}")
             logger.info(f"Admin chunks: {len(admin_chunks)}")
@@ -88,9 +144,29 @@ class ChatbotView(APIView):
             system_instruction=BASE_SYSTEM_INSTRUCTION,
         )
 
+        # Save AI response
+        ai_msg = ChatMessage.objects.create(
+            session=session,
+            role='ai',
+            content=ai_response,
+        )
+
+        # Auto-generate title for new sessions
+        if is_new_session:
+            title = _generate_chat_title(message)
+            session.title = title
+            session.save(update_fields=['title'])
+
+        # Update session timestamp
+        session.save(update_fields=['updated_at'])
+
         # ── Step 4: Build response ──
         response_data = {
             'response': ai_response,
+            'session_id': str(session.id),
+            'session_title': session.title,
+            'message_id': ai_msg.id,
+            'is_new_session': is_new_session,
         }
 
         if show_debug:
@@ -119,6 +195,137 @@ class ChatbotView(APIView):
 
         return Response(response_data)
 
+
+# ─────────────────────────────────────────────
+# Chat Session CRUD
+# ─────────────────────────────────────────────
+
+class ChatSessionListView(APIView):
+    """
+    GET /api/ai/sessions/
+    Returns all chat sessions for the current user, ordered by pinned + recent.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        sessions = ChatSession.objects.filter(user=request.user)
+        serializer = ChatSessionSerializer(sessions, many=True)
+        return Response(serializer.data)
+
+
+class ChatSessionDetailView(APIView):
+    """
+    GET    /api/ai/sessions/<uuid>/         — Get session details
+    PATCH  /api/ai/sessions/<uuid>/         — Rename, pin/unpin
+    DELETE /api/ai/sessions/<uuid>/         — Delete session
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, session_id):
+        session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+        serializer = ChatSessionSerializer(session)
+        return Response(serializer.data)
+
+    def patch(self, request, session_id):
+        session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+        serializer = ChatSessionUpdateSerializer(session, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(ChatSessionSerializer(session).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, session_id):
+        session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+        session.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChatSessionMessagesView(APIView):
+    """
+    GET /api/ai/sessions/<uuid>/messages/
+    Returns all messages in a session, ordered chronologically.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, session_id):
+        session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+        messages = ChatMessage.objects.filter(session=session).order_by('created_at')
+        serializer = ChatMessageSerializer(messages, many=True)
+        return Response(serializer.data)
+
+
+class MessageFeedbackView(APIView):
+    """
+    PATCH /api/ai/messages/<id>/feedback/
+    Set thumbs up/down feedback on an AI message.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, message_id):
+        message = get_object_or_404(
+            ChatMessage, id=message_id, session__user=request.user, role='ai'
+        )
+        serializer = MessageFeedbackSerializer(data=request.data)
+        if serializer.is_valid():
+            feedback_val = serializer.validated_data['feedback']
+            message.feedback = feedback_val if feedback_val else None
+            message.save(update_fields=['feedback'])
+            return Response({'status': 'ok', 'feedback': message.feedback})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChatFileUploadView(APIView):
+    """
+    POST /api/ai/upload/
+    Upload a file (image, PDF, Word doc, PPT, video) for use in chat.
+    Returns file info that the frontend can attach to a chat message.
+    """
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        uploaded_file = request.FILES.get('file')
+        if not uploaded_file:
+            return Response(
+                {'error': 'No file provided.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Determine file type
+        name = uploaded_file.name.lower()
+        if name.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp')):
+            file_type = 'image'
+        elif name.endswith('.pdf'):
+            file_type = 'pdf'
+        elif name.endswith(('.doc', '.docx')):
+            file_type = 'doc'
+        elif name.endswith(('.ppt', '.pptx')):
+            file_type = 'ppt'
+        elif name.endswith(('.mp4', '.avi', '.mkv', '.mov', '.webm')):
+            file_type = 'video'
+        else:
+            file_type = 'other'
+
+        # We'll create a temporary attachment (no message yet)
+        # The frontend will reference this when sending the chat message
+        from django.core.files.storage import default_storage
+        path = default_storage.save(
+            f'chat_attachments/{request.user.id}/{uploaded_file.name}',
+            uploaded_file,
+        )
+
+        return Response({
+            'file_path': path,
+            'file_name': uploaded_file.name,
+            'file_type': file_type,
+            'file_size': uploaded_file.size,
+            'url': f'/media/{path}',
+        })
+
+
+# ─────────────────────────────────────────────
+# Existing Views (preserved)
+# ─────────────────────────────────────────────
 
 class SummaryView(APIView):
     """
@@ -172,7 +379,6 @@ class DebugRetrievalView(APIView):
     """
     POST /api/debug/retrieval/
     Debug endpoint: returns retrieved chunks WITHOUT calling Gemini.
-    Shows similarity scores and source types.
     """
     permission_classes = [IsAuthenticated]
 
@@ -256,8 +462,8 @@ class EmbedAdminContentView(APIView):
 
 class StudentNoteListCreateView(generics.ListCreateAPIView):
     """
-    GET  /api/ai/student-notes/     — List student's notes
-    POST /api/ai/student-notes/     — Create a note (auto-embeds)
+    GET  /api/ai/student-notes/     -- List student's notes
+    POST /api/ai/student-notes/     -- Create a note (auto-embeds)
     """
     serializer_class = StudentNoteSerializer
     permission_classes = [IsAuthenticated]
