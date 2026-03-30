@@ -24,7 +24,12 @@ schema_view = get_schema_view(
 )
 
 
+from django.views.generic import RedirectView
+
 urlpatterns = [
+    # Redirect base URL to Swagger docs
+    path('', RedirectView.as_view(url='swagger/', permanent=False), name='index'),
+
     # Django Admin
     path('admin/', admin.site.urls),
 
@@ -42,6 +47,9 @@ urlpatterns = [
 
     # AI APIs
     path('api/ai/', include('ai.urls')),
+
+    # Debug RAG retrieval (no Gemini call)
+    path('api/debug/retrieval/', __import__('ai.views', fromlist=['DebugRetrievalView']).DebugRetrievalView.as_view(), name='debug-retrieval'),
 
     # Swagger Documentation
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

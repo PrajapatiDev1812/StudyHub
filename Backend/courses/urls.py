@@ -9,6 +9,8 @@ from .views import (
     MyCoursesView,
     DashboardView,
     ProgressHistoryView,
+    MyCompletedContentView,
+    MyTotalContentView,
 )
 
 router = DefaultRouter()
@@ -23,6 +25,8 @@ urlpatterns = [
 
     # Student's Dashboard
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
+    path('my-completed-content/', MyCompletedContentView.as_view(), name='my-completed-content'),
+    path('my-total-content/', MyTotalContentView.as_view(), name='my-total-content'),
 
     # Progress history for graph
     path('progress-history/', ProgressHistoryView.as_view(), name='progress-history'),

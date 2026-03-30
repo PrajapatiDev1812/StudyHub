@@ -21,6 +21,8 @@ import MyAttempts from './pages/student/MyAttempts';
 import Notifications from './pages/student/Notifications';
 import AiChat from './pages/student/AiChat';
 import Profile from './pages/student/Profile';
+import CompletedContent from './pages/student/CompletedContent';
+import TotalContent from './pages/student/TotalContent';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -75,6 +77,8 @@ function App() {
           <Route path="/student/notifications" element={<StudentRoute><Notifications /></StudentRoute>} />
           <Route path="/student/ai-chat" element={<StudentRoute><AiChat /></StudentRoute>} />
           <Route path="/student/profile" element={<StudentRoute><Profile /></StudentRoute>} />
+          <Route path="/student/completed-content" element={<StudentRoute><CompletedContent /></StudentRoute>} />
+          <Route path="/student/total-content" element={<StudentRoute><TotalContent /></StudentRoute>} />
 
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

@@ -342,6 +342,35 @@ class DashboardView(generics.RetrieveAPIView):
         })
 
 
+class MyCompletedContentView(generics.ListAPIView):
+    """
+    GET /api/my-completed-content/
+    Lists all progress/completed content records for the student.
+    """
+    serializer_class = ProgressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Progress.objects.filter(
+            student=self.request.user
+        ).order_by('-completed_at')
+
+
+class MyTotalContentView(generics.ListAPIView):
+    """
+    GET /api/my-total-content/
+    Lists all content items inside the courses the student is enrolled in.
+    """
+    serializer_class = ContentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        enrolled_courses = Course.objects.filter(enrollments__student=self.request.user)
+        return Content.objects.filter(
+            topic__subject__course__in=enrolled_courses
+        ).order_by('topic__subject__course__name', 'topic__name', 'title')
+
+
 # ---------- Progress History (time-series for graph) ----------
 class ProgressHistoryView(generics.GenericAPIView):
     """

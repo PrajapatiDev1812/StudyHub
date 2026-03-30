@@ -24,7 +24,11 @@ export default function Login() {
       const data = await res.json();
       navigate(data.role === 'admin' ? '/admin/dashboard' : '/student/dashboard');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid username or password');
+      if (!err.response) {
+        setError('Cannot connect to the backend server. Is it running?');
+      } else {
+        setError(err.response?.data?.detail || 'Invalid username or password');
+      }
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import ProgressGraph, { TABS } from './ProgressGraph';
 import './Dashboard.css';
@@ -44,6 +45,7 @@ export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState(0); 
   const [periodData, setPeriodData] = useState(null);
   const [loadingPeriod, setLoadingPeriod] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.get('/dashboard/')
@@ -83,15 +85,24 @@ export default function StudentDashboard() {
       </div>
 
       <div className="stats-grid">
-        <div className="stat-card">
+        <div 
+          className="stat-card clickable-stat"
+          onClick={() => navigate('/student/my-courses')}
+        >
           <div className="stat-label">Enrolled Courses</div>
           <div className="stat-value">{data?.enrolled_courses_count || 0}</div>
         </div>
-        <div className="stat-card">
+        <div 
+          className="stat-card clickable-stat"
+          onClick={() => navigate('/student/completed-content')}
+        >
           <div className="stat-label">Completed Content</div>
           <div className="stat-value">{completed}</div>
         </div>
-        <div className="stat-card">
+        <div 
+          className="stat-card clickable-stat"
+          onClick={() => navigate('/student/total-content')}
+        >
           <div className="stat-label">Total Content</div>
           <div className="stat-value">{total}</div>
         </div>
