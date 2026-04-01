@@ -875,3 +875,66 @@ h4.chat-heading { font-size: 1.1rem; }
     max-width: 95%;
   }
 }
+
+/* ── Sidebar Usage Bar ── */
+.chat-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-usage {
+  margin: 0;
+  padding: 14px 16px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+
+.usage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.usage-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.usage-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.usage-bar-track {
+  height: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 7px;
+}
+
+.usage-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  transition: width 0.5s ease;
+}
+
+/* Turn orange when > 75% used */
+.usage-bar-fill[style*="width: 7"],
+.usage-bar-fill[style*="width: 8"],
+.usage-bar-fill[style*="width: 9"],
+.usage-bar-fill[style*="width: 100"] {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+.usage-reset {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: right;
+}

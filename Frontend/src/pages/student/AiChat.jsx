@@ -64,6 +64,9 @@ export default function AiChat() {
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState(null);
 
+  // ── Usage tracking ──
+  const [usageStats, setUsageStats] = useState(null);
+
   // ── Voice ──
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
@@ -228,17 +231,22 @@ export default function AiChat() {
       const aiMsg = {
         id: res.data.message_id,
         role: 'ai',
-        text: res.data.response,
+        text: res.data.reply,
         feedback: null,
       };
       setMessages(prev => [...prev, aiMsg]);
+
+      // Update usage stats from response
+      if (res.data.usage) {
+        setUsageStats(res.data.usage);
+      }
 
       // Update session info
       if (res.data.session_id) {
         setCurrentSessionId(res.data.session_id);
       }
       if (res.data.is_new_session) {
-        loadSessions(); // Refresh sidebar
+        loadSessions();
       }
     } catch (err) {
       if (err.name === 'CanceledError' || err.message === 'canceled') {
@@ -617,6 +625,27 @@ export default function AiChat() {
             <div className="sidebar-empty">No conversations yet</div>
           )}
         </div>
+
+        {/* ── Usage Stats Bar ── */}
+        {usageStats && (
+          <div className="sidebar-usage">
+            <div className="usage-header">
+              <span className="usage-label">Daily AI Limit</span>
+              <span className="usage-count">{usageStats.used_today} / {usageStats.daily_limit}</span>
+            </div>
+            <div className="usage-bar-track">
+              <div
+                className="usage-bar-fill"
+                style={{ width: `${Math.min(100, (usageStats.used_today / usageStats.daily_limit) * 100)}%` }}
+              />
+            </div>
+            <div className="usage-reset">
+              ↺ Resets in {usageStats.resets_in_seconds > 3600
+                ? `${Math.ceil(usageStats.resets_in_seconds / 3600)}h`
+                : `${Math.ceil(usageStats.resets_in_seconds / 60)}m`}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ══════════ MAIN CHAT AREA ══════════ */}
