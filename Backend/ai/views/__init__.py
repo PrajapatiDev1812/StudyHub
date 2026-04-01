@@ -29,6 +29,7 @@ ChatSessionDetailView      = _mod.ChatSessionDetailView
 ChatSessionMessagesView    = _mod.ChatSessionMessagesView
 MessageFeedbackView        = _mod.MessageFeedbackView
 ChatFileUploadView         = _mod.ChatFileUploadView
+DebugRetrievalView         = _mod.DebugRetrievalView
 
 # ── New modular views ──
 from .ai_usage_view import AIUsageView  # noqa
@@ -44,5 +45,6 @@ __all__ = [
     'ChatSessionMessagesView',
     'MessageFeedbackView',
     'ChatFileUploadView',
+    'DebugRetrievalView',
     'AIUsageView',
 ]
