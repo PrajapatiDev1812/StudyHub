@@ -22,6 +22,7 @@ from .retrieval import retrieve_relevant_chunks
 from .prompts import BASE_SYSTEM_INSTRUCTION, build_rag_prompt, MODE_PROMPTS
 from .gemini_client import generate_response, is_configured
 from .embeddings import embed_admin_content, embed_student_note
+from .throttles import AIDailyThrottle, AIBurstThrottle, AIAnonThrottle
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +56,14 @@ class ChatbotView(APIView):
     Main RAG-powered AI chatbot.
     Accepts: message, mode, level, subject, topic, debug, session_id
     Returns: AI response + session info + optional debug info
+
+    Throttle limits (configured in settings.DEFAULT_THROTTLE_RATES):
+      - Students : 50 req/day + 5 req/min burst
+      - Admins   : 100 req/day (no burst limit)
+      - Anonymous: 5 req/day
     """
     permission_classes = [IsAuthenticated]
+    throttle_classes = [AIDailyThrottle, AIBurstThrottle, AIAnonThrottle]
 
     def post(self, request):
         serializer = ChatRequestSerializer(data=request.data)

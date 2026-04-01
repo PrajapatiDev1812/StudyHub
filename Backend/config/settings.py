@@ -166,21 +166,37 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle'
-    ],
+
+    # ── No global throttling — each view applies its own throttle class ──
+    'DEFAULT_THROTTLE_CLASSES': [],
+
+    # ── AI-specific rate limits (change values here to adjust limits) ──
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-        'user': '1000/day'
-    }
+        'ai_daily': '50/day',    # Authenticated students: 50 messages/day
+        'ai_burst': '5/min',     # Authenticated students: 5 messages/minute
+        'ai_anon':  '5/day',     # Anonymous users: 5 messages/day
+        'ai_admin': '100/day',   # Admin/superusers: 100 messages/day
+    },
+
+    # ── Custom exception handler for clean 429 JSON responses ──
+    'EXCEPTION_HANDLER': 'config.exceptions.custom_exception_handler',
 }
 
-# ---------- Caching ----------
+# ---------- Caching — Redis (used by throttling + general caching) ----------
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'studyhub-cache',
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SOCKET_CONNECT_TIMEOUT': 5,   # seconds
+            'SOCKET_TIMEOUT': 5,           # seconds
+            'RETRY_ON_TIMEOUT': True,
+            'MAX_CONNECTIONS': 1000,
+            'IGNORE_EXCEPTIONS': True,     # fallback gracefully if Redis is down
+        },
+        'KEY_PREFIX': 'studyhub',
+        'TIMEOUT': 86400,                  # default TTL: 24 hours
     }
 }
 
