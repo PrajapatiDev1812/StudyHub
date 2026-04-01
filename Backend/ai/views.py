@@ -23,6 +23,7 @@ from .prompts import BASE_SYSTEM_INSTRUCTION, build_rag_prompt, MODE_PROMPTS
 from .gemini_client import generate_response, is_configured
 from .embeddings import embed_admin_content, embed_student_note
 from .throttles import AIDailyThrottle, AIBurstThrottle, AIAnonThrottle
+from .services.ai_usage import increment_usage, get_usage_summary
 
 logger = logging.getLogger(__name__)
 
@@ -167,13 +168,18 @@ class ChatbotView(APIView):
         # Update session timestamp
         session.save(update_fields=['updated_at'])
 
-        # ── Step 4: Build response ──
+        # ── Step 4: Track usage (only after successful AI response) ──
+        increment_usage(request.user)
+        usage_summary = get_usage_summary(request.user)
+
+        # ── Step 5: Build response ──
         response_data = {
-            'response': ai_response,
+            'reply': ai_response,
             'session_id': str(session.id),
             'session_title': session.title,
             'message_id': ai_msg.id,
             'is_new_session': is_new_session,
+            'usage': usage_summary,
         }
 
         if show_debug:

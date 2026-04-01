@@ -11,11 +11,14 @@ from .views import (
     MessageFeedbackView,
     ChatFileUploadView,
 )
+from .views.ai_usage_view import AIUsageView
 
 urlpatterns = [
-    # Main AI chat (RAG-powered, now with session support)
+    # Main AI chat (RAG-powered, with session + usage tracking)
     path('chat/', ChatbotView.as_view(), name='ai-chat'),
 
+    # AI Usage stats for the authenticated user
+    path('usage/', AIUsageView.as_view(), name='ai-usage'),
     # Chat Session CRUD
     path('sessions/', ChatSessionListView.as_view(), name='ai-sessions'),
     path('sessions/<uuid:session_id>/', ChatSessionDetailView.as_view(), name='ai-session-detail'),
