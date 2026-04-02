@@ -37,18 +37,51 @@ def generate_response(prompt: str, system_instruction: str = '') -> str:
         )
 
     # Models to try in order of preference
-    models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite']
+    models_to_try = [
+        'gemini-2.0-flash', 
+        'gemini-flash-latest',
+        'gemini-2.5-flash',
+    ]
+
+    # Strict Safety Settings
+    safety_settings = [
+        types.SafetySetting(
+            category='HARM_CATEGORY_SEXUALLY_EXPLICIT',
+            threshold='BLOCK_LOW_AND_ABOVE'
+        ),
+        types.SafetySetting(
+            category='HARM_CATEGORY_HATE_SPEECH',
+            threshold='BLOCK_LOW_AND_ABOVE'
+        ),
+        types.SafetySetting(
+            category='HARM_CATEGORY_HARASSMENT',
+            threshold='BLOCK_LOW_AND_ABOVE'
+        ),
+        types.SafetySetting(
+            category='HARM_CATEGORY_DANGEROUS_CONTENT',
+            threshold='BLOCK_LOW_AND_ABOVE'
+        ),
+    ]
 
     for model_name in models_to_try:
         try:
             config = types.GenerateContentConfig(
                 system_instruction=system_instruction or None,
+                safety_settings=safety_settings,
+                temperature=0.2, # Lower temperature for better classification accuracy
             )
             response = _client.models.generate_content(
                 model=model_name,
                 contents=prompt,
                 config=config,
             )
+            
+            # Check for safety blocker
+            if not response.text:
+                if response.candidates and response.candidates[0].finish_reason == 'SAFETY':
+                    return "Blocked by safety filters: This assistant only provides academic and educational support."
+                return "The response was blocked or empty due to safety guidelines."
+
             return response.text
         except Exception as e:
             error_str = str(e)

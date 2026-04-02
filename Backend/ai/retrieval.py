@@ -95,7 +95,9 @@ def retrieve_relevant_chunks(
     student_results = []
     if user:
         student_chunks = StudentContentChunk.objects.filter(
-            user=user
+            user=user,
+            source_note__is_approved_for_ai=True,
+            source_note__moderation_status__in=['approved_academic', 'approved_medical']
         ).exclude(
             embedding__isnull=True
         ).exclude(embedding='')

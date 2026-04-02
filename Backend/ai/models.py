@@ -72,6 +72,27 @@ class StudentNote(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # ── Moderation Fields ──
+    MODERATION_STATUS_CHOICES = [
+        ('pending', 'Pending Scan'),
+        ('approved_academic', 'Approved (Academic)'),
+        ('approved_medical', 'Approved (Medical)'),
+        ('rejected_explicit', 'Rejected (Explicit/Unsafe)'),
+        ('rejected_malware', 'Rejected (Malware)'),
+        ('manual_review', 'Manual Review Required'),
+    ]
+    moderation_status = models.CharField(
+        max_length=20,
+        choices=MODERATION_STATUS_CHOICES,
+        default='pending'
+    )
+    moderation_category = models.CharField(max_length=100, blank=True, null=True)
+    is_approved_for_ai = models.BooleanField(
+        default=False,
+        help_text="Only true if moderation_status is approved"
+    )
+    flagged_reason = models.TextField(blank=True, null=True)
+
     class Meta:
         ordering = ['-created_at']
 
@@ -219,6 +240,27 @@ class ChatAttachment(models.Model):
         default=0, help_text="File size in bytes"
     )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # ── Moderation Fields ──
+    MODERATION_STATUS_CHOICES = [
+        ('pending', 'Pending Scan'),
+        ('approved_academic', 'Approved (Academic)'),
+        ('approved_medical', 'Approved (Medical)'),
+        ('rejected_explicit', 'Rejected (Explicit/Unsafe)'),
+        ('rejected_malware', 'Rejected (Malware)'),
+        ('manual_review', 'Manual Review Required'),
+    ]
+    moderation_status = models.CharField(
+        max_length=20,
+        choices=MODERATION_STATUS_CHOICES,
+        default='pending'
+    )
+    moderation_category = models.CharField(max_length=100, blank=True, null=True)
+    is_approved_for_ai = models.BooleanField(
+        default=False,
+        help_text="Only true if moderation_status is approved"
+    )
+    flagged_reason = models.TextField(blank=True, null=True)
 
     class Meta:
         verbose_name = 'Chat Attachment'

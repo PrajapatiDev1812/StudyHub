@@ -25,6 +25,7 @@ from .embeddings import embed_admin_content, embed_student_note
 from .throttles import AIDailyThrottle, AIBurstThrottle, AIAnonThrottle
 from .services.ai_usage import increment_usage, get_usage_summary
 from .services.ai_prompt_builder import build_prompt
+from .services.moderation import classify_content, moderate_response, is_academic
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +112,47 @@ class ChatbotView(APIView):
             content=message,
         )
 
-        # ── Step 1: Retrieve relevant chunks ──
+        # ── Step 0: Input Moderation & Classification ──
+        classification = classify_content(message)
+        
+        if classification == 'unsafe_adult':
+            refusal = "This assistant is designed only for academic and educational support. I cannot help with explicit adult or non-academic content."
+            # We still save the message but with the refusal
+            ai_msg = ChatMessage.objects.create(
+                session=session,
+                role='ai',
+                content=refusal,
+            )
+            return Response({
+                'reply': refusal,
+                'session_id': session.id,
+                'message_id': ai_msg.id,
+                'debug': {
+                    'classification': classification,
+                    'moderation_status': 'blocked',
+                    'source': 'moderator'
+                }
+            })
+
+        if classification == 'unknown_or_borderline':
+            refusal = "I'm not sure if this is an academic request. Could you please rephrase your question to be more specific to your studies?"
+            ai_msg = ChatMessage.objects.create(
+                session=session,
+                role='ai',
+                content=refusal,
+            )
+            return Response({
+                'reply': refusal,
+                'session_id': session.id,
+                'message_id': ai_msg.id,
+                'debug': {
+                    'classification': classification,
+                    'moderation_status': 'refused',
+                    'source': 'moderator'
+                }
+            })
+
+        # Step 1: Retrieve relevant chunks (Only if academic/sensitive)
         retrieval = retrieve_relevant_chunks(
             query=message,
             user=request.user,
@@ -153,6 +194,13 @@ class ChatbotView(APIView):
             system_instruction=BASE_SYSTEM_INSTRUCTION,
         )
 
+        # ── Step 4: Output Moderation Check ──
+        # Double-check sensitive academic responses for safety
+        if classification == 'sensitive_academic':
+            if not moderate_response(ai_response):
+                ai_response = "The generated response was blocked for safety reasons. Please try rephrasing your academic question."
+                logger.warning(f"Output moderation BLOCKED response for user {request.user.id}")
+
         # Save AI response
         ai_msg = ChatMessage.objects.create(
             session=session,
@@ -169,11 +217,11 @@ class ChatbotView(APIView):
         # Update session timestamp
         session.save(update_fields=['updated_at'])
 
-        # ── Step 4: Track usage (only after successful AI response) ──
+        # ── Step 5: Track usage (only after successful AI response) ──
         increment_usage(request.user)
         usage_summary = get_usage_summary(request.user)
 
-        # ── Step 5: Build response ──
+        # ── Step 6: Build response ──
         response_data = {
             'reply': ai_response,
             'session_id': str(session.id),
@@ -185,11 +233,15 @@ class ChatbotView(APIView):
 
         if show_debug:
             response_data['debug'] = {
+                'source': 'local' if not fallback_used else 'global_academic',
+                'classification': classification,
+                'used_context': not fallback_used,
+                'retrieved_chunks_count': len(admin_chunks) + len(student_chunks),
+                'moderation_status': 'allowed',
                 'mode_used': mode,
                 'level': level,
-                'admin_chunks_used': len(admin_chunks),
-                'student_chunks_used': len(student_chunks),
-                'fallback_used': fallback_used,
+                'admin_chunks_count': len(admin_chunks),
+                'student_chunks_count': len(student_chunks),
                 'gemini_configured': is_configured(),
                 'retrieved_chunks': [
                     {
