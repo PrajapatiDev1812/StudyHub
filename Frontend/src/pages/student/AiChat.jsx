@@ -33,6 +33,8 @@ const TYPING_SUGGESTIONS_MAP = {
   'how': ['How does gradient descent work?', 'How to prepare for exams?', 'How does a decision tree work?'],
   'quiz': ['Quiz me on statistics', 'Quiz me on data science basics', 'Quiz me on Python programming'],
   'help': ['Help me understand recursion', 'Help me with calculus', 'Help me prepare for my exam'],
+};
+
 const AI_MODES = [
   { id: 'student_mode', label: 'Student', icon: '🎓', color: '#6366f1' },
   { id: 'exam_mode', label: 'Exam Prep', icon: '📝', color: '#f59e0b' },
