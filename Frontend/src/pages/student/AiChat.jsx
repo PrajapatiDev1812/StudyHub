@@ -33,7 +33,12 @@ const TYPING_SUGGESTIONS_MAP = {
   'how': ['How does gradient descent work?', 'How to prepare for exams?', 'How does a decision tree work?'],
   'quiz': ['Quiz me on statistics', 'Quiz me on data science basics', 'Quiz me on Python programming'],
   'help': ['Help me understand recursion', 'Help me with calculus', 'Help me prepare for my exam'],
-};
+const AI_MODES = [
+  { id: 'student_mode', label: 'Student', icon: '🎓', color: '#6366f1' },
+  { id: 'exam_mode', label: 'Exam Prep', icon: '📝', color: '#f59e0b' },
+  { id: 'teacher_mode', label: 'Teacher', icon: '👨‍🏫', color: '#10b981' },
+  { id: 'practice_mode', label: 'Practice', icon: '🧠', color: '#8b5cf6' },
+];
 
 export default function AiChat() {
   const { user } = useAuth();
@@ -63,6 +68,9 @@ export default function AiChat() {
   const [editValue, setEditValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState(null);
+
+  // ── AI Mode state ──
+  const [selectedMode, setSelectedMode] = useState('student_mode');
 
   // ── Usage tracking ──
   const [usageStats, setUsageStats] = useState(null);
@@ -220,7 +228,7 @@ export default function AiChat() {
     try {
       const res = await api.post('/ai/chat/', {
         message: text,
-        mode: 'student_mode',
+        mode: selectedMode,
         level: 'beginner',
         debug: false,
         session_id: currentSessionId,
@@ -874,8 +882,25 @@ export default function AiChat() {
           </div>
         )}
 
-        {/* ── Input Bar ── */}
-        <form className="chat-input-bar" onSubmit={handleSubmit}>
+        <div className="chat-input-wrapper">
+          {/* ── Mode Selector ── */}
+          <div className="mode-selector-container">
+            {AI_MODES.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className={`mode-pill ${selectedMode === m.id ? 'active' : ''}`}
+                onClick={() => setSelectedMode(m.id)}
+                style={{ '--active-color': m.color }}
+              >
+                <span className="mode-icon">{m.icon}</span>
+                <span className="mode-label">{m.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* ── Input Bar ── */}
+          <form className="chat-input-bar" onSubmit={handleSubmit}>
           {/* Attach button */}
           <div className="attach-wrapper">
             <button
