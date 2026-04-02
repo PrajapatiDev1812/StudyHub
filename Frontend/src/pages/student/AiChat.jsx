@@ -981,7 +981,8 @@ export default function AiChat() {
         </form>
       </div>
     </div>
-  );
+  </div>
+);
 }
 
 // ── Session Item Component ──
