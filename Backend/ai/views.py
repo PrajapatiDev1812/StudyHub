@@ -24,6 +24,7 @@ from .gemini_client import generate_response, is_configured
 from .embeddings import embed_admin_content, embed_student_note
 from .throttles import AIDailyThrottle, AIBurstThrottle, AIAnonThrottle
 from .services.ai_usage import increment_usage, get_usage_summary
+from .services.ai_prompt_builder import build_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -136,14 +137,14 @@ class ChatbotView(APIView):
             logger.info(f"Fallback: {fallback_used}")
 
         # ── Step 2: Build prompt ──
-        prompt = build_rag_prompt(
-            message=message,
-            admin_chunks=admin_chunks,
-            student_chunks=student_chunks,
+        prompt = build_prompt(
+            user_message=message,
             mode=mode,
             level=level,
             subject=subject,
             topic=topic,
+            admin_chunks=admin_chunks,
+            student_chunks=student_chunks,
         )
 
         # ── Step 3: Call Gemini ──
