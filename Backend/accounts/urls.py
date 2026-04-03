@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-from .views import RegisterView, ProfileView
+from .views import RegisterView, ProfileView, ThemeListView, UpdateAppearanceView, CreateCustomThemeView, ThemeDetailView
 
 urlpatterns = [
     # Register a new user
@@ -18,4 +18,10 @@ urlpatterns = [
 
     # Get current user's profile
     path('profile/', ProfileView.as_view(), name='auth-profile'),
+
+    # Themes and Appearance
+    path('themes/', ThemeListView.as_view(), name='themes-list'),
+    path('themes/custom/', CreateCustomThemeView.as_view(), name='custom-theme-create'),
+    path('themes/<int:pk>/', ThemeDetailView.as_view(), name='theme-detail'),
+    path('appearance/', UpdateAppearanceView.as_view(), name='appearance-update'),
 ]

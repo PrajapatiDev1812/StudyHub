@@ -14,7 +14,7 @@ function ProgressRing({ percent = 0, size = 140, stroke = 10 }) {
     <svg className="progress-ring" width={size} height={size}>
       <circle
         cx={size / 2} cy={size / 2} r={radius}
-        fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke}
+        fill="none" stroke="var(--border-color)" strokeWidth={stroke}
       />
       <circle
         cx={size / 2} cy={size / 2} r={radius}
@@ -25,11 +25,11 @@ function ProgressRing({ percent = 0, size = 140, stroke = 10 }) {
       />
       <defs>
         <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#6c63ff" />
-          <stop offset="100%" stopColor="#3b82f6" />
+          <stop offset="0%" stopColor="var(--accent-primary)" />
+          <stop offset="100%" stopColor="var(--accent-secondary)" />
         </linearGradient>
       </defs>
-      <text x="50%" y="50%" textAnchor="middle" dy="0.35em" className="progress-ring-text">
+      <text x="50%" y="50%" textAnchor="middle" dy="0.35em" className="progress-ring-text" style={{ fill: 'var(--text-primary)' }}>
         {percent}%
       </text>
     </svg>

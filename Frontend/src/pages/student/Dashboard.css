@@ -43,14 +43,14 @@
 }
 
 .clickable-stat:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-primary);
   transform: translateY(-2px);
 }
 
 .clickable-stat.active {
-  border-color: var(--accent);
-  box-shadow: 0 0 15px rgba(108, 99, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--accent-primary);
+  box-shadow: var(--glow);
+  background: var(--active-item);
 }
 
 .stat-details-panel {
@@ -70,7 +70,7 @@
 
 .stat-details-content {
   padding: 20px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-surface, rgba(0, 0, 0, 0.2));
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   margin-top: 12px;
@@ -153,8 +153,8 @@
 }
 
 .graph-tab:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
 }
 
 .graph-tab.active {
@@ -165,7 +165,7 @@
 
 /* ── SVG Chart ── */
 .graph-container {
-  background: rgba(0, 0, 0, 0.15);
+  background: var(--bg-surface, rgba(0, 0, 0, 0.15));
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
   padding: 8px;

@@ -15,7 +15,9 @@
 /* ══════════ SIDEBAR ══════════ */
 .chat-sidebar {
   width: 260px;
-  background: var(--bg-secondary);
+  background: var(--bg-sidebar);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
@@ -665,7 +667,9 @@
   align-items: flex-end;
   gap: 12px;
   padding: 16px 20px;
-  background: var(--bg-primary);
+  background: var(--bg-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   margin: 0 auto 16px;
   width: 90%;
   max-width: 800px;
@@ -901,13 +905,13 @@ h4.chat-heading { font-size: 1.1rem; }
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-muted);
 }
 
 .usage-count {
   font-size: 0.78rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
 .usage-bar-track {
@@ -935,7 +939,7 @@ h4.chat-heading { font-size: 1.1rem; }
 
 .usage-reset {
   font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-muted);
   text-align: right;
 }
 
@@ -961,10 +965,10 @@ h4.chat-heading { font-size: 1.1rem; }
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
   border-radius: 20px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
@@ -972,15 +976,15 @@ h4.chat-heading { font-size: 1.1rem; }
 }
 
 .mode-pill:hover {
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
   transform: translateY(-1px);
 }
 
 .mode-pill.active {
   background: var(--active-color);
   border-color: var(--active-color);
-  color: white;
+  color: #fff;
   box-shadow: 0 4px 15px -4px var(--active-color);
   opacity: 0.95;
 }

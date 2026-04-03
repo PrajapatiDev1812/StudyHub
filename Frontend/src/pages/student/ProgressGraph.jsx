@@ -83,12 +83,12 @@ export default function ProgressGraph({ activeTab, setActiveTab, points, loading
           <svg viewBox={`0 0 ${W} ${H}`} className="line-chart">
             <defs>
               <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#6c63ff" />
-                <stop offset="100%" stopColor="#3b82f6" />
+                <stop offset="0%" stopColor="var(--accent-primary)" />
+                <stop offset="100%" stopColor="var(--accent-secondary)" />
               </linearGradient>
               <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#6c63ff" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#6c63ff" stopOpacity="0.02" />
+                <stop offset="0%" stopColor="var(--accent-primary)" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="var(--accent-primary)" stopOpacity="0.02" />
               </linearGradient>
             </defs>
 
@@ -98,7 +98,7 @@ export default function ProgressGraph({ activeTab, setActiveTab, points, loading
                 <line
                   x1={PAD.left} y1={yScale(tick)}
                   x2={W - PAD.right} y2={yScale(tick)}
-                  stroke="rgba(255,255,255,0.06)" strokeWidth="1"
+                  stroke="var(--border-color)" strokeWidth="1"
                 />
                 <text
                   x={PAD.left - 10} y={yScale(tick) + 4}
@@ -115,7 +115,7 @@ export default function ProgressGraph({ activeTab, setActiveTab, points, loading
                 <line
                   x1={grid.xPos} y1={PAD.top}
                   x2={grid.xPos} y2={PAD.top + chartH}
-                  stroke="rgba(255,255,255,0.04)" strokeWidth="1"
+                  stroke="var(--bg-glass)" strokeWidth="1"
                 />
                 <text
                   x={grid.xPos} y={H - 12}
@@ -127,8 +127,8 @@ export default function ProgressGraph({ activeTab, setActiveTab, points, loading
             ))}
 
             {/* Axes */}
-            <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + chartH} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-            <line x1={PAD.left} y1={PAD.top + chartH} x2={W - PAD.right} y2={PAD.top + chartH} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+            <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + chartH} stroke="var(--border-color)" strokeWidth="1" />
+            <line x1={PAD.left} y1={PAD.top + chartH} x2={W - PAD.right} y2={PAD.top + chartH} stroke="var(--border-color)" strokeWidth="1" />
 
             {/* Area fill */}
             {areaPath && <path d={areaPath} fill="url(#areaGrad)" />}

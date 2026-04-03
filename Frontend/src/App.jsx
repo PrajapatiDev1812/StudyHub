@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 
@@ -21,6 +22,7 @@ import MyAttempts from './pages/student/MyAttempts';
 import Notifications from './pages/student/Notifications';
 import AiChat from './pages/student/AiChat';
 import Profile from './pages/student/Profile';
+import Appearance from './pages/student/Appearance';
 import CompletedContent from './pages/student/CompletedContent';
 import TotalContent from './pages/student/TotalContent';
 
@@ -57,41 +59,44 @@ function AdminRoute({ children }) {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+      <ThemeProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public */}
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          {/* Student Routes */}
-          <Route path="/student/dashboard" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
-          <Route path="/student/courses" element={<StudentRoute><BrowseCourses /></StudentRoute>} />
-          <Route path="/student/courses/:id" element={<StudentRoute><CourseDetail /></StudentRoute>} />
-          <Route path="/student/content/:id" element={<StudentRoute><ContentViewer /></StudentRoute>} />
-          <Route path="/student/my-courses" element={<StudentRoute><MyCourses /></StudentRoute>} />
-          <Route path="/student/tests" element={<StudentRoute><TestsList /></StudentRoute>} />
-          <Route path="/student/tests/:id" element={<StudentRoute><TakeTest /></StudentRoute>} />
-          <Route path="/student/attempts/:id" element={<StudentRoute><TestResults /></StudentRoute>} />
-          <Route path="/student/my-attempts" element={<StudentRoute><MyAttempts /></StudentRoute>} />
-          <Route path="/student/notifications" element={<StudentRoute><Notifications /></StudentRoute>} />
-          <Route path="/student/ai-chat" element={<StudentRoute><AiChat /></StudentRoute>} />
-          <Route path="/student/profile" element={<StudentRoute><Profile /></StudentRoute>} />
-          <Route path="/student/completed-content" element={<StudentRoute><CompletedContent /></StudentRoute>} />
-          <Route path="/student/total-content" element={<StudentRoute><TotalContent /></StudentRoute>} />
+            {/* Student Routes */}
+            <Route path="/student/dashboard" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
+            <Route path="/student/courses" element={<StudentRoute><BrowseCourses /></StudentRoute>} />
+            <Route path="/student/courses/:id" element={<StudentRoute><CourseDetail /></StudentRoute>} />
+            <Route path="/student/content/:id" element={<StudentRoute><ContentViewer /></StudentRoute>} />
+            <Route path="/student/my-courses" element={<StudentRoute><MyCourses /></StudentRoute>} />
+            <Route path="/student/tests" element={<StudentRoute><TestsList /></StudentRoute>} />
+            <Route path="/student/tests/:id" element={<StudentRoute><TakeTest /></StudentRoute>} />
+            <Route path="/student/attempts/:id" element={<StudentRoute><TestResults /></StudentRoute>} />
+            <Route path="/student/my-attempts" element={<StudentRoute><MyAttempts /></StudentRoute>} />
+            <Route path="/student/notifications" element={<StudentRoute><Notifications /></StudentRoute>} />
+            <Route path="/student/ai-chat" element={<StudentRoute><AiChat /></StudentRoute>} />
+            <Route path="/student/profile" element={<StudentRoute><Profile /></StudentRoute>} />
+            <Route path="/student/completed-content" element={<StudentRoute><CompletedContent /></StudentRoute>} />
+            <Route path="/student/total-content" element={<StudentRoute><TotalContent /></StudentRoute>} />
+            <Route path="/student/appearance" element={<StudentRoute><Appearance /></StudentRoute>} />
 
-          {/* Admin Routes */}
-          <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-          <Route path="/admin/courses" element={<AdminRoute><ManageCourses /></AdminRoute>} />
-          <Route path="/admin/subjects" element={<AdminRoute><ManageSubjects /></AdminRoute>} />
-          <Route path="/admin/topics" element={<AdminRoute><ManageTopics /></AdminRoute>} />
-          <Route path="/admin/content" element={<AdminRoute><ManageContent /></AdminRoute>} />
-          <Route path="/admin/tests" element={<AdminRoute><ManageTests /></AdminRoute>} />
-          <Route path="/admin/tests/:testId/questions" element={<AdminRoute><ManageQuestions /></AdminRoute>} />
-          <Route path="/admin/tests/:id/analytics" element={<AdminRoute><TestAnalytics /></AdminRoute>} />
-          <Route path="/admin/courses/:id/students" element={<AdminRoute><StudentList /></AdminRoute>} />
-        </Routes>
-      </BrowserRouter>
+            {/* Admin Routes */}
+            <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/courses" element={<AdminRoute><ManageCourses /></AdminRoute>} />
+            <Route path="/admin/subjects" element={<AdminRoute><ManageSubjects /></AdminRoute>} />
+            <Route path="/admin/topics" element={<AdminRoute><ManageTopics /></AdminRoute>} />
+            <Route path="/admin/content" element={<AdminRoute><ManageContent /></AdminRoute>} />
+            <Route path="/admin/tests" element={<AdminRoute><ManageTests /></AdminRoute>} />
+            <Route path="/admin/tests/:testId/questions" element={<AdminRoute><ManageQuestions /></AdminRoute>} />
+            <Route path="/admin/tests/:id/analytics" element={<AdminRoute><TestAnalytics /></AdminRoute>} />
+            <Route path="/admin/courses/:id/students" element={<AdminRoute><StudentList /></AdminRoute>} />
+          </Routes>
+        </BrowserRouter>
+      </ThemeProvider>
     </AuthProvider>
   );
 }
