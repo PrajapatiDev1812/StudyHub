@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta
 
-from accounts.permissions import IsAdmin
+from accounts.permissions import IsAdmin, IsStudent, IsAdminOrReadOnly
 from .models import Course, Subject, Topic, Content, Enrollment, Progress
 from .serializers import (
     CourseSerializer,
@@ -21,24 +21,6 @@ from .serializers import (
 )
 
 
-class IsAdminOrReadOnly(IsAuthenticated):
-    """
-    Admin users can do anything.
-    Authenticated students can only read (GET, HEAD, OPTIONS).
-    """
-
-    def has_permission(self, request, view):
-        # First check that the user is authenticated
-        is_authenticated = super().has_permission(request, view)
-        if not is_authenticated:
-            return False
-
-        # Read-only methods are allowed for any authenticated user
-        if request.method in ('GET', 'HEAD', 'OPTIONS'):
-            return True
-
-        # Write methods are only allowed for admins
-        return request.user.role == 'admin'
 
 
 # ---------- Course ----------
@@ -83,20 +65,13 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     # ---- Enrollment Actions ----
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'], permission_classes=[IsStudent])
     def enroll(self, request, pk=None):
         """
         POST /api/courses/{id}/enroll/
         Enroll the current student in this course.
         """
         course = self.get_object()
-
-        # Only students can enroll
-        if request.user.role != 'student':
-            return Response(
-                {'error': 'Only students can enroll in courses.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
 
         # Check if already enrolled
         if Enrollment.objects.filter(student=request.user, course=course).exists():
@@ -115,19 +90,13 @@ class CourseViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'], permission_classes=[IsStudent])
     def unenroll(self, request, pk=None):
         """
         POST /api/courses/{id}/unenroll/
         Remove the current student from this course.
         """
         course = self.get_object()
-
-        if request.user.role != 'student':
-            return Response(
-                {'error': 'Only students can unenroll from courses.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
 
         enrollment = Enrollment.objects.filter(
             student=request.user, course=course
@@ -145,7 +114,7 @@ class CourseViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
-    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['get'], permission_classes=[IsAdmin])
     def students(self, request, pk=None):
         """
         GET /api/courses/{id}/students/
@@ -153,29 +122,17 @@ class CourseViewSet(viewsets.ModelViewSet):
         """
         course = self.get_object()
 
-        if request.user.role != 'admin':
-            return Response(
-                {'error': 'Only admins can view enrolled students.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         enrollments = Enrollment.objects.filter(course=course)
         serializer = EnrollmentSerializer(enrollments, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['get'], permission_classes=[IsAdmin])
     def analytics(self, request, pk=None):
         """
         GET /api/courses/{id}/analytics/
         Admin view for course engagement analytics.
         """
         course = self.get_object()
-
-        if request.user.role != 'admin':
-            return Response(
-                {'error': 'Only admins can view course analytics.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
 
         total_enrollments = course.enrollments.count()
         total_content = Content.objects.filter(topic__subject__course=course).count()
@@ -277,19 +234,13 @@ class ContentViewSet(viewsets.ModelViewSet):
             qs = qs.filter(topic_id=topic_id)
         return qs
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'], permission_classes=[IsStudent])
     def mark_complete(self, request, pk=None):
         """
         POST /api/contents/{id}/mark_complete/
         Mark a content item as completed by the student.
         """
         content = self.get_object()
-
-        if request.user.role != 'student':
-            return Response(
-                {'error': 'Only students can mark content as complete.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
 
         progress, created = Progress.objects.get_or_create(
             student=request.user,
@@ -313,15 +264,9 @@ class DashboardView(generics.RetrieveAPIView):
     GET /api/dashboard/
     Student dashboard with progress % and recent activity.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStudent]
 
     def get(self, request, *args, **kwargs):
-        if request.user.role != 'student':
-            return Response(
-                {'error': 'Only students have a dashboard.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         enrolled_courses = Course.objects.filter(enrollments__student=request.user)
         total_content_in_enrolled = Content.objects.filter(topic__subject__course__in=enrolled_courses).count()
         completed_content = Progress.objects.filter(student=request.user).count()

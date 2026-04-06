@@ -48,6 +48,11 @@ class Subject(models.Model):
         return f"{self.course.name} - {self.name}"
 
 class Topic(models.Model):
+    DIFFICULTY_CHOICES = [
+        ('easy', 'Easy'),
+        ('medium', 'Medium'),
+        ('hard', 'Hard'),
+    ]
     subject = models.ForeignKey(
         Subject,
         on_delete=models.CASCADE,
@@ -55,6 +60,12 @@ class Topic(models.Model):
     )
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    difficulty = models.CharField(
+        max_length=10,
+        choices=DIFFICULTY_CHOICES,
+        default='medium',
+        help_text="Topic difficulty — used for focus timer suggestions",
+    )
 
     def __str__(self):
         return f"{self.subject.name} - {self.name}"

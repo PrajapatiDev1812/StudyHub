@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.shortcuts import get_object_or_404
 from courses.models import Content
+from accounts.permissions import IsAdmin
 
 from .models import StudentNote, ChatSession, ChatMessage, ChatAttachment
 from .serializers import (
@@ -19,7 +20,7 @@ from .serializers import (
     MessageFeedbackSerializer,
 )
 from .retrieval import retrieve_relevant_chunks
-from .prompts import BASE_SYSTEM_INSTRUCTION, build_rag_prompt, MODE_PROMPTS
+from .prompts import BASE_SYSTEM_INSTRUCTION, build_rag_prompt, MODE_PROMPTS, FOCUS_STRICT_INSTRUCTION, FOCUS_NORMAL_INSTRUCTION
 from .gemini_client import generate_response, is_configured
 from .embeddings import embed_admin_content, embed_student_note
 from .throttles import AIDailyThrottle, AIBurstThrottle, AIAnonThrottle
@@ -81,6 +82,38 @@ class ChatbotView(APIView):
         topic = data.get('topic', '')
         show_debug = data.get('debug', False) or DEBUG_RAG
         session_id = data.get('session_id')
+        focus_session_id = data.get('focus_session_id')  # NEW: Focus Mode
+
+        # ── Focus Mode Context Injection ──
+        focus_extra_instruction = ''
+        if focus_session_id:
+            try:
+                from focus.models import FocusSession
+                focus_session = FocusSession.objects.select_related('subject', 'topic').get(
+                    pk=focus_session_id,
+                    student=request.user,
+                    status__in=['active', 'break'],
+                )
+                focus_subject = focus_session.subject.name if focus_session.subject else subject
+                focus_topic = focus_session.topic.name if focus_session.topic else topic
+                # Use subject/topic from focus session context
+                if focus_subject:
+                    subject = focus_subject
+                if focus_topic:
+                    topic = focus_topic
+                topic_context = f', Topic: {focus_topic}' if focus_topic else ''
+                if focus_session.mode == 'strict':
+                    focus_extra_instruction = FOCUS_STRICT_INSTRUCTION.format(
+                        subject=focus_subject or 'the current subject',
+                        topic_context=topic_context,
+                    )
+                else:
+                    focus_extra_instruction = FOCUS_NORMAL_INSTRUCTION.format(
+                        subject=focus_subject or 'the current subject',
+                        topic_context=f'\nCurrent topic: {focus_topic}' if focus_topic else '',
+                    )
+            except Exception:
+                pass  # non-fatal: continue without focus context
 
         # ── Session Management ──
         session = None
@@ -189,9 +222,15 @@ class ChatbotView(APIView):
         )
 
         # ── Step 3: Call Gemini ──
+        # Prepend focus mode instruction to system context if in a focus session
+        effective_system = (
+            focus_extra_instruction + '\n\n' + BASE_SYSTEM_INSTRUCTION
+            if focus_extra_instruction
+            else BASE_SYSTEM_INSTRUCTION
+        )
         ai_response = generate_response(
             prompt=prompt,
-            system_instruction=BASE_SYSTEM_INSTRUCTION,
+            system_instruction=effective_system,
         )
 
         # ── Step 4: Output Moderation Check ──
@@ -445,8 +484,9 @@ class DebugRetrievalView(APIView):
     """
     POST /api/debug/retrieval/
     Debug endpoint: returns retrieved chunks WITHOUT calling Gemini.
+    Admin only — not exposed to students.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
 
     def post(self, request):
         serializer = DebugRetrievalRequestSerializer(data=request.data)
@@ -491,15 +531,9 @@ class EmbedAdminContentView(APIView):
     POST /api/ai/embed-content/<id>/
     Admin triggers embedding generation for a specific Content item.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
 
     def post(self, request, content_id):
-        if request.user.role != 'admin':
-            return Response(
-                {'error': 'Only admins can embed content.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
         try:
             content = Content.objects.get(id=content_id)
         except Content.DoesNotExist:

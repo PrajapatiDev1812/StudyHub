@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from accounts.permissions import IsAdmin
+from accounts.permissions import IsAdmin, IsStudent, IsAdminOrReadOnly
 from .models import Test, Question, Option, StudentAttempt, StudentAnswer
 from .serializers import (
     TestSerializer,
@@ -20,17 +20,6 @@ from .serializers import (
     StudentAttemptListSerializer,
 )
 
-
-class IsAdminOrReadOnly(IsAuthenticated):
-    """Admin can do everything, students can only read."""
-
-    def has_permission(self, request, view):
-        is_authenticated = super().has_permission(request, view)
-        if not is_authenticated:
-            return False
-        if request.method in ('GET', 'HEAD', 'OPTIONS'):
-            return True
-        return request.user.role == 'admin'
 
 
 # ---------- Test ViewSet ----------
@@ -68,7 +57,7 @@ class TestViewSet(viewsets.ModelViewSet):
         serializer.save(created_by=self.request.user)
 
     # ---- Student takes a test ----
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'], permission_classes=[IsStudent])
     def submit(self, request, pk=None):
         """
         POST /api/tests/{id}/submit/
@@ -83,13 +72,6 @@ class TestViewSet(viewsets.ModelViewSet):
         }
         """
         test = self.get_object()
-
-        # Only students can take tests
-        if request.user.role != 'student':
-            return Response(
-                {'error': 'Only students can submit tests.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
 
         # Validate submission data
         serializer = SubmitTestSerializer(data=request.data)
@@ -158,19 +140,13 @@ class TestViewSet(viewsets.ModelViewSet):
         )
 
     # ---- Test Analytics (Admin) ----
-    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['get'], permission_classes=[IsAdmin])
     def analytics(self, request, pk=None):
         """
         GET /api/tests/{id}/analytics/
         Admin views test statistics.
         """
         test = self.get_object()
-
-        if request.user.role != 'admin':
-            return Response(
-                {'error': 'Only admins can view analytics.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
 
         attempts = StudentAttempt.objects.filter(test=test, completed_at__isnull=False)
         total_attempts = attempts.count()

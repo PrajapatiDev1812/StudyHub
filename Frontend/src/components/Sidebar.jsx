@@ -15,6 +15,7 @@ export default function Sidebar() {
     { to: '/student/dashboard', icon: '📊', label: 'Dashboard' },
     { to: '/student/courses', icon: '📚', label: 'Browse Courses' },
     { to: '/student/my-courses', icon: '🎓', label: 'My Courses' },
+    { to: '/student/focus', icon: '🎯', label: 'Focus Mode' },
     { to: '/student/tests', icon: '📝', label: 'Tests' },
     { to: '/student/my-attempts', icon: '📋', label: 'My Attempts' },
     { to: '/student/notifications', icon: '🔔', label: 'Notifications' },

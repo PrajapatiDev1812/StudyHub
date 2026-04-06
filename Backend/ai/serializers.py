@@ -54,6 +54,7 @@ class ChatRequestSerializer(serializers.Serializer):
     topic = serializers.CharField(max_length=200, required=False, default='')
     debug = serializers.BooleanField(default=False)
     session_id = serializers.UUIDField(required=False, allow_null=True)
+    focus_session_id = serializers.IntegerField(required=False, allow_null=True)
 
 
 class DebugRetrievalRequestSerializer(serializers.Serializer):

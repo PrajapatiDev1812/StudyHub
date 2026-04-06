@@ -45,6 +45,7 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
     'django_filters',
 
@@ -52,6 +53,7 @@ INSTALLED_APPS = [
     'courses',
     'assessments',
     'notifications',
+    'focus',
     'ai',
 
     "corsheaders"
@@ -208,7 +210,7 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
-    'AUTH_HEADER_TYPES': ('Bearer'),
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -239,4 +241,25 @@ LOGGING = {
             'propagate': True,
         },
     },
+}
+
+# ---------- Swagger Settings ----------
+SWAGGER_SETTINGS = {
+    # Disable session-based auth in Swagger (we use JWT only)
+    'USE_SESSION_AUTH': False,
+    # Define JWT Bearer as the only auth scheme
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': 'Enter your JWT token as: **Bearer &lt;your_access_token&gt;**',
+        }
+    },
+    # Apply Bearer security globally to all endpoints in Swagger
+    'DEFAULT_AUTO_SCHEMA_CLASS': 'drf_yasg.inspectors.SwaggerAutoSchema',
+    # Persist authorization across page refreshes
+    'PERSIST_AUTH': True,
+    'REFETCH_SCHEMA_WITH_AUTH': True,
+    'REFETCH_SCHEMA_ON_LOGOUT': True,
 }
