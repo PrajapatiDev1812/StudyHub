@@ -163,11 +163,57 @@
 /* ── History ── */
 .fl-history { margin-top: 48px; }
 
-.fl-history h2 {
+.fl-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.fl-history-header h2 {
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--text-primary, #fff);
-  margin: 0 0 20px;
+  margin: 0;
+}
+
+.fl-view-history-btn {
+  background: rgba(108,99,255,0.1);
+  border: 1px solid rgba(108,99,255,0.35);
+  color: rgba(108,99,255,0.9);
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.fl-view-history-btn:hover {
+  background: rgba(108,99,255,0.2);
+  color: #a5b4fc;
+  border-color: rgba(108,99,255,0.6);
+}
+
+.fl-see-all-btn {
+  width: 100%;
+  margin-top: 14px;
+  background: transparent;
+  border: 1px dashed rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.35);
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.fl-see-all-btn:hover {
+  border-color: rgba(108,99,255,0.4);
+  color: rgba(108,99,255,0.85);
+  background: rgba(108,99,255,0.05);
 }
 
 .fl-loading, .fl-empty {

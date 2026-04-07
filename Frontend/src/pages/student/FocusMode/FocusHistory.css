@@ -1,0 +1,304 @@
+/* FocusHistory.css */
+
+.fh-root {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 24px 60px;
+  animation: fhFadeIn 0.3s ease;
+}
+
+@keyframes fhFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Header ── */
+.fh-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 32px 0 24px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.fh-header-left { display: flex; flex-direction: column; gap: 6px; }
+
+.fh-back-btn {
+  background: none;
+  border: none;
+  color: rgba(108, 99, 255, 0.85);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  transition: color 0.2s;
+  text-align: left;
+}
+.fh-back-btn:hover { color: #a5b4fc; }
+
+.fh-header h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-primary, #fff);
+  margin: 0;
+}
+.fh-header p {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.35);
+  margin: 0;
+}
+
+.fh-clear-all-btn {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: rgba(239, 68, 68, 0.85);
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.fh-clear-all-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.6);
+}
+.fh-clear-all-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Stats Grid ── */
+.fh-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 700px) { .fh-stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.fh-stat-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 18px 16px;
+  text-align: center;
+  transition: all 0.2s;
+}
+.fh-stat-card:hover { border-color: rgba(108,99,255,0.3); background: rgba(108,99,255,0.06); }
+
+.fh-stat-icon  { font-size: 1.4rem; margin-bottom: 8px; display: block; }
+.fh-stat-value { font-size: 1.6rem; font-weight: 800; color: var(--text-primary, #fff); line-height: 1; }
+.fh-stat-label { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.fh-stat-sub   { font-size: 0.72rem; color: rgba(255,255,255,0.25); margin-top: 4px; }
+
+.fh-stats-loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: rgba(255,255,255,0.25);
+  padding: 24px;
+  font-size: 0.88rem;
+}
+
+/* ── Filter Bar ── */
+.fh-filter-bar {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  margin-bottom: 24px;
+}
+
+.fh-filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fh-filter-label { font-size: 0.72rem; color: rgba(255,255,255,0.35); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
+
+.fh-filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.fh-pill {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.55);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.fh-pill:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.85); }
+.fh-pill.active {
+  background: rgba(108,99,255,0.2);
+  border-color: rgba(108,99,255,0.5);
+  color: #a5b4fc;
+}
+
+.fh-filter-sort { margin-left: auto; }
+
+.fh-sort-select {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 7px 12px;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.82rem;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+.fh-sort-select option { background: #1a1a2e; color: #fff; }
+.fh-sort-select:focus { border-color: rgba(108,99,255,0.5); }
+
+/* ── List Header ── */
+.fh-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.35);
+}
+.fh-list-hint { font-size: 0.75rem; }
+
+/* ── Session Cards ── */
+.fh-sessions { display: flex; flex-direction: column; gap: 10px; }
+
+.fh-session-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+.fh-session-card:hover { border-color: rgba(255,255,255,0.14); }
+.fh-session-card.expanded { border-color: rgba(108,99,255,0.3); background: rgba(108,99,255,0.04); }
+
+.fh-card-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  cursor: pointer;
+}
+
+.fh-card-left  { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.fh-card-subject { font-size: 0.95rem; font-weight: 700; color: rgba(255,255,255,0.9); }
+.fh-card-topic   { font-size: 0.78rem; color: rgba(255,255,255,0.4); }
+.fh-card-goal    { font-size: 0.8rem; color: rgba(255,255,255,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; }
+
+.fh-card-mid { display: flex; flex-direction: column; gap: 6px; align-items: center; flex-shrink: 0; }
+
+.fh-mode-badge {
+  font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 8px; white-space: nowrap;
+}
+.fh-mode-badge.normal { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+.fh-mode-badge.strict { background: rgba(124,58,237,0.12); color: #a78bfa; border: 1px solid rgba(124,58,237,0.25); }
+
+.fh-status-tag {
+  font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 8px; white-space: nowrap;
+}
+.fh-status-tag.completed { background: rgba(16,185,129,0.12); color: #34d399; }
+.fh-status-tag.abandoned { background: rgba(239,68,68,0.1); color: #f87171; }
+.fh-status-tag.active    { background: rgba(108,99,255,0.15); color: #a5b4fc; }
+.fh-status-tag.paused    { background: rgba(234,179,8,0.1); color: #fbbf24; }
+.fh-status-tag.break     { background: rgba(6,182,212,0.1); color: #22d3ee; }
+
+.fh-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.fh-card-meta  { display: flex; gap: 12px; font-size: 0.78rem; color: rgba(255,255,255,0.35); flex-wrap: wrap; justify-content: flex-end; }
+
+.fh-expand-btn {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4); width: 24px; height: 24px; border-radius: 6px;
+  cursor: pointer; font-size: 0.65rem; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; font-family: inherit;
+}
+.fh-expand-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+/* ── Expanded Detail Panel ── */
+.fh-card-details {
+  border-top: 1px solid rgba(108,99,255,0.15);
+  padding: 16px 20px;
+  background: rgba(108,99,255,0.03);
+  animation: detailReveal 0.2s ease;
+}
+
+@keyframes detailReveal {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fh-detail-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.fh-detail-item { display: flex; flex-direction: column; gap: 3px; }
+.fh-detail-lbl { font-size: 0.7rem; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.fh-detail-val { font-size: 0.85rem; color: rgba(255,255,255,0.75); font-weight: 500; }
+.fh-suggestion-src { font-size: 0.72rem; color: rgba(255,255,255,0.3); }
+
+.fh-card-actions { display: flex; align-items: center; gap: 10px; }
+
+.fh-confirm-inline {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-size: 0.83rem; color: rgba(255,255,255,0.6);
+}
+
+.fh-btn-delete {
+  background: transparent; border: 1px solid rgba(239,68,68,0.35);
+  color: rgba(239,68,68,0.75); padding: 7px 16px; border-radius: 8px;
+  font-size: 0.8rem; cursor: pointer; transition: all 0.2s; font-family: inherit;
+}
+.fh-btn-delete:hover { background: rgba(239,68,68,0.1); color: #f87171; border-color: rgba(239,68,68,0.6); }
+
+.fh-btn-confirm-del {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: #fff; border: none; padding: 7px 16px; border-radius: 8px;
+  font-size: 0.8rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.fh-btn-confirm-del:hover:not(:disabled) { box-shadow: 0 4px 14px rgba(220,38,38,0.35); }
+.fh-btn-confirm-del:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.fh-btn-cancel {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.6); padding: 7px 14px; border-radius: 8px;
+  font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.fh-btn-cancel:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+/* ── Empty State ── */
+.fh-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 24px; text-align: center; color: rgba(255,255,255,0.3);
+}
+.fh-empty-icon { font-size: 2.5rem; margin-bottom: 14px; }
+.fh-empty p { font-size: 0.88rem; line-height: 1.6; }
+
+/* ── Confirm Modal ── */
+.fh-modal-overlay {
+  position: fixed; inset: 0; z-index: 1200;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  animation: fhFadeIn 0.25s ease;
+}
+
+.fh-modal {
+  background: #161628; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px; padding: 36px 32px; max-width: 440px; width: 100%;
+  text-align: center; box-shadow: 0 20px 64px rgba(0,0,0,0.5);
+}
+.fh-modal-icon { font-size: 2.5rem; margin-bottom: 14px; display: block; }
+.fh-modal h3 { font-size: 1.2rem; font-weight: 800; color: #fff; margin: 0 0 12px; }
+.fh-modal p { font-size: 0.88rem; color: rgba(255,255,255,0.5); line-height: 1.6; margin-bottom: 24px; }
+.fh-modal strong { color: rgba(255,255,255,0.85); }
+.fh-modal-actions { display: flex; gap: 12px; justify-content: center; }

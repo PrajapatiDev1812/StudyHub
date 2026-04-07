@@ -69,10 +69,36 @@ export default function FocusStartModal({ prefill = {}, onStart, onCancel }) {
     setLoading(true);
     setError('');
     try {
-      const res = await focusApi.startSession({ ...form, mode });
+      // Build a clean payload — DRF IntegerField rejects empty strings, needs null
+      const payload = {
+        subject_id: parseInt(form.subject_id, 10),
+        session_goal: form.session_goal.trim(),
+        mode,
+        selected_focus_minutes: parseInt(form.selected_focus_minutes, 10) || 25,
+        selected_break_minutes: parseInt(form.selected_break_minutes, 10) || 5,
+        topic_id: form.topic_id ? parseInt(form.topic_id, 10) : null,
+        content_id: form.content_id ? parseInt(form.content_id, 10) : null,
+      };
+      const res = await focusApi.startSession(payload);
       onStart(res.data);
     } catch (e) {
-      setError(e.response?.data?.detail || 'Failed to start session.');
+      // Show real backend validation errors if available
+      const data = e.response?.data;
+      if (data) {
+        if (typeof data === 'string') {
+          setError(data);
+        } else if (data.detail) {
+          setError(data.detail);
+        } else {
+          // Flatten DRF field errors like { subject_id: ["This field is required."] }
+          const msgs = Object.entries(data)
+            .map(([field, errs]) => `${field}: ${Array.isArray(errs) ? errs.join(', ') : errs}`)
+            .join(' | ');
+          setError(msgs || 'Failed to start session.');
+        }
+      } else {
+        setError('Network error — make sure the backend is running.');
+      }
     } finally {
       setLoading(false);
     }

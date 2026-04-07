@@ -5,10 +5,10 @@ from .views import FocusSessionViewSet, TimerSuggestionView
 router = DefaultRouter()
 router.register(r'sessions', FocusSessionViewSet, basename='focus-session')
 
+# NOTE: The router already generates /sessions/start/ from the @action decorator.
+# We only add routes that the router does NOT generate.
 urlpatterns = [
     path('', include(router.urls)),
-    # Custom non-router start action
-    path('sessions/start/', FocusSessionViewSet.as_view({'post': 'start_session'}), name='focus-start'),
     # Timer suggestions
     path('suggestions/', TimerSuggestionView.as_view(), name='focus-suggestions'),
 ]

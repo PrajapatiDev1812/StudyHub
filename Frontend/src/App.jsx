@@ -26,6 +26,7 @@ import Appearance from './pages/student/Appearance';
 import CompletedContent from './pages/student/CompletedContent';
 import TotalContent from './pages/student/TotalContent';
 import FocusLanding from './pages/student/FocusMode/FocusLanding';
+import FocusHistory from './pages/student/FocusMode/FocusHistory';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -85,6 +86,7 @@ function App() {
             <Route path="/student/total-content" element={<StudentRoute><TotalContent /></StudentRoute>} />
             <Route path="/student/appearance" element={<StudentRoute><Appearance /></StudentRoute>} />
             <Route path="/student/focus" element={<StudentRoute><FocusLanding /></StudentRoute>} />
+            <Route path="/student/focus/history" element={<StudentRoute><FocusHistory /></StudentRoute>} />
 
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

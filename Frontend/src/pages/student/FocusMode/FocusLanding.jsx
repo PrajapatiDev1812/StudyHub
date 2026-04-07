@@ -5,6 +5,7 @@
  * and restores to an active session if one exists.
  */
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import focusApi from '../../../services/focusApi';
 import FocusStartModal from './FocusStartModal';
 import FocusActiveSession from './FocusActiveSession';
@@ -29,6 +30,7 @@ function StatusTag({ status }) {
 }
 
 export default function FocusLanding() {
+  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [activeSession, setActiveSession] = useState(null);
   const [sessions, setSessions] = useState([]);
@@ -46,13 +48,15 @@ export default function FocusLanding() {
     try {
       const [activeRes, historyRes] = await Promise.allSettled([
         focusApi.getActiveSession(),
-        focusApi.listSessions(),
+        focusApi.listSessions({ ordering: '-start_time' }),
       ]);
       if (activeRes.status === 'fulfilled') {
         setActiveSession(activeRes.value.data);
       }
       if (historyRes.status === 'fulfilled') {
-        setSessions(historyRes.value.data.results || historyRes.value.data);
+        // Keep only the 3 most recent ended sessions for the preview
+        const all = historyRes.value.data.results || historyRes.value.data;
+        setSessions(all.filter(s => ['completed', 'abandoned'].includes(s.status)).slice(0, 3));
       }
     } finally {
       setLoading(false);
@@ -152,9 +156,17 @@ export default function FocusLanding() {
         </div>
       </div>
 
-      {/* Session History */}
+      {/* Recent Sessions Preview */}
       <div className="fl-history">
-        <h2>Session History</h2>
+        <div className="fl-history-header">
+          <h2>Recent Sessions</h2>
+          <button
+            className="fl-view-history-btn"
+            onClick={() => navigate('/student/focus/history')}
+          >
+            View Full History →
+          </button>
+        </div>
         {loading ? (
           <div className="fl-loading">Loading history…</div>
         ) : sessions.length === 0 ? (
@@ -163,25 +175,33 @@ export default function FocusLanding() {
             <p>No focus sessions yet. Start your first session to see your history here.</p>
           </div>
         ) : (
-          <div className="fl-sessions-grid">
-            {sessions.map(s => (
-              <div key={s.id} className="fl-session-card">
-                <div className="fl-sc-top">
-                  <div className="fl-sc-subject">{s.subject_name || '—'}</div>
-                  <StatusTag status={s.status} />
+          <>
+            <div className="fl-sessions-grid">
+              {sessions.map(s => (
+                <div key={s.id} className="fl-session-card">
+                  <div className="fl-sc-top">
+                    <div className="fl-sc-subject">{s.subject_name || '—'}</div>
+                    <StatusTag status={s.status} />
+                  </div>
+                  <div className="fl-sc-goal">🎯 {s.session_goal}</div>
+                  <div className="fl-sc-meta">
+                    <span className={`fl-sc-mode ${s.mode}`}>
+                      {s.mode === 'strict' ? '🔒 Strict' : '🌿 Normal'}
+                    </span>
+                    <span>⏱ {s.duration_minutes}m studied</span>
+                    <span>☕ {s.break_minutes}m break</span>
+                    <span>📅 {formatDate(s.start_time)}</span>
+                  </div>
                 </div>
-                <div className="fl-sc-goal">🎯 {s.session_goal}</div>
-                <div className="fl-sc-meta">
-                  <span className={`fl-sc-mode ${s.mode}`}>
-                    {s.mode === 'strict' ? '🔒 Strict' : '🌿 Normal'}
-                  </span>
-                  <span>⏱ {s.duration_minutes}m studied</span>
-                  <span>☕ {s.break_minutes}m break</span>
-                  <span>📅 {formatDate(s.start_time)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <button
+              className="fl-see-all-btn"
+              onClick={() => navigate('/student/focus/history')}
+            >
+              See All Sessions & Manage History →
+            </button>
+          </>
         )}
       </div>
     </div>
