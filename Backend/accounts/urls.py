@@ -4,14 +4,14 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-from .views import RegisterView, ProfileView, ThemeListView, UpdateAppearanceView, CreateCustomThemeView, ThemeDetailView
+from .views import RegisterView, ProfileView, ThemeListView, UpdateAppearanceView, CreateCustomThemeView, ThemeDetailView, CustomTokenObtainPairView
 
 urlpatterns = [
     # Register a new user
     path('register/', RegisterView.as_view(), name='auth-register'),
 
     # Login — returns access + refresh tokens
-    path('login/', TokenObtainPairView.as_view(), name='auth-login'),
+    path('login/', CustomTokenObtainPairView.as_view(), name='auth-login'),
 
     # Refresh an expired access token
     path('token/refresh/', TokenRefreshView.as_view(), name='auth-token-refresh'),

@@ -269,8 +269,25 @@ class FocusSessionViewSet(viewsets.ModelViewSet):
         session.status = 'completed'
         session.end_time = timezone.now()
         session.save(update_fields=['status', 'end_time', 'total_break_seconds', 'break_started_at'])
-        return Response(FocusSessionSerializer(session).data)
-
+        
+        # Gamification hook
+        from gamification.services import track_event
+        focus_minutes = session.total_focus_seconds // 60
+        unlocked_badges = track_event(request.user, 'focus_complete', value=focus_minutes)
+        
+        response_data = FocusSessionSerializer(session).data
+        if unlocked_badges:
+            response_data['badge_unlocked'] = True
+            response_data['badge'] = {
+                "name": unlocked_badges[0].name,
+                "description": unlocked_badges[0].description,
+                "icon": unlocked_badges[0].icon.url if unlocked_badges[0].icon else None,
+                "xp": unlocked_badges[0].xp_reward
+            }
+        else:
+            response_data['badge_unlocked'] = False
+            
+        return Response(response_data)
     # ── Abandon (Exit) session ─────────────────────────────────────
     @action(detail=True, methods=['post'])
     def abandon(self, request, pk=None):

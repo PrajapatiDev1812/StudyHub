@@ -18,6 +18,13 @@ const SYNC_INTERVAL = 30; // sync to backend every 30 seconds
 export default function FocusActiveSession({ session: initialSession, onExit }) {
   const navigate = useNavigate();
   const [session, setSession] = useState(initialSession);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // ── Sync Focus Mode state to global UI (for hiding sidebar) ──
+  useEffect(() => {
+    document.body.classList.add('focus-mode-active');
+    return () => document.body.classList.remove('focus-mode-active');
+  }, []);
 
   // ── Timer state ──
   const [focusRemaining, setFocusRemaining] = useState(
@@ -38,7 +45,6 @@ export default function FocusActiveSession({ session: initialSession, onExit }) 
   // ── UI state ──
   const [activeTab, setActiveTab] = useState('topics');
   const [showAI, setShowAI] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [exitMessage, setExitMessage] = useState('');
 
@@ -68,32 +74,57 @@ export default function FocusActiveSession({ session: initialSession, onExit }) 
     }).finally(() => setLoading(false));
   }, [session?.subject]);
 
-  // ── Focus timer countdown ──
-  useEffect(() => {
-    if (!timerRunning || isBreak) return;
-    const tick = setInterval(() => {
-      setFocusRemaining(r => {
-        if (r <= 1) {
-          clearInterval(tick);
-          setTimerRunning(false);
-          return 0;
-        }
-        return r - 1;
-      });
-      setElapsedFocus(e => e + 1);
-      syncCountRef.current += 1;
+  const lastTickRef = useRef(Date.now());
 
-      // Sync to backend every SYNC_INTERVAL seconds
-      if (syncCountRef.current >= SYNC_INTERVAL) {
-        syncCountRef.current = 0;
-        setElapsedFocus(current => {
-          focusApi.syncTimer(session.id, current).catch(() => {});
-          return current;
+  // ── Focus timer countdown (Delta-based for background stability) ──
+  useEffect(() => {
+    if (!timerRunning || isBreak) {
+      lastTickRef.current = Date.now();
+      return;
+    }
+
+    const tick = setInterval(() => {
+      const now = Date.now();
+      const delta = Math.floor((now - lastTickRef.current) / 1000);
+      
+      if (delta >= 1) {
+        setFocusRemaining(r => {
+          if (r <= delta) {
+            clearInterval(tick);
+            setTimerRunning(false);
+            return 0;
+          }
+          return r - delta;
         });
+        setElapsedFocus(e => e + delta);
+        syncCountRef.current += delta;
+        lastTickRef.current = now;
+
+        // Sync to backend every SYNC_INTERVAL seconds
+        if (syncCountRef.current >= SYNC_INTERVAL) {
+          const currentTotal = elapsedFocus + delta; // local approximation for immediate sync
+          focusApi.syncTimer(session.id, currentTotal).catch(() => {});
+          syncCountRef.current = 0;
+        }
       }
     }, 1000);
-    return () => clearInterval(tick);
-  }, [timerRunning, isBreak, session?.id]);
+
+    // Sync immediately if student switches tabs (distraction detection)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        setElapsedFocus(curr => {
+          focusApi.syncTimer(session.id, curr).catch(() => {});
+          return curr;
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(tick);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [timerRunning, isBreak, session?.id, elapsedFocus]);
 
   // ── Break timer countdown ──
   useEffect(() => {

@@ -7,7 +7,7 @@ export default function ManageTopics() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', description: '', subject: '' });
+  const [form, setForm] = useState({ name: '', description: '', subject: '', difficulty: 'medium' });
 
   const fetchData = () => {
     setLoading(true);
@@ -29,14 +29,14 @@ export default function ManageTopics() {
     try {
       if (editing) { await api.put(`/topics/${editing.id}/`, form); }
       else { await api.post('/topics/', form); }
-      setShowModal(false); setEditing(null); setForm({ name: '', description: '', subject: '' });
+      setShowModal(false); setEditing(null); setForm({ name: '', description: '', subject: '', difficulty: 'medium' });
       fetchData();
     } catch (err) { alert(JSON.stringify(err.response?.data) || 'Error'); }
   };
 
   const handleEdit = (t) => {
     setEditing(t);
-    setForm({ name: t.name, description: t.description || '', subject: t.subject });
+    setForm({ name: t.name, description: t.description || '', subject: t.subject, difficulty: t.difficulty || 'medium' });
     setShowModal(true);
   };
 
@@ -51,17 +51,22 @@ export default function ManageTopics() {
     <div className="fade-in">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div><h1>Manage Topics</h1><p>Organize topics within subjects</p></div>
-        <button className="btn btn-primary" onClick={() => { setEditing(null); setForm({ name: '', description: '', subject: '' }); setShowModal(true); }}>+ New Topic</button>
+        <button className="btn btn-primary" onClick={() => { setEditing(null); setForm({ name: '', description: '', subject: '', difficulty: 'medium' }); setShowModal(true); }}>+ New Topic</button>
       </div>
 
       <div className="glass-card">
         <table className="data-table">
-          <thead><tr><th>Name</th><th>Subject</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Name</th><th>Subject</th><th>Difficulty</th><th>Actions</th></tr></thead>
           <tbody>
             {topics.map(t => (
               <tr key={t.id}>
                 <td>{t.name}</td>
                 <td>{subjects.find(s => s.id === t.subject)?.name || t.subject}</td>
+                <td>
+                  <span className={`badge badge-${t.difficulty || 'medium'}`}>
+                    {t.difficulty?.toUpperCase() || 'MEDIUM'}
+                  </span>
+                </td>
                 <td>
                   <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(t)} style={{ marginRight: 8 }}>Edit</button>
                   <button className="btn btn-danger btn-sm" onClick={() => handleDelete(t.id)}>Delete</button>
@@ -93,6 +98,14 @@ export default function ManageTopics() {
                 <select className="form-input" name="subject" value={form.subject} onChange={handleChange} required>
                   <option value="">Select a subject</option>
                   {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Difficulty (for Smart Timer)</label>
+                <select className="form-input" name="difficulty" value={form.difficulty} onChange={handleChange} required>
+                  <option value="easy">Easy (Low focus required)</option>
+                  <option value="medium">Medium (Standard)</option>
+                  <option value="hard">Hard (High focus/Longer sessions)</option>
                 </select>
               </div>
               <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>{editing ? 'Update' : 'Create'}</button>

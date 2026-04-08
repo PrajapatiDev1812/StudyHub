@@ -19,7 +19,7 @@ class TopicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Topic
-        fields = ['id', 'subject', 'name', 'description', 'contents']
+        fields = ['id', 'subject', 'name', 'description', 'difficulty', 'contents']
         read_only_fields = ['id']
 
 
@@ -28,7 +28,7 @@ class TopicListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Topic
-        fields = ['id', 'subject', 'name', 'description']
+        fields = ['id', 'subject', 'name', 'description', 'difficulty']
         read_only_fields = ['id']
 
 

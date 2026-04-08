@@ -16,6 +16,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Intercept responses for Gamification badge unlocks
+api.interceptors.response.use((response) => {
+    if (response.data && response.data.badge_unlocked && response.data.badge) {
+        window.dispatchEvent(new CustomEvent('badge-unlocked', { detail: response.data.badge }));
+        window.dispatchEvent(new Event('refresh-gamification'));
+    }
+    return response;
+});
+
 // Automatically refresh token on 401
 api.interceptors.response.use(
   (response) => response,

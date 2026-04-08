@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import GamificationWidget from './gamification/GamificationWidget';
 import './Sidebar.css';
 
 export default function Sidebar() {
@@ -20,6 +21,7 @@ export default function Sidebar() {
     { to: '/student/my-attempts', icon: '📋', label: 'My Attempts' },
     { to: '/student/notifications', icon: '🔔', label: 'Notifications' },
     { to: '/student/ai-chat', icon: '🤖', label: 'AI Assistant' },
+    { to: '/student/achievements', icon: '🏆', label: 'Achievements' },
     { to: '/student/profile', icon: '👤', label: 'Profile' },
   ];
 
@@ -48,6 +50,8 @@ export default function Sidebar() {
           <span className="user-role">{user?.role}</span>
         </div>
       </div>
+
+      {user?.role === 'student' && <GamificationWidget />}
 
       <nav className="sidebar-nav">
         {links.map((link) => (

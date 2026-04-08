@@ -50,11 +50,17 @@ export default function FocusLanding() {
         focusApi.getActiveSession(),
         focusApi.listSessions({ ordering: '-start_time' }),
       ]);
-      if (activeRes.status === 'fulfilled') {
-        setActiveSession(activeRes.value.data);
+      
+      let activeData = null;
+      if (activeRes.status === 'fulfilled' && activeRes.value.data) {
+        activeData = activeRes.value.data;
+        setActiveSession(activeData);
+        // Auto-resume if we found an active session on first load
+        setCurrentSession(activeData);
+        setInSession(true);
       }
+
       if (historyRes.status === 'fulfilled') {
-        // Keep only the 3 most recent ended sessions for the preview
         const all = historyRes.value.data.results || historyRes.value.data;
         setSessions(all.filter(s => ['completed', 'abandoned'].includes(s.status)).slice(0, 3));
       }

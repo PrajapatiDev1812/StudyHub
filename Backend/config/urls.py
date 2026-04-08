@@ -63,6 +63,9 @@ urlpatterns = [
     # ── Focus Mode APIs ──
     path('api/focus/', include('focus.urls')),
 
+    # ── Gamification APIs ──
+    path('api/gamification/', include('gamification.urls')),
+
     # ── Token Verify ──
     path('api/auth/token/verify/', TokenVerifyView.as_view(), name='auth-token-verify'),
 

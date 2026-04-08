@@ -2,11 +2,37 @@ from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.contrib.auth.models import update_last_login
 
 from .models import Theme, UserAppearance
 from .serializers import RegisterSerializer, UserSerializer, ThemeSerializer, UserAppearanceSerializer, CustomThemeCreateSerializer
 from django.db.models import Q
 
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            user = self.get_serializer().validate(request.data).get('user')
+            if hasattr(self.get_serializer(), 'user'):
+                user = self.get_serializer().user
+            
+            # Hook Gamification login
+            if user:
+                from gamification.services import track_event
+                unlocked_badges = track_event(user, 'login')
+                if unlocked_badges:
+                    response.data['badge_unlocked'] = True
+                    response.data['badge'] = {
+                        "name": unlocked_badges[0].name,
+                        "description": unlocked_badges[0].description,
+                        "icon": unlocked_badges[0].icon.url if unlocked_badges[0].icon else None,
+                        "xp": unlocked_badges[0].xp_reward
+                    }
+                else:
+                    response.data['badge_unlocked'] = False
+        return response
 
 class ThemeListView(generics.ListAPIView):
     """

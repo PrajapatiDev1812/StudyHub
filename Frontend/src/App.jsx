@@ -1,8 +1,10 @@
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
+import BadgeUnlockPopup from './components/gamification/BadgeUnlockPopup';
 
 // Public Pages
 import Landing from './pages/Landing';
@@ -27,6 +29,7 @@ import CompletedContent from './pages/student/CompletedContent';
 import TotalContent from './pages/student/TotalContent';
 import FocusLanding from './pages/student/FocusMode/FocusLanding';
 import FocusHistory from './pages/student/FocusMode/FocusHistory';
+import AchievementsPage from './pages/student/AchievementsPage';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -59,10 +62,21 @@ function AdminRoute({ children }) {
 }
 
 function App() {
+  const [unlockedBadge, setUnlockedBadge] = useState(null);
+
+  useEffect(() => {
+    const handleBadgeUnlock = (event) => {
+        setUnlockedBadge(event.detail);
+    };
+    window.addEventListener('badge-unlocked', handleBadgeUnlock);
+    return () => window.removeEventListener('badge-unlocked', handleBadgeUnlock);
+  }, []);
+
   return (
     <AuthProvider>
       <ThemeProvider>
         <BrowserRouter>
+          <BadgeUnlockPopup badge={unlockedBadge} onClose={() => setUnlockedBadge(null)} />
           <Routes>
             {/* Public */}
             <Route path="/" element={<Landing />} />
@@ -82,6 +96,7 @@ function App() {
             <Route path="/student/notifications" element={<StudentRoute><Notifications /></StudentRoute>} />
             <Route path="/student/ai-chat" element={<StudentRoute><AiChat /></StudentRoute>} />
             <Route path="/student/profile" element={<StudentRoute><Profile /></StudentRoute>} />
+            <Route path="/student/achievements" element={<StudentRoute><AchievementsPage /></StudentRoute>} />
             <Route path="/student/completed-content" element={<StudentRoute><CompletedContent /></StudentRoute>} />
             <Route path="/student/total-content" element={<StudentRoute><TotalContent /></StudentRoute>} />
             <Route path="/student/appearance" element={<StudentRoute><Appearance /></StudentRoute>} />

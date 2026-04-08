@@ -248,12 +248,24 @@ class ContentViewSet(viewsets.ModelViewSet):
         )
 
         if created:
-            return Response(
-                {'message': f'Marked "{content.title}" as complete.'},
-                status=status.HTTP_201_CREATED,
-            )
+            # Gamification hook
+            from gamification.services import track_event
+            unlocked_badges = track_event(request.user, 'task_complete')
+            
+            response_data = {'message': f'Marked "{content.title}" as complete.'}
+            if unlocked_badges:
+                response_data['badge_unlocked'] = True
+                response_data['badge'] = {
+                    "name": unlocked_badges[0].name,
+                    "description": unlocked_badges[0].description,
+                    "icon": unlocked_badges[0].icon.url if unlocked_badges[0].icon else None,
+                    "xp": unlocked_badges[0].xp_reward
+                }
+            
+            return Response(response_data, status=status.HTTP_201_CREATED)
+            
         return Response(
-            {'message': 'Content was already marked as complete.'},
+            {'message': 'Content was already marked as complete.', 'badge_unlocked': False},
             status=status.HTTP_200_OK,
         )
 

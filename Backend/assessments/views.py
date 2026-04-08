@@ -129,15 +129,28 @@ class TestViewSet(viewsets.ModelViewSet):
         attempt.completed_at = timezone.now()
         attempt.save()
 
-        # Return results
+        # Gamification hook
+        from gamification.services import track_event
+        unlocked_badges = track_event(request.user, 'test_submit', value=float(attempt.score))
+        
         result_serializer = StudentAttemptSerializer(attempt)
-        return Response(
-            {
-                'message': 'Test submitted successfully!',
-                'result': result_serializer.data,
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        response_data = {
+            'message': 'Test submitted successfully!',
+            'result': result_serializer.data,
+            'badge_unlocked': False
+        }
+        
+        if unlocked_badges:
+            response_data['badge_unlocked'] = True
+            response_data['badge'] = {
+                "name": unlocked_badges[0].name,
+                "description": unlocked_badges[0].description,
+                "icon": unlocked_badges[0].icon.url if unlocked_badges[0].icon else None,
+                "xp": unlocked_badges[0].xp_reward
+            }
+
+        # Return results
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
     # ---- Test Analytics (Admin) ----
     @action(detail=True, methods=['get'], permission_classes=[IsAdmin])

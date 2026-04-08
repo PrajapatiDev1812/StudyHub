@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'notifications',
     'focus',
     'ai',
+    'gamification',
 
     "corsheaders"
 ]

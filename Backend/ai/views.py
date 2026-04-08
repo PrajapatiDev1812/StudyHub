@@ -260,6 +260,10 @@ class ChatbotView(APIView):
         increment_usage(request.user)
         usage_summary = get_usage_summary(request.user)
 
+        # Gamification hook
+        from gamification.services import track_event
+        unlocked_badges = track_event(request.user, 'ai_used')
+
         # ── Step 6: Build response ──
         response_data = {
             'reply': ai_response,
@@ -268,7 +272,17 @@ class ChatbotView(APIView):
             'message_id': ai_msg.id,
             'is_new_session': is_new_session,
             'usage': usage_summary,
+            'badge_unlocked': False
         }
+
+        if unlocked_badges:
+            response_data['badge_unlocked'] = True
+            response_data['badge'] = {
+                "name": unlocked_badges[0].name,
+                "description": unlocked_badges[0].description,
+                "icon": unlocked_badges[0].icon.url if unlocked_badges[0].icon else None,
+                "xp": unlocked_badges[0].xp_reward
+            }
 
         if show_debug:
             response_data['debug'] = {

@@ -143,6 +143,21 @@ a:hover {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  transition: margin-left 0.3s ease;
+}
+
+/* ---------- Focus Mode Global Overrides ---------- */
+body.focus-mode-active .sidebar {
+  display: none;
+}
+
+body.focus-mode-active .top-navbar {
+  display: none;
+}
+
+body.focus-mode-active .main-content {
+  margin-left: 0 !important;
+  padding-top: 24px !important;
 }
 
 /* ---------- Glass Card ---------- */
