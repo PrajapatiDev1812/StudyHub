@@ -18,20 +18,23 @@ const BadgeUnlockPopup = ({ badge, onClose }) => {
 
   if (!badge) return null;
 
+  const isMilestone = badge.tier && badge.tier !== 'none';
+  const isRepeatableIncrement = badge.repeatable_earned;
+
   return (
-    <div className={`badge-popup-overlay ${visible ? 'show' : ''}`} onClick={(e) => {
+    <div className={`badge-popup-overlay ${visible ? 'show' : ''} tier-${badge.tier || 'none'}`} onClick={(e) => {
         setVisible(false);
         setTimeout(onClose, 300);
     }}>
       <div className="badge-popup-card" onClick={e => e.stopPropagation()}>
         <div className="confetti-bg"></div>
         <div className="badge-popup-header">
-            <h3>Achievement Unlocked!</h3>
-            <span>+{badge.xp} XP</span>
+            <h3>{isMilestone ? `${badge.tier.toUpperCase()} Milestone!` : (isRepeatableIncrement ? 'Achievement Progress!' : 'Achievement Unlocked!')}</h3>
+            <span>+{badge.xp || 10} XP</span>
         </div>
         <div className="badge-popup-icon-wrapper">
           {badge.icon ? (
-            <img src={`http://127.0.0.1:8000${badge.icon}`} alt={badge.name} className="badge-popup-img" />
+            <img src={badge.icon.startsWith('http') ? badge.icon : `http://127.0.0.1:8000${badge.icon}`} alt={badge.name} className="badge-popup-img" />
           ) : (
             <div className="badge-popup-placeholder">🏆</div>
           )}
@@ -39,6 +42,11 @@ const BadgeUnlockPopup = ({ badge, onClose }) => {
         <div className="badge-popup-content">
           <h4>{badge.name}</h4>
           <p>{badge.description}</p>
+          {isRepeatableIncrement && badge.earned_count && (
+            <div className="badge-popup-count">
+                Total Completed: <strong>{badge.earned_count}</strong>
+            </div>
+          )}
         </div>
         <button className="badge-popup-close" onClick={() => {
             setVisible(false);

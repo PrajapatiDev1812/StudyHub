@@ -33,15 +33,29 @@ export function ThemeProvider({ children }) {
 
   /**
    * Sync theme when user data arrives or changes.
-   * Prioritizes the database-saved theme.
+   * Prioritizes the database-saved theme, falls back to localStorage, then defaults to Light.
    */
   useEffect(() => {
     if (user?.appearance?.selected_theme_detail) {
       const savedTheme = user.appearance.selected_theme_detail;
       setActiveTheme(savedTheme);
       applyThemeVariables(savedTheme.config, savedTheme.background_image);
+      localStorage.setItem('studyhub_theme_cache', JSON.stringify(savedTheme));
     } else {
-      // Default to Light if no theme is found
+      // Check if we have a locally cached theme to prevent flashing during data load
+      const cached = localStorage.getItem('studyhub_theme_cache');
+      if (cached) {
+        try {
+          const parsedCache = JSON.parse(cached);
+          setActiveTheme(parsedCache);
+          applyThemeVariables(parsedCache.config, parsedCache.background_image);
+          return;
+        } catch (e) {
+          console.error('Failed to parse cached theme', e);
+        }
+      }
+      
+      // Absolute fallback
       const defaultTheme = getThemeById('light');
       setActiveTheme(defaultTheme);
       applyThemeVariables(defaultTheme.config, defaultTheme.background_image);
@@ -85,10 +99,12 @@ export function ThemeProvider({ children }) {
         selected_theme: themeId
       });
       
-      // Update local state and re-apply
+      // Update local state, re-apply, and fiercely update the synchronous cache
       if (res.data.selected_theme_detail) {
-        setActiveTheme(res.data.selected_theme_detail);
-        applyThemeVariables(res.data.selected_theme_detail.config, res.data.selected_theme_detail.background_image);
+        const savedTheme = res.data.selected_theme_detail;
+        setActiveTheme(savedTheme);
+        applyThemeVariables(savedTheme.config, savedTheme.background_image);
+        localStorage.setItem('studyhub_theme_cache', JSON.stringify(savedTheme));
       }
       return { success: true };
     } catch (error) {

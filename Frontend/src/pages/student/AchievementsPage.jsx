@@ -34,7 +34,10 @@ const AchievementsPage = () => {
         return <div className="achievements-loading">Loading achievements...</div>;
     }
 
-    const earnedBadgeIds = new Set(userBadges.map(ub => ub.badge.id));
+    const earnedBadgesMap = userBadges.reduce((acc, ub) => {
+        acc[ub.badge.id] = ub;
+        return acc;
+    }, {});
 
     // Group badges by category if desired, or just show all
     const groupedBadges = allBadges.reduce((acc, badge) => {
@@ -75,12 +78,18 @@ const AchievementsPage = () => {
                         <h2>{category.charAt(0).toUpperCase() + category.slice(1)} Badges</h2>
                         <div className="badges-grid">
                             {groupedBadges[category].map(badge => {
-                                const isEarned = earnedBadgeIds.has(badge.id);
+                                const userBadge = earnedBadgesMap[badge.id];
+                                const isEarned = !!userBadge;
+                                const tierClass = badge.tier || 'none';
+                                
                                 return (
-                                    <div key={badge.id} className={`badge-card ${isEarned ? 'earned' : 'locked'}`}>
+                                    <div key={badge.id} className={`badge-card ${isEarned ? 'earned' : 'locked'} ${tierClass}`}>
+                                        {isEarned && userBadge.earned_count > 1 && (
+                                            <div className="earned-count-badge">×{userBadge.earned_count}</div>
+                                        )}
                                         <div className="badge-icon-container">
                                             {badge.icon ? (
-                                                <img src={`http://127.0.0.1:8000${badge.icon}`} alt={badge.name} />
+                                                <img src={badge.icon.startsWith('http') ? badge.icon : `http://127.0.0.1:8000${badge.icon}`} alt={badge.name} />
                                             ) : (
                                                 <div className="badge-placeholder">🏆</div>
                                             )}

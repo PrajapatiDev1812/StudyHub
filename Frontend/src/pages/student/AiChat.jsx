@@ -63,6 +63,8 @@ export default function AiChat() {
   const [typingSuggestions, setTypingSuggestions] = useState([]);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [activeContextMenu, setActiveContextMenu] = useState(null);
+  const [contextMenuPos, setContextMenuPos] = useState({ top: 0, left: 0 });
+  const [contextMenuSession, setContextMenuSession] = useState(null);
   const [activeMessageMenu, setActiveMessageMenu] = useState(null);
   const [renameSessionId, setRenameSessionId] = useState(null);
   const [renameValue, setRenameValue] = useState('');
@@ -551,7 +553,41 @@ export default function AiChat() {
   const firstName = user?.first_name || user?.username || 'Student';
 
   return (
-    <div className="ai-chat-layout">
+    <div className="ai-chat-layout" onClick={() => { setActiveContextMenu(null); setContextMenuSession(null); }}>
+      {/* ══════════ FIXED CONTEXT MENU (top-level, escapes scroll container) ══════════ */}
+      {activeContextMenu && contextMenuSession && (
+        <div
+          className="context-menu context-menu-fixed"
+          style={{ top: contextMenuPos.top, left: contextMenuPos.left }}
+          onClick={e => e.stopPropagation()}
+        >
+          <button onClick={() => { alert('Share feature coming soon'); setActiveContextMenu(null); }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            Share
+          </button>
+          <button onClick={() => { alert('Group chat feature coming soon'); setActiveContextMenu(null); }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Start a group chat
+          </button>
+          <button onClick={() => { setRenameSessionId(contextMenuSession.id); setRenameValue(contextMenuSession.title); setActiveContextMenu(null); }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Rename
+          </button>
+          <button onClick={() => { pinSession(contextMenuSession.id, contextMenuSession.is_pinned); setActiveContextMenu(null); }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 17v5M9 3h6l-1 7h4l-8 8 2-7H8l1-8z"/></svg>
+            {contextMenuSession.is_pinned ? 'Unpin chat' : 'Pin chat'}
+          </button>
+          <button onClick={() => { alert('Archive feature coming soon'); setActiveContextMenu(null); }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+            Archive
+          </button>
+          <button className="delete-btn" onClick={() => { deleteSession(contextMenuSession.id); setActiveContextMenu(null); }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            Delete
+          </button>
+        </div>
+      )}
+
       {/* ══════════ SIDEBAR ══════════ */}
       <div className={`chat-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
@@ -591,12 +627,20 @@ export default function AiChat() {
                   key={session.id}
                   session={session}
                   isActive={currentSessionId === session.id}
+                  isMenuOpen={activeContextMenu === session.id}
                   onClick={() => loadSessionMessages(session.id)}
-                  activeContextMenu={activeContextMenu}
-                  setActiveContextMenu={setActiveContextMenu}
-                  onPin={() => pinSession(session.id, session.is_pinned)}
-                  onDelete={() => deleteSession(session.id)}
-                  onRenameStart={() => { setRenameSessionId(session.id); setRenameValue(session.title); setActiveContextMenu(null); }}
+                  onMenuToggle={(e) => {
+                    e.stopPropagation();
+                    if (activeContextMenu === session.id) {
+                      setActiveContextMenu(null);
+                      setContextMenuSession(null);
+                    } else {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setContextMenuPos({ top: rect.bottom + 4, left: rect.right - 188 });
+                      setContextMenuSession(session);
+                      setActiveContextMenu(session.id);
+                    }
+                  }}
                   renameSessionId={renameSessionId}
                   renameValue={renameValue}
                   setRenameValue={setRenameValue}
@@ -615,12 +659,20 @@ export default function AiChat() {
                   key={session.id}
                   session={session}
                   isActive={currentSessionId === session.id}
+                  isMenuOpen={activeContextMenu === session.id}
                   onClick={() => loadSessionMessages(session.id)}
-                  activeContextMenu={activeContextMenu}
-                  setActiveContextMenu={setActiveContextMenu}
-                  onPin={() => pinSession(session.id, session.is_pinned)}
-                  onDelete={() => deleteSession(session.id)}
-                  onRenameStart={() => { setRenameSessionId(session.id); setRenameValue(session.title); setActiveContextMenu(null); }}
+                  onMenuToggle={(e) => {
+                    e.stopPropagation();
+                    if (activeContextMenu === session.id) {
+                      setActiveContextMenu(null);
+                      setContextMenuSession(null);
+                    } else {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setContextMenuPos({ top: rect.bottom + 4, left: rect.right - 188 });
+                      setContextMenuSession(session);
+                      setActiveContextMenu(session.id);
+                    }
+                  }}
                   renameSessionId={renameSessionId}
                   renameValue={renameValue}
                   setRenameValue={setRenameValue}
@@ -987,15 +1039,15 @@ export default function AiChat() {
 
 // ── Session Item Component ──
 function SessionItem({
-  session, isActive, onClick, activeContextMenu, setActiveContextMenu,
-  onPin, onDelete, onRenameStart, renameSessionId, renameValue, setRenameValue,
+  session, isActive, isMenuOpen, onClick, onMenuToggle,
+  renameSessionId, renameValue, setRenameValue,
   onRenameSubmit, onRenameCancel,
 }) {
   const isRenaming = renameSessionId === session.id;
 
   return (
     <div
-      className={`session-item ${isActive ? 'active' : ''}`}
+      className={`session-item ${isActive ? 'active' : ''} ${isMenuOpen ? 'has-open-menu' : ''}`}
       onClick={isRenaming ? undefined : onClick}
       title={session.title}
     >
@@ -1015,46 +1067,12 @@ function SessionItem({
           <span className="session-title">{session.title}</span>
           <button
             className="session-menu-btn"
-            onClick={(e) => { e.stopPropagation(); setActiveContextMenu(activeContextMenu === session.id ? null : session.id); }}
+            onClick={onMenuToggle}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
             </svg>
           </button>
-          {activeContextMenu === session.id && (
-            <div className="context-menu" onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => { alert('Share feature coming soon'); setActiveContextMenu(null); }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-                Share
-              </button>
-              <button onClick={() => { alert('Group chat feature coming soon'); setActiveContextMenu(null); }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                Start a group chat
-              </button>
-              <button onClick={onRenameStart}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-                Rename
-              </button>
-              <button onClick={onPin}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 17v5M9 3h6l-1 7h4l-8 8 2-7H8l1-8z"/>
-                </svg>
-                {session.is_pinned ? 'Unpin chat' : 'Pin chat'}
-              </button>
-              <button onClick={() => { alert('Archive feature coming soon'); setActiveContextMenu(null); }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-                Archive
-              </button>
-              <button className="delete-btn" onClick={() => onDelete()}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-                </svg>
-                Delete
-              </button>
-            </div>
-          )}
         </>
       )}
     </div>

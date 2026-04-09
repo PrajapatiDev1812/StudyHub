@@ -20,6 +20,14 @@ class Badge(models.Model):
         ('ai_usage', 'AI Usage Count'),
     ]
 
+    TIER_CHOICES = [
+        ('none', 'No Tier'),
+        ('bronze', 'Bronze'),
+        ('silver', 'Silver'),
+        ('gold', 'Gold'),
+        ('legendary', 'Legendary'),
+    ]
+
     name = models.CharField(max_length=200)
     description = models.TextField()
     icon = models.ImageField(upload_to='badges/', blank=True, null=True)
@@ -28,6 +36,12 @@ class Badge(models.Model):
     condition_value = models.IntegerField()
     xp_reward = models.IntegerField(default=50)
     is_hidden = models.BooleanField(default=False)
+    
+    # New fields for Advanced Badge System
+    repeatable = models.BooleanField(default=False)
+    tier = models.CharField(max_length=20, choices=TIER_CHOICES, default='none')
+    milestone_value = models.IntegerField(default=0, help_text="Threshold count for tiered badges")
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -36,11 +50,13 @@ class Badge(models.Model):
 class UserBadge(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='earned_badges')
     badge = models.ForeignKey(Badge, on_delete=models.CASCADE, related_name='earned_by')
+    earned_count = models.IntegerField(default=1)
     earned_at = models.DateTimeField(auto_now_add=True)
+    last_earned_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ('user', 'badge')
-        ordering = ['-earned_at']
+        ordering = ['-last_earned_at']
 
     def __str__(self):
         return f"{self.user.username} - {self.badge.name}"

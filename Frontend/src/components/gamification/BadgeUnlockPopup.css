@@ -126,3 +126,53 @@
   70% { box-shadow: 0 0 0 15px rgba(255, 204, 0, 0); }
   100% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0); }
 }
+
+/* Tiered Styling */
+.tier-bronze .badge-popup-header h3 { color: #cd7f32; }
+.tier-bronze .badge-popup-icon-wrapper { 
+    border-color: #cd7f32; 
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.3), rgba(139, 69, 19, 0.3));
+    box-shadow: 0 0 20px rgba(205, 127, 50, 0.4);
+}
+
+.tier-silver .badge-popup-header h3 { color: #c0c0c0; }
+.tier-silver .badge-popup-icon-wrapper { 
+    border-color: #c0c0c0; 
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.3), rgba(128, 128, 128, 0.3));
+    box-shadow: 0 0 20px rgba(192, 192, 192, 0.4);
+}
+
+.tier-gold .badge-popup-header h3 { color: #ffd700; }
+.tier-gold .badge-popup-icon-wrapper { 
+    border-color: #ffd700; 
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(184, 134, 11, 0.3));
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+}
+
+.tier-legendary .badge-popup-header h3 { 
+    background: linear-gradient(to right, #6c63ff, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+}
+.tier-legendary .badge-popup-icon-wrapper { 
+    border-color: #6c63ff; 
+    background: linear-gradient(135deg, rgba(108, 99, 255, 0.3), rgba(59, 130, 246, 0.3));
+    box-shadow: 0 0 30px rgba(108, 99, 255, 0.6);
+}
+
+.badge-popup-count {
+    margin-top: -10px;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    background: var(--bg-glass);
+    padding: 8px 16px;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+.badge-popup-count strong {
+    color: var(--accent-primary);
+    font-size: 1.2rem;
+}

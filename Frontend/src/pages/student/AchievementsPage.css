@@ -167,3 +167,53 @@
   padding: 3px 8px;
   border-radius: 12px;
 }
+
+.earned-count-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: var(--accent-primary);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Tiered Card Styles */
+.badge-card.bronze.earned { 
+    border-color: rgba(205, 127, 50, 0.4); 
+    box-shadow: 0 4px 20px rgba(205, 127, 50, 0.15);
+}
+.badge-card.bronze.earned .badge-icon-container { 
+    border-color: #cd7f32; 
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.2), rgba(139, 69, 19, 0.2));
+}
+
+.badge-card.silver.earned { 
+    border-color: rgba(192, 192, 192, 0.4); 
+    box-shadow: 0 4px 20px rgba(192, 192, 192, 0.15);
+}
+.badge-card.silver.earned .badge-icon-container { 
+    border-color: #c0c0c0; 
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), rgba(128, 128, 128, 0.2));
+}
+
+.badge-card.gold.earned { 
+    border-color: rgba(255, 215, 0, 0.4); 
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.15);
+}
+.badge-card.gold.earned .badge-icon-container { 
+    border-color: #ffd700; 
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(184, 134, 11, 0.2));
+}
+
+.badge-card.legendary.earned { 
+    border-color: rgba(108, 99, 255, 0.4); 
+    box-shadow: 0 4px 25px rgba(108, 99, 255, 0.25);
+}
+.badge-card.legendary.earned .badge-icon-container { 
+    border-color: #6c63ff; 
+    background: linear-gradient(135deg, rgba(108, 99, 255, 0.2), rgba(59, 130, 246, 0.2));
+}

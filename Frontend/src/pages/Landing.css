@@ -1,34 +1,48 @@
 .landing-page {
   min-height: 100vh;
+  background-color: var(--bg-primary); 
+  color: var(--text-primary); 
+  position: relative;
+  overflow-x: clip;
+  font-family: 'Inter', system-ui, sans-serif;
 }
+
+/* Ambient Floating Orbs removed as requested to fix grey rendering artifact */
 
 .landing-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 48px;
+  padding: 20px 5%;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 100;
-  background: rgba(10, 10, 26, 0.8);
-  backdrop-filter: blur(12px);
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-color);
+  transition: all 0.3s ease;
 }
 
 .landing-brand {
-  font-size: 1.4rem;
+  font-size: 1.6rem;
   font-weight: 800;
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-primary);
+}
+
+.landing-brand span {
+  font-size: 1.8rem;
 }
 
 .landing-actions {
   display: flex;
-  gap: 12px;
+  gap: 16px;
 }
 
 .hero {
@@ -37,94 +51,185 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 80px 20px;
+  padding: 140px 20px 100px;
   position: relative;
-  overflow: hidden;
-}
-
-.hero::before {
-  content: '';
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(108, 99, 255, 0.12), transparent 70%);
-  top: 10%;
-  left: 50%;
-  transform: translateX(-50%);
-  border-radius: 50%;
+  z-index: 1;
 }
 
 .hero-content {
-  position: relative;
-  z-index: 1;
-  max-width: 700px;
+  max-width: 850px;
 }
 
+/* Beautiful Hero Headline */
 .hero-content h1 {
-  font-size: 3.5rem;
+  font-size: 5rem;
   font-weight: 800;
-  line-height: 1.15;
-  margin-bottom: 20px;
+  line-height: 1.1;
+  margin-bottom: 28px;
+  color: var(--text-primary);
+  letter-spacing: -1.5px;
 }
 
+/* Stunning Gradient for emphasis */
 .gradient-text {
   background: var(--accent-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: inline-block;
+  padding-right: 5px; /* Prevent clipping */
 }
 
+/* High contrast subtitle */
 .hero-content p {
-  font-size: 1.15rem;
+  font-size: 1.35rem;
   color: var(--text-secondary);
-  margin-bottom: 36px;
-  line-height: 1.7;
+  margin-bottom: 48px;
+  line-height: 1.6;
+  max-width: 650px;
+  margin-inline: auto;
+  font-weight: 400;
 }
 
 .hero-buttons {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   justify-content: center;
 }
 
+/* Custom premium buttons for the landing page */
+.landing-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 36px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+
+.landing-btn-primary {
+  background: var(--accent-gradient);
+  color: white;
+  border: none;
+  box-shadow: var(--accent-glow);
+}
+
+.landing-btn-primary:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(108, 99, 255, 0.5);
+  color: #ffffff;
+}
+
+.landing-btn-secondary {
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(12px);
+}
+
+.landing-btn-secondary:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-primary);
+  transform: translateY(-4px);
+  color: var(--text-primary);
+}
+
 .features {
-  padding: 80px 48px;
+  padding: 80px 5% 120px;
+  position: relative;
+  z-index: 1;
 }
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-  max-width: 1100px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
-.feature-card {
-  text-align: center;
-  padding: 32px 24px;
+/* Glassmorphic feature cards */
+.landing-feature-card {
+  text-align: left;
+  padding: 40px 32px;
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
 }
 
-.feature-icon {
-  font-size: 2.5rem;
-  display: block;
-  margin-bottom: 16px;
+.landing-feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--glassBorder), transparent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
 
-.feature-card h3 {
-  font-size: 1.1rem;
+.landing-feature-card:hover {
+  transform: translateY(-10px);
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow);
+  background: var(--bg-card-hover);
+}
+
+.landing-feature-card:hover::before {
+  opacity: 1;
+}
+
+.feature-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: var(--glassTint);
+  border-radius: 18px;
+  margin-bottom: 24px;
+  font-size: 2rem;
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.landing-feature-card:hover .feature-icon-wrapper {
+  transform: scale(1.05) rotate(-5deg);
+  border-color: var(--accent-primary);
+}
+
+.landing-feature-card h3 {
+  font-size: 1.4rem;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
 
-.feature-card p {
-  font-size: 0.88rem;
+.landing-feature-card p {
+  font-size: 1.05rem;
   color: var(--text-secondary);
   line-height: 1.6;
 }
 
 @media (max-width: 768px) {
   .hero-content h1 {
-    font-size: 2rem;
+    font-size: 3.2rem;
+  }
+  
+  .hero-content p {
+    font-size: 1.15rem;
   }
 
   .landing-nav {
@@ -133,5 +238,23 @@
 
   .hero-buttons {
     flex-direction: column;
+    width: 100%;
+    padding: 0 20px;
+  }
+  
+  .landing-btn {
+    width: 100%;
+  }
+
+  .hero {
+    padding: 140px 20px 60px;
+  }
+  
+  .features {
+    padding: 60px 20px;
+  }
+  
+  .landing-brand span {
+    font-size: 1.5rem;
   }
 }

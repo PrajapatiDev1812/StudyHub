@@ -51,23 +51,50 @@ class TrackEventView(views.APIView):
         unlocked_badges = track_event(request.user, event_type, value)
         stats = UserStats.objects.get(user=request.user)
         
+        # Find the base repeatable badge count for this event if applicable
+        event_to_condition = {
+            'task_complete': 'tasks_completed',
+            'focus_complete': 'focus_time',
+            'test_submit': 'test_score',
+            'ai_used': 'ai_usage',
+            'login': 'streak_days'
+        }
+        
+        repeatable_info = None
+        condition_type = event_to_condition.get(event_type)
+        if condition_type:
+            ub = UserBadge.objects.filter(user=request.user, badge__condition_type=condition_type, badge__repeatable=True).first()
+            if ub:
+                repeatable_info = {
+                    "repeatable": True,
+                    "badge": ub.badge.name,
+                    "earned_count": ub.earned_count
+                }
+
         response_data = {
             "badge_unlocked": len(unlocked_badges) > 0,
+            "repeatable_earned": repeatable_info is not None,
             "new_level": stats.level,
             "total_xp": stats.xp,
-            "badges": []
+            "badges": [],
+            "repeatable_info": repeatable_info
         }
         
         for badge in unlocked_badges:
-            response_data["badges"].append({
+            badge_data = {
                 "name": badge.name,
                 "description": badge.description,
                 "icon": badge.icon.url if badge.icon else None,
-                "xp": badge.xp_reward
-            })
+                "xp": badge.xp_reward,
+                "tier": badge.tier,
+                "milestone_unlocked": badge.tier != 'none'
+            }
+            response_data["badges"].append(badge_data)
             
             # To match the requested prompt format simply, we'll put the first one in "badge"
-            if "badge" not in response_data and len(unlocked_badges) > 0:
-                response_data["badge"] = response_data["badges"][0]
+            if "badge" not in response_data:
+                response_data["badge"] = badge_data
+                if badge.tier != 'none':
+                    response_data["milestone_unlocked"] = True
             
         return Response(response_data)

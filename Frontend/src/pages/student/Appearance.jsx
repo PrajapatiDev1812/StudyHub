@@ -98,10 +98,22 @@ export default function Appearance() {
     }
   };
 
-  const handlePreview = (theme) => {
+  const handlePreview = async (theme) => {
     if (!theme) return;
     setSelectedForPreview(theme);
     previewTheme(theme);
+    
+    // Auto-save the theme immediately when clicked to prevent 'reverting' confusion
+    if (theme.id) {
+      setSaveStatus('saving');
+      const result = await saveTheme(theme.id);
+      if (result.success) {
+        setSaveStatus('success');
+        setTimeout(() => setSaveStatus(null), 3000);
+      } else {
+        setSaveStatus('error');
+      }
+    }
   };
 
   const handleSave = async () => {
