@@ -43,6 +43,14 @@
   background: var(--bg-panel, var(--bg-glass));
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebar-user:hover {
+  background: var(--hover-item, var(--bg-glass));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .user-avatar {

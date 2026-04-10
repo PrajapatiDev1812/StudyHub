@@ -11,15 +11,16 @@ const AchievementsPage = () => {
     useEffect(() => {
         const loadAchievements = async () => {
             try {
-                const [statsData, badgesData, userBadgesData] = await Promise.all([
+                const [statsData, rawBadges, rawUserBadges] = await Promise.all([
                     getUserStats(),
                     getBadges(),
                     getUserBadges()
                 ]);
                 
                 setStats(statsData);
-                setAllBadges(badgesData);
-                setUserBadges(userBadgesData);
+                // Handle potential pagination format (res.results)
+                setAllBadges(Array.isArray(rawBadges) ? rawBadges : rawBadges?.results || []);
+                setUserBadges(Array.isArray(rawUserBadges) ? rawUserBadges : rawUserBadges?.results || []);
             } catch (error) {
                 console.error("Failed to load achievements page data:", error);
             } finally {
@@ -34,13 +35,18 @@ const AchievementsPage = () => {
         return <div className="achievements-loading">Loading achievements...</div>;
     }
 
-    const earnedBadgesMap = userBadges.reduce((acc, ub) => {
-        acc[ub.badge.id] = ub;
+    const safeUserBadges = Array.isArray(userBadges) ? userBadges : [];
+    const earnedBadgesMap = safeUserBadges.reduce((acc, ub) => {
+        if (ub && ub.badge && ub.badge.id) {
+            acc[ub.badge.id] = ub;
+        }
         return acc;
     }, {});
 
     // Group badges by category if desired, or just show all
-    const groupedBadges = allBadges.reduce((acc, badge) => {
+    const safeAllBadges = Array.isArray(allBadges) ? allBadges : [];
+    const groupedBadges = safeAllBadges.reduce((acc, badge) => {
+        if (!badge) return acc;
         const cat = badge.category || 'general';
         if (!acc[cat]) acc[cat] = [];
         acc[cat].push(badge);

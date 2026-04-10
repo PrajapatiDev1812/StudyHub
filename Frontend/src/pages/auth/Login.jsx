@@ -73,6 +73,11 @@ export default function Login() {
           <button type="submit" className="btn btn-primary btn-lg auth-btn" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
+          
+          <div className="auth-recovery-links" style={{ display: 'flex', justifyContent: 'space-between', marginTop: 15 }}>
+            <Link to="/forgot-password" style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', textDecoration: 'none' }}>Forgot password?</Link>
+            <Link to="/forgot-username" style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', textDecoration: 'none' }}>Forgot username?</Link>
+          </div>
         </form>
 
         <p className="auth-footer">

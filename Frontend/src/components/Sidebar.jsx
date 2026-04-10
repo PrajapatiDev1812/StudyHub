@@ -43,7 +43,11 @@ export default function Sidebar() {
         <span className="brand-text">StudyHub</span>
       </div>
 
-      <div className="sidebar-user">
+      <div 
+        className="sidebar-user" 
+        onClick={() => navigate(user?.role === 'admin' ? '/admin/profile' : '/student/profile')}
+        title="View Profile"
+      >
         <div className="user-avatar">{user?.username?.[0]?.toUpperCase()}</div>
         <div className="user-info">
           <span className="user-name">{user?.username}</span>

@@ -9,9 +9,79 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     is_active_user = models.BooleanField(default=True)
+    is_email_verified = models.BooleanField(default=False)
 
     def __str__(self):
         return self.username
+
+
+class AccountRecoveryLog(models.Model):
+    """
+    Detailed audit log for all account recovery attempts.
+    """
+    RECOVERY_TYPES = (
+        ('password', 'Forgot Password'),
+        ('username', 'Forgot Username'),
+        ('manual', 'Manual Request'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='recovery_logs')
+    email_submitted = models.EmailField()
+    recovery_type = models.CharField(max_length=20, choices=RECOVERY_TYPES)
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField(blank=True)
+    status = models.CharField(max_length=50)  # e.g., 'initiated', 'completed', 'blocked_rate_limit', 'failed'
+    risk_score = models.IntegerField(default=0)  # 0-100 score based on IP/behavior
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.recovery_type} log for {self.email_submitted} at {self.created_at}"
+
+
+class ManualRecoveryRequest(models.Model):
+    """
+    Fallback request for manual admin intervention.
+    """
+    STATUS_CHOICES = (
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='manual_recovery_requests')
+    full_name = models.CharField(max_length=255)
+    email = models.EmailField()
+    username = models.CharField(max_length=150, blank=True)
+    enrollment_no = models.CharField(max_length=50, blank=True)
+    role_claimed = models.CharField(max_length=20)
+    reason = models.TextField()
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_recoveries')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    admin_notes = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Manual Recovery: {self.full_name} ({self.status})"
+
+
+class PasswordHistory(models.Model):
+    """
+    Stores past password hashes to prevent reuse of the last 5 passwords.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_history')
+    password_hash = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = "Password histories"
+
+    def __str__(self):
+        return f"History for {self.user.username} at {self.created_at}"
 
 
 class Theme(models.Model):
@@ -52,6 +122,7 @@ class UserAppearance(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Appearance"
+
 
 
 # --- Signals ---

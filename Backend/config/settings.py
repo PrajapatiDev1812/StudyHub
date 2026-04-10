@@ -203,6 +203,49 @@ CACHES = {
     }
 }
 
+# ---------- Account Recovery Security ----------
+# Enforce strict throttling for recovery endpoints to prevent brute-force attacks
+REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({
+    'recovery_email': '3/hour',   # Max 3 emails per user/hour
+    'recovery_ip': '5/hour',      # Max 5 attempts per IP/hour
+    'recovery_global': '100/day', # Global circuit breaker
+})
+
+# ---------- Password Security ----------
+PASSWORD_HISTORY_COUNT = 5
+PASSWORD_RESET_TIMEOUT = 1800  # 30 minutes in seconds
+
+# ---------- Email Configuration ----------
+# Use console for local testing; Railway/Render will provide ENV vars for SMTP
+if os.getenv('EMAIL_HOST'):
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.getenv('EMAIL_HOST')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+    DEFAULT_FROM_EMAIL = f"StudyHub Security <{EMAIL_HOST_USER}>"
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = "StudyHub Security <notifications@studyhub.edu>"
+
+# ---------- Bot Protection (reCAPTCHA) ----------
+RECAPTCHA_SECRET_KEY = os.getenv('RECAPTCHA_SECRET_KEY', '6LeIxAcTAAAAAGG-vFI1TnRWxMZNF6G4W_Noo7hx') # Test key
+RECAPTCHA_MIN_SCORE = 0.5
+
+# ---------- Production Security Settings ----------
+# These will be enforced when deployed. For now, we prepare them.
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_SSL_REDIRECT = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = 31536000 # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
 # ---------- SimpleJWT ----------
 from datetime import timedelta
 
