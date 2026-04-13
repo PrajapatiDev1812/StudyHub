@@ -215,7 +215,7 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({
 
 # ---------- 2FA / OTP Security ----------
 REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({
-    'otp_verify': '5/10min',   # Max 5 OTP attempts per 10 minutes per IP
+    'otp_verify': '5/min',   # Max 5 OTP attempts per minute per IP
     'otp_setup':  '10/hour',   # Max 10 setup attempts per hour
 })
 
