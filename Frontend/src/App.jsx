@@ -14,6 +14,7 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import ForgotUsername from './pages/auth/ForgotUsername';
 import RecoveryRequest from './pages/auth/RecoveryRequest';
+import TwoFactorSetup from './pages/auth/TwoFactorSetup';
 
 // Student Pages
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -90,6 +91,14 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/forgot-username" element={<ForgotUsername />} />
             <Route path="/recovery-request" element={<RecoveryRequest />} />
+            
+            {/* Authenticated Setup Routes */}
+            <Route path="/setup-2fa" element={
+              <StudentRoute>
+                <TwoFactorSetup />
+              </StudentRoute>
+            } />
+
 
             {/* Student Routes */}
             <Route path="/student/dashboard" element={<StudentRoute><StudentDashboard /></StudentRoute>} />

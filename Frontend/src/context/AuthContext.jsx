@@ -32,12 +32,27 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     const res = await api.post('/auth/login/', { username, password });
+    
+    // If 2FA is required, do NOT set tokens or fetch profile yet.
+    // Return early so the Login component can advance to the OTP step.
+    if (res.data.requires_2fa) {
+      return res.data;
+    }
+
+    // Normal JWT login (e.g., first login before 2FA setup).
     localStorage.setItem('access_token', res.data.access);
     localStorage.setItem('refresh_token', res.data.refresh);
     await fetchProfile();
     return res.data;
   };
 
+  const verifyOTP = async (tempToken, otp) => {
+    const res = await api.post('/auth/verify-otp/', { temp_token: tempToken, otp });
+    localStorage.setItem('access_token', res.data.access);
+    localStorage.setItem('refresh_token', res.data.refresh);
+    await fetchProfile();
+    return res.data;
+  };
   const register = async (data) => {
     const res = await api.post('/auth/register/', data);
     return res.data;
@@ -50,7 +65,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, verifyOTP, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

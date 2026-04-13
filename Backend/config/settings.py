@@ -25,12 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-a!0fvj36wlt*#ggnmy*01bgjpse&6ck1&id4yy+s!r9&(ut%0i'
+SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 
 # Application definition
@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
     'django_filters',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
 
     'accounts',
     'courses',
@@ -210,6 +212,15 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({
     'recovery_ip': '5/hour',      # Max 5 attempts per IP/hour
     'recovery_global': '100/day', # Global circuit breaker
 })
+
+# ---------- 2FA / OTP Security ----------
+REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({
+    'otp_verify': '5/10min',   # Max 5 OTP attempts per 10 minutes per IP
+    'otp_setup':  '10/hour',   # Max 10 setup attempts per hour
+})
+
+# Temp token TTL for 2FA step-up (seconds)
+TWO_FA_TEMP_TOKEN_TTL = 300  # 5 minutes
 
 # ---------- Password Security ----------
 PASSWORD_HISTORY_COUNT = 5

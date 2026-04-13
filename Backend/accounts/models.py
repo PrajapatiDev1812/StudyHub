@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 import uuid
 
 class User(AbstractUser):
@@ -13,6 +14,65 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
+
+class User2FA(models.Model):
+    """
+    Stores the 2FA configuration for every user.
+    otp_secret is a Base32-encoded string for TOTP.
+    backup_codes holds a JSON array of bcrypt-hashed one-time recovery codes.
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='two_fa')
+    otp_secret = models.CharField(max_length=64)           # Base32 TOTP secret
+    is_enabled = models.BooleanField(default=False)        # True only after first OTP verified
+    is_setup_complete = models.BooleanField(default=False) # False until user scans + verifies QR
+    backup_codes = models.JSONField(default=list)          # List of hashed one-time codes
+
+    # Brute-force lockout tracking
+    failed_attempts = models.PositiveSmallIntegerField(default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def is_locked(self):
+        """Check if OTP verification is currently locked out."""
+        if self.locked_until and timezone.now() < self.locked_until:
+            return True
+        return False
+
+    def record_failed_attempt(self):
+        """Increment failure count; lock after 5 failures for 10 minutes."""
+        self.failed_attempts += 1
+        if self.failed_attempts >= 5:
+            self.locked_until = timezone.now() + timezone.timedelta(minutes=10)
+            self.failed_attempts = 0
+        self.save(update_fields=['failed_attempts', 'locked_until'])
+
+    def clear_failed_attempts(self):
+        """Reset on successful OTP verification."""
+        self.failed_attempts = 0
+        self.locked_until = None
+        self.save(update_fields=['failed_attempts', 'locked_until'])
+
+    def __str__(self):
+        return f"2FA for {self.user.username} ({'enabled' if self.is_enabled else 'disabled'})"
+
+
+class OTPAttemptLog(models.Model):
+    """
+    Audit log for every OTP verification attempt.
+    """
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='otp_logs')
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField(blank=True)
+    success = models.BooleanField(default=False)
+    used_backup_code = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        result = "SUCCESS" if self.success else "FAILED"
+        return f"OTP [{result}] for {self.user} at {self.created_at}"
 
 
 class AccountRecoveryLog(models.Model):
