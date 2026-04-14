@@ -31,6 +31,7 @@ def get_themes():
                 "--accent-glow": "0 0 20px rgba(108, 99, 255, 0.15)",
                 "--border-color": "rgba(0, 0, 0, 0.08)",
                 "--border-glow": "rgba(108, 99, 255, 0.2)",
+                "--backgroundOverlay": "transparent",
             }
         },
         {
@@ -53,6 +54,7 @@ def get_themes():
                 "--accent-glow": "0 0 20px rgba(108, 99, 255, 0.3)",
                 "--border-color": "rgba(255, 255, 255, 0.08)",
                 "--border-glow": "rgba(108, 99, 255, 0.3)",
+                "--backgroundOverlay": "rgba(10, 10, 26, 0.75)",
             }
         },
         # --- Study-Friendly Themes ---
@@ -76,6 +78,7 @@ def get_themes():
                 "--accent-glow": "0 0 15px rgba(181, 137, 0, 0.2)",
                 "--border-color": "rgba(88, 110, 117, 0.1)",
                 "--border-glow": "rgba(181, 137, 0, 0.3)",
+                "--backgroundOverlay": "transparent",
             }
         },
         {
@@ -98,6 +101,7 @@ def get_themes():
                 "--accent-glow": "0 0 20px rgba(156, 137, 184, 0.25)",
                 "--border-color": "rgba(74, 68, 88, 0.1)",
                 "--border-glow": "rgba(156, 137, 184, 0.4)",
+                "--backgroundOverlay": "transparent",
             }
         },
         {
@@ -120,6 +124,7 @@ def get_themes():
                 "--accent-glow": "0 0 20px rgba(0, 206, 201, 0.3)",
                 "--border-color": "rgba(255, 255, 255, 0.08)",
                 "--border-glow": "rgba(0, 206, 201, 0.3)",
+                "--backgroundOverlay": "rgba(10, 10, 26, 0.75)",
             }
         },
         {
@@ -142,6 +147,7 @@ def get_themes():
                 "--accent-glow": "0 0 25px rgba(56, 189, 248, 0.3)",
                 "--border-color": "rgba(255, 255, 255, 0.1)",
                 "--border-glow": "rgba(56, 189, 248, 0.4)",
+                "--backgroundOverlay": "rgba(10, 10, 26, 0.75)",
             }
         },
         # --- Nature Themes ---
@@ -165,6 +171,7 @@ def get_themes():
                 "--accent-glow": "0 0 15px rgba(123, 163, 137, 0.2)",
                 "--border-color": "rgba(45, 58, 49, 0.1)",
                 "--border-glow": "rgba(123, 163, 137, 0.4)",
+                "--backgroundOverlay": "transparent",
             }
         },
         {
@@ -187,6 +194,7 @@ def get_themes():
                 "--accent-glow": "0 0 20px rgba(74, 222, 128, 0.3)",
                 "--border-color": "rgba(255, 255, 255, 0.08)",
                 "--border-glow": "rgba(74, 222, 128, 0.3)",
+                "--backgroundOverlay": "rgba(10, 10, 26, 0.75)",
             }
         },
         {
@@ -209,6 +217,7 @@ def get_themes():
                 "--accent-glow": "0 0 20px rgba(14, 165, 233, 0.2)",
                 "--border-color": "rgba(12, 74, 110, 0.1)",
                 "--border-glow": "rgba(14, 165, 233, 0.4)",
+                "--backgroundOverlay": "transparent",
             }
         },
         {
@@ -231,6 +240,7 @@ def get_themes():
                 "--accent-glow": "0 0 15px rgba(91, 169, 138, 0.2)",
                 "--border-color": "rgba(45, 74, 62, 0.1)",
                 "--border-glow": "rgba(91, 169, 138, 0.4)",
+                "--backgroundOverlay": "transparent",
             }
         },
         {
@@ -253,6 +263,7 @@ def get_themes():
                 "--accent-glow": "0 0 15px rgba(210, 180, 140, 0.2)",
                 "--border-color": "rgba(74, 58, 45, 0.1)",
                 "--border-glow": "rgba(210, 180, 140, 0.4)",
+                "--backgroundOverlay": "transparent",
             }
         },
     ]
