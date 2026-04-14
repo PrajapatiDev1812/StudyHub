@@ -8,7 +8,7 @@
   --bg-primary: #0a0a1a;
   --bg-secondary: #111128;
   --bg-surface: rgba(25, 25, 60, 0.85);
-  --backgroundOverlay: rgba(10, 10, 26, 0.75);
+  --backgroundOverlay: transparent;
   --bg-card: rgba(25, 25, 60, 0.6);
   --bg-card-hover: rgba(35, 35, 80, 0.8);
   --bg-glass: rgba(255, 255, 255, 0.04);
