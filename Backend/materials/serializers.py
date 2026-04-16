@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import StudentMaterial, MaterialAccess, MaterialUserNote
+from .models import StudentMaterial, MaterialAccess, MaterialUserNote, MaterialComment
 
 User = get_user_model()
 
@@ -16,17 +16,17 @@ class MaterialAccessSerializer(serializers.ModelSerializer):
 
 
 class ShareMaterialSerializer(serializers.Serializer):
-    """Used for granting access to a specific user."""
-    username = serializers.CharField()
+    """Used for granting access to a specific user via email."""
+    email = serializers.EmailField()
     can_view = serializers.BooleanField(default=True)
     can_edit = serializers.BooleanField(default=False)
     can_comment = serializers.BooleanField(default=True)
 
-    def validate_username(self, value):
+    def validate_email(self, value):
         try:
-            User.objects.get(username=value)
+            User.objects.get(email__iexact=value)
         except User.DoesNotExist:
-            raise serializers.ValidationError("No user found with that username.")
+            raise serializers.ValidationError("No user found with that email address.")
         return value
 
 
@@ -35,6 +35,15 @@ class MaterialUserNoteSerializer(serializers.ModelSerializer):
         model = MaterialUserNote
         fields = ['id', 'note_content', 'updated_at']
         read_only_fields = ['id', 'updated_at']
+
+
+class MaterialCommentSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = MaterialComment
+        fields = ['id', 'username', 'content', 'created_at']
+        read_only_fields = ['id', 'username', 'created_at']
 
 
 class StudentMaterialSerializer(serializers.ModelSerializer):

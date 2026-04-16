@@ -10,7 +10,7 @@
   flex-direction: column;
   padding: 20px 0;
   z-index: 100;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .sidebar-brand {
@@ -63,7 +63,7 @@
   justify-content: center;
   font-weight: 700;
   font-size: 0.9rem;
-  color: white;
+  color: var(--bg-secondary);
 }
 
 .user-info {
@@ -85,6 +85,18 @@
 .sidebar-nav {
   flex: 1;
   padding: 0 12px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 4px;
 }
 
 .nav-link {
@@ -107,9 +119,10 @@
 }
 
 .nav-link.active {
-  background: var(--active-item, rgba(108, 99, 255, 0.12));
-  color: var(--accent-primary);
+  background: var(--bg-glass);
+  color: var(--text-primary);
   border-left: 3px solid var(--accent-primary);
+  font-weight: 700;
 }
 
 .nav-icon {
@@ -124,8 +137,8 @@
   gap: 10px;
   margin: 12px 24px;
   padding: 10px 16px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   color: var(--danger);
   font-family: 'Inter', sans-serif;
@@ -136,7 +149,8 @@
 }
 
 .logout-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--danger);
 }
 
 @media (max-width: 768px) {

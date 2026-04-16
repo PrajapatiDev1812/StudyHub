@@ -10,6 +10,7 @@ from .models import StudentMaterial, MaterialAccess, MaterialUserNote
 from .serializers import (
     StudentMaterialSerializer, MaterialAccessSerializer,
     ShareMaterialSerializer, MaterialUserNoteSerializer,
+    MaterialCommentSerializer,
 )
 
 User = get_user_model()
@@ -43,6 +44,7 @@ class StudentMaterialViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+    serializer_class = StudentMaterialSerializer
 
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
@@ -51,8 +53,17 @@ class StudentMaterialViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        tab = self.request.query_params.get('tab', 'all')
+        
+        # For detail views (restore, permanent-delete, etc.), 
+        # we need to include trashed items in the base queryset.
+        if self.action in ['retrieve', 'update', 'partial_update', 'destroy', 'restore', 'permanent_delete', 'move_to_folder', 'toggle_favorite']:
+            # Return all materials owned by user (deleted or not) + shared materials
+            owned = Q(student=user)
+            accessible_ids = MaterialAccess.objects.filter(user=user).values_list('material_id', flat=True)
+            shared_with_me = Q(id__in=accessible_ids, visibility='shared')
+            return StudentMaterial.objects.filter(owned | shared_with_me).select_related('student')
 
+        tab = self.request.query_params.get('tab', 'all')
         if tab == 'trash':
             qs = StudentMaterial.objects.filter(student=user, is_deleted=True)
         elif tab == 'uploads':
@@ -212,7 +223,7 @@ class MaterialSharingViewSet(viewsets.ViewSet):
         serializer = ShareMaterialSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        target_user = User.objects.get(username=serializer.validated_data['username'])
+        target_user = User.objects.get(email__iexact=serializer.validated_data['email'])
         if target_user == request.user:
             return Response({'error': 'You cannot share a material with yourself.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -317,3 +328,71 @@ class MaterialNoteViewSet(viewsets.ViewSet):
             defaults={'note_content': serializer.validated_data['note_content']}
         )
         return Response(MaterialUserNoteSerializer(note).data, status=status.HTTP_200_OK)
+
+
+class MaterialCommentViewSet(viewsets.ViewSet):
+    """
+    Public comments visible to anyone with access to the material.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _check_access(self, material_pk, request):
+        try:
+            material = StudentMaterial.objects.get(pk=material_pk, is_deleted=False)
+        except StudentMaterial.DoesNotExist:
+            return None, Response({'error': 'Material not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        is_owner = material.student == request.user
+        has_access = MaterialAccess.objects.filter(material=material, user=request.user).exists()
+        if not is_owner and not has_access:
+            return None, Response({'error': 'Access denied.'}, status=status.HTTP_403_FORBIDDEN)
+        return material, None
+
+    def list(self, request, material_pk=None):
+        material, err = self._check_access(material_pk, request)
+        if err:
+            return err
+        
+        from .models import MaterialComment
+        comments = MaterialComment.objects.filter(material=material)
+        return Response(MaterialCommentSerializer(comments, many=True).data)
+
+    def create(self, request, material_pk=None):
+        material, err = self._check_access(material_pk, request)
+        if err:
+            return err
+
+        # If they are just a guest, check if they have comment permission
+        if material.student != request.user:
+            access = MaterialAccess.objects.get(material=material, user=request.user)
+            if not access.can_comment:
+                return Response({'error': 'You do not have permission to comment on this material.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = MaterialCommentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        from .models import MaterialComment
+        comment = MaterialComment.objects.create(
+            material=material,
+            user=request.user,
+            content=serializer.validated_data['content']
+        )
+        return Response(MaterialCommentSerializer(comment).data, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None, material_pk=None):
+        material, err = self._check_access(material_pk, request)
+        if err:
+            return err
+            
+        from .models import MaterialComment
+        try:
+            comment = MaterialComment.objects.get(pk=pk, material=material)
+        except MaterialComment.DoesNotExist:
+            return Response({'error': 'Comment not found.'}, status=status.HTTP_404_NOT_FOUND)
+            
+        # Only the comment author or the material owner can delete the comment
+        if comment.user != request.user and material.student != request.user:
+            return Response({'error': 'You cannot delete this comment.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

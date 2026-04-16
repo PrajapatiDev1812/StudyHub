@@ -32,8 +32,8 @@
 .mm-tab:hover { background: var(--bg-glass); color: var(--text-primary); }
 .mm-tab.active {
   background: var(--accent-gradient);
-  color: #fff;
-  box-shadow: 0 2px 10px rgba(108, 99, 255, 0.3);
+  color: var(--bg-secondary);
+  box-shadow: 0 2px 10px var(--border-glow);
 }
 .mm-tab-count {
   background: rgba(255,255,255,0.2);
@@ -112,7 +112,7 @@
   gap: 6px;
   padding: 10px 20px;
   background: var(--accent-gradient);
-  color: #fff;
+  color: var(--bg-secondary);
   border: none;
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
@@ -120,15 +120,27 @@
   cursor: pointer;
   transition: var(--transition);
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(108,99,255,0.3);
+  box-shadow: 0 4px 12px var(--border-glow);
 }
-.mm-upload-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(108,99,255,0.4); }
+.mm-upload-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--border-glow); }
 
 /* ── Grid ────────────────────────────────────────────────────────────────── */
 .mm-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 18px;
+}
+
+.alert-error {
+  background: var(--bg-glass);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+.alert-success {
+  background: var(--bg-glass);
+  border: 1px solid var(--success);
+  color: var(--success);
 }
 
 .mm-card {
@@ -165,12 +177,12 @@
   font-size: 1.3rem;
   flex-shrink: 0;
 }
-.mm-type-pdf    { background: rgba(239,68,68,0.15); }
-.mm-type-doc    { background: rgba(59,130,246,0.15); }
-.mm-type-ppt    { background: rgba(245,158,11,0.15); }
-.mm-type-image  { background: rgba(34,197,94,0.15); }
-.mm-type-text   { background: rgba(156,137,184,0.15); }
-.mm-type-link   { background: rgba(14,165,233,0.15); }
+.mm-type-pdf    { background: var(--bg-glass); color: var(--danger); border: 1px solid rgba(var(--danger-rgb, 239, 68, 68), 0.2); }
+.mm-type-doc    { background: var(--bg-glass); color: var(--info); border: 1px solid rgba(var(--info-rgb, 59, 130, 246), 0.2); }
+.mm-type-ppt    { background: var(--bg-glass); color: var(--warning); border: 1px solid rgba(var(--warning-rgb, 245, 158, 11), 0.2); }
+.mm-type-image  { background: var(--bg-glass); color: var(--success); border: 1px solid rgba(var(--success-rgb, 34, 197, 94), 0.2); }
+.mm-type-text   { background: var(--bg-glass); color: var(--accent-primary); border: 1px solid var(--border-color); }
+.mm-type-link   { background: var(--bg-glass); color: var(--accent-secondary); border: 1px solid var(--border-color); }
 
 .mm-card-title-block { flex: 1; min-width: 0; }
 .mm-card-title {
@@ -247,7 +259,9 @@
   right: 0;
   top: calc(100% + 6px);
   width: 190px;
-  background: var(--bg-secondary);
+  background: var(--bg-surface, var(--bg-card));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
@@ -255,6 +269,16 @@
   overflow: hidden;
   animation: fadeIn 0.15s ease;
 }
+
+/* Ensure text is always readable inside the dropdown */
+.mm-dropdown-item {
+  color: var(--text-primary) !important;
+  background: transparent;
+}
+.mm-dropdown-item:hover {
+  background: var(--bg-glass);
+}
+
 .mm-dropdown-item {
   width: 100%;
   padding: 10px 14px;
@@ -297,7 +321,7 @@
   padding: 16px;
 }
 .mm-modal {
-  background: var(--bg-secondary);
+  background: var(--bg-card); /* Stronger opaque card background */
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 28px;
@@ -306,7 +330,91 @@
   max-height: 85vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease;
+  box-shadow: var(--shadow);
 }
+/* Explicit overrides for modal forms to fix contrast issues with various themes */
+.mm-modal label {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.mm-modal .form-input {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  opacity: 1;
+}
+
+/* ── Custom Select Styling ────────────────────────────────────────────────── */
+.mm-custom-select-group {
+  position: relative;
+  margin-bottom: 20px;
+}
+.mm-custom-select-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.mm-custom-select {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: var(--transition);
+}
+.mm-custom-select:hover {
+  border-color: var(--accent-primary);
+}
+.mm-custom-select.active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--border-glow);
+}
+.mm-custom-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  background: var(--bg-surface, var(--bg-card));
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  z-index: 1000;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  animation: fadeIn 0.15s ease;
+}
+.mm-custom-select-item {
+  padding: 11px 16px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.mm-custom-select-item:hover {
+  background: var(--bg-glass);
+}
+.mm-custom-select-item.selected {
+  background: var(--accent-gradient);
+  color: white;
+}
+
+.mm-modal .form-input::placeholder {
+  color: var(--text-muted);
+}
+.mm-modal .form-input:focus {
+  background: var(--bg-primary);
+  border-color: var(--accent-primary);
+}
+
 .mm-modal h2 {
   font-size: 1.15rem;
   font-weight: 700;
@@ -331,12 +439,16 @@
   font-weight: 600;
 }
 .mm-visibility-badge.shared {
-  background: rgba(34,197,94,0.15);
+  background: var(--bg-glass);
   color: var(--success);
+  border: 1px solid rgba(var(--success-rgb, 34, 197, 94), 0.2);
+  backdrop-filter: blur(4px);
 }
 .mm-visibility-badge.private {
   background: var(--bg-glass);
   color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(4px);
 }
 
 /* ── Owner badge ─────────────────────────────────────────────────────────── */

@@ -102,3 +102,18 @@ class MaterialUserNote(models.Model):
 
     def __str__(self):
         return f"Note by {self.user.username} on '{self.material.title}'"
+
+
+class MaterialComment(models.Model):
+    """Public comments shared among users who have access to the material."""
+    material = models.ForeignKey(StudentMaterial, on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='material_comments')
+    
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Comment by {self.user.username} on '{self.material.title}'"

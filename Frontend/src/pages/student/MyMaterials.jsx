@@ -26,6 +26,54 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+const getFullUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  return `http://127.0.0.1:8000${path}`;
+}
+
+// ── Custom Dropdown Component ──────────────────────────────────────────────
+
+function ThemedSelect({ label, value, options, onChange, iconMap = {} }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selected = options.find(o => o.value === value) || options[0];
+
+  return (
+    <div className="form-group mm-custom-select-group" ref={containerRef}>
+      <label>{label}</label>
+      <div className={`mm-custom-select ${isOpen ? 'active' : ''}`} onClick={() => setIsOpen(!isOpen)}>
+        <span className="mm-selected-value">
+          {iconMap[value] || selected.icon} {selected.label}
+        </span>
+        <span className="mm-select-arrow">▾</span>
+      </div>
+      {isOpen && (
+        <div className="mm-custom-select-dropdown">
+          {options.map(opt => (
+            <div 
+              key={opt.value} 
+              className={`mm-custom-select-item ${value === opt.value ? 'selected' : ''}`}
+              onClick={() => { onChange(opt.value); setIsOpen(false); }}
+            >
+              {iconMap[opt.value] || opt.icon} {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Upload / Edit Modal ────────────────────────────────────────────────────
 
 function MaterialModal({ initial, onClose, onSaved, folders }) {
@@ -71,7 +119,14 @@ function MaterialModal({ initial, onClose, onSaved, folders }) {
       onSaved(res.data);
       onClose();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Something went wrong.');
+      console.error("Upload error:", err.response?.data || err);
+      if (err.response?.data) {
+        const d = err.response.data;
+        const msg = typeof d === 'object' ? Object.entries(d).map(([k, v]) => `${k}: ${v}`).join(' | ') : d;
+        setError(msg || 'Something went wrong.');
+      } else {
+        setError(err.message || 'Something went wrong.');
+      }
     } finally {
       setLoading(false);
     }
@@ -91,12 +146,12 @@ function MaterialModal({ initial, onClose, onSaved, folders }) {
             <label>Title *</label>
             <input name="title" className="form-input" value={form.title} onChange={handleChange} required placeholder="e.g. Chapter 3 Notes" />
           </div>
-          <div className="form-group">
-            <label>Type *</label>
-            <select name="material_type" className="form-input" value={form.material_type} onChange={handleChange}>
-              {Object.entries(TYPE_META).map(([k, v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
-            </select>
-          </div>
+          <ThemedSelect 
+            label="Type *" 
+            value={form.material_type}
+            onChange={(val) => setForm(prev => ({ ...prev, material_type: val }))}
+            options={Object.entries(TYPE_META).map(([k, v]) => ({ value: k, label: v.label, icon: v.icon }))}
+          />
           {showFile && (
             <div className="form-group">
               <label>File {!isEdit && '*'}</label>
@@ -130,13 +185,15 @@ function MaterialModal({ initial, onClose, onSaved, folders }) {
             <input name="tags" className="form-input" value={form.tags} onChange={handleChange} placeholder="e.g. exam, important, revision" />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div className="form-group">
-              <label>Visibility</label>
-              <select name="visibility" className="form-input" value={form.visibility} onChange={handleChange}>
-                <option value="private">🔒 Private</option>
-                <option value="shared">🤝 Shared</option>
-              </select>
-            </div>
+            <ThemedSelect 
+              label="Visibility"
+              value={form.visibility}
+              onChange={(val) => setForm(prev => ({ ...prev, visibility: val }))}
+              options={[
+                { value: 'private', label: 'Private', icon: '🔒' },
+                { value: 'shared',  label: 'Shared',  icon: '🤝' }
+              ]}
+            />
             <div className="form-group">
               <label>Folder</label>
               <input name="folder_name" className="form-input" value={form.folder_name} onChange={handleChange} placeholder="Optional folder" list="mm-folders" />
@@ -162,7 +219,7 @@ function MaterialModal({ initial, onClose, onSaved, folders }) {
 // ── Share Modal ────────────────────────────────────────────────────────────
 
 function ShareModal({ material, onClose }) {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [perms, setPerms] = useState({ can_view: true, can_edit: false, can_comment: true });
   const [grants, setGrants] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -182,12 +239,12 @@ function ShareModal({ material, onClose }) {
     e.preventDefault();
     setLoading(true); setError(''); setMsg('');
     try {
-      await api.post(`/materials/${material.id}/sharing/share/`, { username, ...perms });
-      setMsg(`✅ Shared with ${username}`);
-      setUsername('');
+      await api.post(`/materials/${material.id}/sharing/share/`, { email, ...perms });
+      setMsg(`✅ Shared successfully with ${email}`);
+      setEmail('');
       loadGrants();
     } catch (err) {
-      setError(err.response?.data?.username?.[0] || err.response?.data?.error || 'Failed to share.');
+      setError(err.response?.data?.email?.[0] || err.response?.data?.error || 'Failed to share.');
     } finally { setLoading(false); }
   };
 
@@ -206,8 +263,8 @@ function ShareModal({ material, onClose }) {
         {error && <div className="alert alert-error">{error}</div>}
         <form onSubmit={handleShare}>
           <div className="form-group">
-            <label>Share with student (username)</label>
-            <input className="form-input" value={username} onChange={e => setUsername(e.target.value)} required placeholder="Enter their username" />
+            <label>Share with student (organization email id)</label>
+            <input type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} required placeholder="Enter their email address" />
           </div>
           <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
             {[['can_view','Can View'],['can_edit','Can Edit'],['can_comment','Can Comment']].map(([k,l]) => (
@@ -252,13 +309,25 @@ function ViewModal({ material, onClose }) {
   const [savedNote, setSavedNote] = useState('');
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  
+  // Comments state
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [postingComment, setPostingComment] = useState(false);
 
   useEffect(() => {
     api.get(`/materials/${material.id}/note/`).then(r => {
       setSavedNote(r.data.note_content || '');
       setNote(r.data.note_content || '');
     }).catch(() => {});
-  }, [material.id]);
+    
+    // Load comments
+    if (material.visibility === 'shared') {
+      api.get(`/materials/${material.id}/comments/`).then(r => {
+        setComments(r.data);
+      }).catch(() => {});
+    }
+  }, [material.id, material.visibility]);
 
   const handleSaveNote = async () => {
     setSaving(true);
@@ -268,6 +337,26 @@ function ViewModal({ material, onClose }) {
       setDirty(false);
     } catch { /* ignore */ }
     finally { setSaving(false); }
+  };
+
+  const handlePostComment = async e => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+    setPostingComment(true);
+    try {
+      const r = await api.post(`/materials/${material.id}/comments/`, { content: newComment });
+      setComments(prev => [...prev, r.data]);
+      setNewComment('');
+    } catch { /* ignore */ }
+    finally { setPostingComment(false); }
+  };
+
+  const handleDeleteComment = async cid => {
+    if (!window.confirm("Delete this comment?")) return;
+    try {
+      await api.delete(`/materials/${material.id}/comments/${cid}/`);
+      setComments(prev => prev.filter(c => c.id !== cid));
+    } catch { /* ignore */ }
   };
 
   const tm = TYPE_META[material.material_type] || TYPE_META.text;
@@ -297,7 +386,7 @@ function ViewModal({ material, onClose }) {
           <a href={material.external_url} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ marginBottom: 14, display: 'inline-flex' }}>🔗 Open Link</a>
         )}
         {material.file && (
-          <a href={material.file} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ marginBottom: 14, display: 'inline-flex' }}>⬇️ Download File</a>
+          <a href={getFullUrl(material.file)} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ marginBottom: 14, display: 'inline-flex' }}>⬇️ Download File</a>
         )}
 
         {material.tags?.length > 0 && (
@@ -327,6 +416,43 @@ function ViewModal({ material, onClose }) {
         <div className="mm-modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>Close</button>
         </div>
+
+        {/* Public Comments section (if shared) */}
+        {material.visibility === 'shared' && (
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 16, marginTop: 24 }}>
+            <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>💬 Shared Discussion</p>
+            <div style={{ maxHeight: 200, overflowY: 'auto', marginBottom: 12, paddingRight: 8 }}>
+              {comments.length === 0 ? (
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No comments yet. Start the discussion!</p>
+              ) : (
+                comments.map(c => (
+                  <div key={c.id} style={{ background: 'var(--bg-card)', padding: '10px 12px', borderRadius: 'var(--radius-sm)', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{c.username}</span>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{formatDate(c.created_at)}</span>
+                        {(c.username === material.student_username || material.is_owner) && (
+                          <span onClick={() => handleDeleteComment(c.id)} style={{ fontSize: '0.75rem', color: 'var(--danger)', cursor: 'pointer', opacity: 0.8 }}>✕</span>
+                        )}
+                      </div>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, whiteSpace: 'pre-wrap' }}>{c.content}</p>
+                  </div>
+                ))
+              )}
+            </div>
+            <form onSubmit={handlePostComment} style={{ display: 'flex', gap: 8 }}>
+              <input 
+                className="form-input" 
+                placeholder="Write a comment... (visible to everyone with access)" 
+                value={newComment} 
+                onChange={e => setNewComment(e.target.value)} 
+                required 
+              />
+              <button type="submit" className="btn btn-primary btn-sm" disabled={postingComment}>{postingComment ? '...' : 'Post'}</button>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -360,7 +486,7 @@ function MaterialCard({ item, currentUser, onAction }) {
   ];
 
   return (
-    <div className={`mm-card ${isTrash ? 'is-deleted' : ''}`}>
+    <div className={`mm-card ${isTrash ? 'is-deleted' : ''}`} onClick={() => !isTrash && onAction('view', item)} style={!isTrash ? { cursor: 'pointer' } : {}}>
       <div className="mm-card-header">
         <div className={`mm-type-icon ${tm.cls}`}>{tm.icon}</div>
         <div className="mm-card-title-block">
@@ -381,7 +507,7 @@ function MaterialCard({ item, currentUser, onAction }) {
             {item.visibility === 'shared' ? '🤝' : '🔒'} {item.visibility}
           </span>
         </div>
-        <div className="mm-card-actions">
+        <div className="mm-card-actions" onClick={e => e.stopPropagation()}>
           {!isTrash && isOwner && (
             <button
               className={`mm-icon-btn fav ${item.favorite ? 'active' : ''}`}
