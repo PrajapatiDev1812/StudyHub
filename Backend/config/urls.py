@@ -66,6 +66,9 @@ urlpatterns = [
     # ── Gamification APIs ──
     path('api/gamification/', include('gamification.urls')),
 
+    # ── Student Materials APIs ──
+    path('api/', include('materials.urls')),
+
     # ── Token Verify ──
     path('api/auth/token/verify/', TokenVerifyView.as_view(), name='auth-token-verify'),
 

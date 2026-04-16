@@ -21,6 +21,7 @@ export default function Sidebar() {
     { to: '/student/my-attempts', icon: '📋', label: 'My Attempts' },
     { to: '/student/notifications', icon: '🔔', label: 'Notifications' },
     { to: '/student/ai-chat', icon: '🤖', label: 'AI Assistant' },
+    { to: '/student/my-materials', icon: '📂', label: 'My Materials' },
     { to: '/student/achievements', icon: '🏆', label: 'Achievements' },
     { to: '/student/profile', icon: '👤', label: 'Profile' },
   ];

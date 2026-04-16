@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'focus',
     'ai',
     'gamification',
+    'materials',
 
     "corsheaders"
 ]
