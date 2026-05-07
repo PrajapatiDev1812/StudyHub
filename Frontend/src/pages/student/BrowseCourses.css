@@ -1,0 +1,182 @@
+/* ─────────────────────────────────────────────
+   BrowseCourses.css  — Premium course card styles
+   ───────────────────────────────────────────── */
+
+.bc-page {
+  padding-bottom: 60px;
+}
+
+/* ── Course Grid ────────────────────────────── */
+.bc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* ── Course Card ────────────────────────────── */
+.bc-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-md, 16px);
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: default;
+}
+
+.bc-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+}
+
+/* Thumbnail */
+.bc-card-thumb {
+  position: relative;
+  height: 140px;
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-primary) 30%, transparent),
+    color-mix(in srgb, var(--accent-secondary, #6c63ff) 30%, transparent)
+  );
+}
+
+.bc-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bc-card-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+.bc-cert-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+  border-radius: 20px;
+  padding: 3px 8px;
+  font-size: 0.8rem;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Card body */
+.bc-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 16px;
+  gap: 8px;
+}
+
+.bc-card-meta-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bc-category-chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, transparent);
+  border-radius: 20px;
+  padding: 2px 8px;
+}
+
+.bc-level-badge {
+  font-size: 0.7rem;
+  text-transform: capitalize;
+  padding: 2px 8px !important;
+}
+
+.bc-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bc-card-desc {
+  font-size: 0.825rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Stats row */
+.bc-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.bc-stat {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Footer */
+.bc-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.bc-card-price {}
+
+.bc-free-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--success, #22c55e);
+  background: color-mix(in srgb, var(--success, #22c55e) 12%, transparent);
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.bc-paid-badge {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.bc-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bc-enrolled-badge {
+  font-size: 0.75rem;
+  padding: 4px 10px !important;
+}
+
+/* ── Responsive ─────────────────────────────── */
+@media (max-width: 600px) {
+  .bc-grid {
+    grid-template-columns: 1fr;
+  }
+}

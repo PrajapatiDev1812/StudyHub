@@ -185,13 +185,92 @@ class UserAppearance(models.Model):
 
 
 
+class UserPreference(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferences')
+    
+    # AI Preferences
+    AI_MODE_CHOICES = (
+        ('student', 'Student Mode'),
+        ('teacher', 'Teacher Mode'),
+        ('exam', 'Exam Mode'),
+    )
+    AI_STYLE_CHOICES = (
+        ('short', 'Short'),
+        ('detailed', 'Detailed'),
+        ('step-by-step', 'Step-by-step'),
+    )
+    default_ai_mode = models.CharField(max_length=20, choices=AI_MODE_CHOICES, default='student')
+    ai_response_style = models.CharField(max_length=20, choices=AI_STYLE_CHOICES, default='detailed')
+    emoji_enabled = models.BooleanField(default=True)
+    
+    # Focus Preferences
+    default_focus_minutes = models.PositiveIntegerField(default=25)
+    default_break_minutes = models.PositiveIntegerField(default=5)
+    auto_break_enabled = models.BooleanField(default=False)
+    strict_mode_default = models.BooleanField(default=False)
+    default_focus_sound = models.CharField(max_length=50, default='none')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Preferences"
+
+class NotificationPreference(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='notification_preferences')
+    email_notifications = models.BooleanField(default=True)
+    test_reminders = models.BooleanField(default=True)
+    focus_reminders = models.BooleanField(default=False)
+    ai_alerts = models.BooleanField(default=True)
+    achievement_alerts = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Notification Preferences"
+
+class LoginActivity(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='login_activities')
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    device = models.CharField(max_length=255, blank=True)
+    location = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=50) # 'success', 'failed'
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.status} at {self.created_at}"
+
+class ActiveSession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='active_sessions')
+    session_key = models.CharField(max_length=255, unique=True, help_text="JWT Token ID (jti) or Session Key")
+    device = models.CharField(max_length=255, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    last_active = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-last_active']
+
+    def __str__(self):
+        return f"Session {self.session_key} for {self.user.username}"
+
+
 # --- Signals ---
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 @receiver(post_save, sender=User)
-def create_user_appearance(sender, instance, created, **kwargs):
+def create_user_related_profiles(sender, instance, created, **kwargs):
     if created:
         # Get default theme (light)
         default_theme = Theme.objects.filter(slug='light').first()
         UserAppearance.objects.create(user=instance, selected_theme=default_theme)
+        # Create Preferences
+        UserPreference.objects.create(user=instance)
+        NotificationPreference.objects.create(user=instance)

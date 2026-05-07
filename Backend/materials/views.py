@@ -1,6 +1,8 @@
 import logging
+from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -53,11 +55,13 @@ class StudentMaterialViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        
-        # For detail views (restore, permanent-delete, etc.), 
+
+        # For detail views (restore, permanent-delete, etc.),
         # we need to include trashed items in the base queryset.
-        if self.action in ['retrieve', 'update', 'partial_update', 'destroy', 'restore', 'permanent_delete', 'move_to_folder', 'toggle_favorite']:
-            # Return all materials owned by user (deleted or not) + shared materials
+        if self.action in [
+            'retrieve', 'update', 'partial_update', 'destroy',
+            'restore', 'permanent_delete', 'move_to_folder', 'toggle_favorite'
+        ]:
             owned = Q(student=user)
             accessible_ids = MaterialAccess.objects.filter(user=user).values_list('material_id', flat=True)
             shared_with_me = Q(id__in=accessible_ids, visibility='shared')
@@ -69,7 +73,6 @@ class StudentMaterialViewSet(viewsets.ModelViewSet):
         elif tab == 'uploads':
             qs = StudentMaterial.objects.filter(student=user, is_deleted=False)
         elif tab == 'shared':
-            # Materials owned by OTHERS that this user has been granted access to
             accessible_ids = MaterialAccess.objects.filter(user=user).values_list('material_id', flat=True)
             qs = StudentMaterial.objects.filter(
                 id__in=accessible_ids, is_deleted=False, visibility='shared'
@@ -82,46 +85,82 @@ class StudentMaterialViewSet(viewsets.ModelViewSet):
             shared_with_me = Q(id__in=accessible_ids, is_deleted=False, visibility='shared')
             qs = StudentMaterial.objects.filter(owned | shared_with_me)
 
-        # Search
+        # ── Search ──────────────────────────────────────────────────────────
         search = self.request.query_params.get('search', '')
         if search:
-            qs = qs.filter(Q(title__icontains=search) | Q(subject__icontains=search) | Q(topic__icontains=search))
+            qs = qs.filter(
+                Q(title__icontains=search) |
+                Q(subject__icontains=search) |
+                Q(topic__icontains=search)
+            )
 
-        # Filters
+        # ── Type filter ─────────────────────────────────────────────────────
         material_type = self.request.query_params.get('type')
         if material_type:
             qs = qs.filter(material_type=material_type)
 
+        # ── Subject / Topic / Folder filters ────────────────────────────────
         subject = self.request.query_params.get('subject')
         if subject:
             qs = qs.filter(subject__icontains=subject)
+
+        topic = self.request.query_params.get('topic')
+        if topic:
+            qs = qs.filter(topic__icontains=topic)
 
         folder = self.request.query_params.get('folder')
         if folder:
             qs = qs.filter(folder_name=folder)
 
-        # Sorting
+        # ── Visibility / Favorite / AI-Indexed filters ───────────────────────
+        visibility = self.request.query_params.get('visibility')
+        if visibility:
+            qs = qs.filter(visibility=visibility)
+
+        favorite = self.request.query_params.get('favorite')
+        if favorite == 'true':
+            qs = qs.filter(favorite=True)
+
+        ai_indexed = self.request.query_params.get('ai_indexed')
+        if ai_indexed == 'true':
+            qs = qs.filter(ai_indexed=True)
+
+        # ── Deleted-date filter (Trash tab only) ─────────────────────────────
+        if tab == 'trash':
+            deleted_date = self.request.query_params.get('deleted_date')
+            if deleted_date == 'today':
+                qs = qs.filter(deleted_at__date=timezone.now().date())
+            elif deleted_date == '7days':
+                qs = qs.filter(deleted_at__gte=timezone.now() - timedelta(days=7))
+            elif deleted_date == '30days':
+                qs = qs.filter(deleted_at__gte=timezone.now() - timedelta(days=30))
+
+        # ── Sorting ──────────────────────────────────────────────────────────
         sort = self.request.query_params.get('sort', 'newest')
         sort_map = {
-            'newest': '-uploaded_at',
-            'oldest': 'uploaded_at',
-            'az': 'title',
-            'za': '-title',
+            'newest':         '-uploaded_at',
+            'oldest':         'uploaded_at',
+            'az':             'title',
+            'za':             '-title',
+            'newest_deleted': '-deleted_at',
+            'oldest_deleted': 'deleted_at',
         }
         qs = qs.order_by(sort_map.get(sort, '-uploaded_at'))
 
-        return qs.select_related('student').prefetch_related('access_grants__user')
+        return qs.select_related('student', 'deleted_by').prefetch_related('access_grants__user')
 
     def perform_create(self, serializer):
         serializer.save(student=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
-        """Override to do SOFT delete instead of hard delete."""
+        """Soft delete — records who deleted it and when."""
         obj = self.get_object()
         if obj.student != request.user:
             return Response({'error': 'Only the owner can delete this material.'}, status=status.HTTP_403_FORBIDDEN)
         obj.is_deleted = True
-        obj.save(update_fields=['is_deleted'])
+        obj.deleted_at = timezone.now()
+        obj.deleted_by = request.user
+        obj.save(update_fields=['is_deleted', 'deleted_at', 'deleted_by'])
         return Response({'message': 'Material moved to trash.'}, status=status.HTTP_200_OK)
 
     def update(self, request, *args, **kwargs):
@@ -162,7 +201,9 @@ class StudentMaterialViewSet(viewsets.ModelViewSet):
         if not obj.is_deleted:
             return Response({'error': 'Material is not in trash.'}, status=status.HTTP_400_BAD_REQUEST)
         obj.is_deleted = False
-        obj.save(update_fields=['is_deleted'])
+        obj.deleted_at = None
+        obj.deleted_by = None
+        obj.save(update_fields=['is_deleted', 'deleted_at', 'deleted_by'])
         return Response({'message': 'Material restored successfully.'})
 
     @action(detail=True, methods=['post'], url_path='move-to-folder')
@@ -196,6 +237,46 @@ class StudentMaterialViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Move to trash first before permanent deletion.'}, status=status.HTTP_400_BAD_REQUEST)
         obj.delete()
         return Response({'message': 'Material permanently deleted.'}, status=status.HTTP_204_NO_CONTENT)
+
+    # ── Bulk Actions ───────────────────────────────────────────────────────────
+
+    @action(detail=False, methods=['post'], url_path='bulk-trash')
+    def bulk_trash(self, request):
+        """Soft-delete multiple materials at once."""
+        ids = request.data.get('ids', [])
+        if not ids:
+            return Response({'error': 'No IDs provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        qs = StudentMaterial.objects.filter(id__in=ids, student=request.user, is_deleted=False)
+        now = timezone.now()
+        count = qs.update(is_deleted=True, deleted_at=now, deleted_by=request.user)
+        return Response({'moved': count})
+
+    @action(detail=False, methods=['post'], url_path='bulk-restore')
+    def bulk_restore(self, request):
+        """Restore multiple trashed materials at once."""
+        ids = request.data.get('ids', [])
+        if not ids:
+            return Response({'error': 'No IDs provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        qs = StudentMaterial.objects.filter(id__in=ids, student=request.user, is_deleted=True)
+        count = qs.update(is_deleted=False, deleted_at=None, deleted_by=None)
+        return Response({'restored': count})
+
+    @action(detail=False, methods=['delete'], url_path='bulk-permanent-delete')
+    def bulk_permanent_delete(self, request):
+        """Permanently delete multiple trashed materials."""
+        ids = request.data.get('ids', [])
+        if not ids:
+            return Response({'error': 'No IDs provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        qs = StudentMaterial.objects.filter(id__in=ids, student=request.user, is_deleted=True)
+        count, _ = qs.delete()
+        return Response({'deleted': count})
+
+    @action(detail=False, methods=['delete'], url_path='empty-trash')
+    def empty_trash(self, request):
+        """Permanently delete ALL trashed materials for this user."""
+        qs = StudentMaterial.objects.filter(student=request.user, is_deleted=True)
+        count, _ = qs.delete()
+        return Response({'deleted': count})
 
 
 class MaterialSharingViewSet(viewsets.ViewSet):

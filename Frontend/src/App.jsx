@@ -36,6 +36,7 @@ import FocusLanding from './pages/student/FocusMode/FocusLanding';
 import FocusHistory from './pages/student/FocusMode/FocusHistory';
 import AchievementsPage from './pages/student/AchievementsPage';
 import MyMaterials from './pages/student/MyMaterials';
+import StudentAnalyticsPage from './pages/student/StudentAnalyticsPage';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -103,6 +104,7 @@ function App() {
 
             {/* Student Routes */}
             <Route path="/student/dashboard" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
+            <Route path="/student/analytics" element={<StudentRoute><StudentAnalyticsPage /></StudentRoute>} />
             <Route path="/student/courses" element={<StudentRoute><BrowseCourses /></StudentRoute>} />
             <Route path="/student/courses/:id" element={<StudentRoute><CourseDetail /></StudentRoute>} />
             <Route path="/student/content/:id" element={<StudentRoute><ContentViewer /></StudentRoute>} />

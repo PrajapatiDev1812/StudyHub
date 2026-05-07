@@ -124,6 +124,185 @@
 }
 .mm-upload-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--border-glow); }
 
+/* ── Empty Trash Button ──────────────────────────────────────────────────── */
+.mm-empty-trash-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.mm-empty-trash-btn:hover {
+  background: var(--danger);
+  color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+/* ── Toolbar Actions Group ───────────────────────────────────────────────── */
+.mm-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ── Select All Label ────────────────────────────────────────────────────── */
+.mm-select-all-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.mm-select-all-text { user-select: none; }
+
+/* ── Filter Select ───────────────────────────────────────────────────────── */
+.mm-filter-select {
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.mm-filter-select:focus { outline: none; border-color: var(--accent-primary); }
+
+/* ── Card Checkbox ───────────────────────────────────────────────────────── */
+.mm-card-checkbox-wrap {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.mm-card:hover .mm-card-checkbox-wrap,
+.mm-card.selected .mm-card-checkbox-wrap {
+  opacity: 1;
+}
+.mm-card-checkbox {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+/* ── Selected Card State ─────────────────────────────────────────────────── */
+.mm-card.selected {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 2px var(--border-glow), var(--shadow) !important;
+  background: var(--bg-card-hover) !important;
+}
+
+/* ── Trash Card Metadata ─────────────────────────────────────────────────── */
+.mm-trash-meta {
+  font-size: 0.72rem;
+  color: var(--danger);
+  opacity: 0.8;
+  padding: 4px 0;
+  margin-bottom: 4px;
+}
+
+/* ── Bulk Action Bar ─────────────────────────────────────────────────────── */
+.mm-bulk-bar {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 500;
+  animation: slideUp 0.2s ease;
+  white-space: nowrap;
+}
+.mm-bulk-deselect {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  transition: var(--transition);
+}
+.mm-bulk-deselect:hover { color: var(--danger); border-color: var(--danger); }
+.mm-bulk-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: 4px 12px;
+  background: var(--accent-gradient);
+  color: white;
+  border-radius: 999px;
+}
+
+/* ── Confirm Modal ───────────────────────────────────────────────────────── */
+.mm-confirm-modal {
+  text-align: center;
+  max-width: 400px;
+}
+.mm-confirm-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+.mm-confirm-icon.danger { color: var(--danger); }
+.mm-confirm-icon.accent { color: var(--accent-primary); }
+.mm-confirm-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.mm-confirm-message {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+/* ── Danger Button ───────────────────────────────────────────────────────── */
+.btn-danger {
+  background: var(--danger);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-danger:hover { opacity: 0.85; transform: translateY(-1px); }
+.btn-danger.btn-sm { padding: 7px 14px; font-size: 0.8rem; }
+
 /* ── Grid ────────────────────────────────────────────────────────────────── */
 .mm-grid {
   display: grid;

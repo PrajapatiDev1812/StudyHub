@@ -32,6 +32,13 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                     }
                 else:
                     response.data['badge_unlocked'] = False
+                    
+                # Log Activity
+                from .models import LoginActivity
+                ip = request.META.get('REMOTE_ADDR')
+                ua = request.META.get('HTTP_USER_AGENT', '')
+                LoginActivity.objects.create(user=user, ip_address=ip, user_agent=ua, status='success', device='Web Browser')
+                
         return response
 
 class ThemeListView(generics.ListAPIView):

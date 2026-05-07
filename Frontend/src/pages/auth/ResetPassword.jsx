@@ -3,6 +3,27 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import './Auth.css';
 
+// ── Reusable password field with show/hide toggle
+function PasswordInput({ value, onChange, placeholder, required = true }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="pw-wrapper">
+      <input
+        type={show ? 'text' : 'password'}
+        className="form-input"
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
+      />
+      <button type="button" className="pw-toggle" onClick={() => setShow(s => !s)} tabIndex={-1} aria-label={show ? 'Hide password' : 'Show password'}>
+        {show ? '🙈' : '👁️'}
+      </button>
+    </div>
+  );
+}
+
+
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -65,25 +86,19 @@ export default function ResetPassword() {
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label>New Password</label>
-              <input
-                type="password"
-                className="form-input"
-                placeholder="••••••••"
+              <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
+                placeholder="••••••••"
               />
             </div>
 
             <div className="form-group">
               <label>Confirm New Password</label>
-              <input
-                type="password"
-                className="form-input"
-                placeholder="••••••••"
+              <PasswordInput
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                required
+                placeholder="••••••••"
               />
             </div>
 

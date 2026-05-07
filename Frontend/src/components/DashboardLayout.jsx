@@ -1,4 +1,5 @@
 import Sidebar from './Sidebar';
+import GlobalSettingsButton from './GlobalSettingsButton';
 
 export default function DashboardLayout({ children }) {
   return (
@@ -7,6 +8,7 @@ export default function DashboardLayout({ children }) {
       <main className="main-content">
         {children}
       </main>
+      <GlobalSettingsButton />
     </div>
   );
 }

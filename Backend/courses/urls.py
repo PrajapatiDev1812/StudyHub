@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     CourseViewSet,
+    CourseCategoryViewSet,
     SubjectViewSet,
     TopicViewSet,
     ContentViewSet,
@@ -15,6 +16,7 @@ from .views import (
 
 router = DefaultRouter()
 router.register(r'courses', CourseViewSet, basename='course')
+router.register(r'categories', CourseCategoryViewSet, basename='category')
 router.register(r'subjects', SubjectViewSet, basename='subject')
 router.register(r'topics', TopicViewSet, basename='topic')
 router.register(r'contents', ContentViewSet, basename='content')
@@ -24,7 +26,6 @@ urlpatterns = [
     path('my-courses/', MyCoursesView.as_view(), name='my-courses'),
 
     # Student's Dashboard
-    path('dashboard/', DashboardView.as_view(), name='dashboard'),
     path('my-completed-content/', MyCompletedContentView.as_view(), name='my-completed-content'),
     path('my-total-content/', MyTotalContentView.as_view(), name='my-total-content'),
 

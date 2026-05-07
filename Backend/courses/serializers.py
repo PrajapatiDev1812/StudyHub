@@ -1,5 +1,17 @@
 from rest_framework import serializers
-from .models import Course, Subject, Topic, Content, Enrollment, Progress
+from .models import Course, CourseCategory, Subject, Topic, Content, Enrollment, Progress
+
+
+# ---------- Course Category ----------
+class CourseCategorySerializer(serializers.ModelSerializer):
+    course_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CourseCategory
+        fields = ['id', 'name', 'icon', 'slug', 'course_count']
+
+    def get_course_count(self, obj):
+        return obj.courses.filter(is_public=True).count()
 
 
 # ---------- Content ----------
@@ -57,6 +69,8 @@ class CourseSerializer(serializers.ModelSerializer):
     created_by_username = serializers.CharField(
         source='created_by.username', read_only=True
     )
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    category_icon = serializers.CharField(source='category.icon', read_only=True)
     enrolled_count = serializers.SerializerMethodField()
     is_enrolled = serializers.SerializerMethodField()
 
@@ -65,6 +79,10 @@ class CourseSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'description', 'created_by', 'created_by_username',
             'is_public', 'created_at', 'enrolled_count', 'is_enrolled', 'subjects',
+            # Filter / discovery fields
+            'category', 'category_name', 'category_icon',
+            'level', 'duration', 'language', 'price',
+            'has_certification', 'rating', 'popularity_score', 'thumbnail',
         ]
         read_only_fields = ['id', 'created_by', 'created_at']
 
@@ -83,6 +101,8 @@ class CourseListSerializer(serializers.ModelSerializer):
     created_by_username = serializers.CharField(
         source='created_by.username', read_only=True
     )
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    category_icon = serializers.CharField(source='category.icon', read_only=True)
     enrolled_count = serializers.SerializerMethodField()
     is_enrolled = serializers.SerializerMethodField()
 
@@ -91,6 +111,10 @@ class CourseListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'description', 'created_by_username',
             'is_public', 'created_at', 'enrolled_count', 'is_enrolled',
+            # Filter / discovery fields
+            'category', 'category_name', 'category_icon',
+            'level', 'duration', 'language', 'price',
+            'has_certification', 'rating', 'popularity_score', 'thumbnail',
         ]
 
     def get_enrolled_count(self, obj):
@@ -123,3 +147,4 @@ class ProgressSerializer(serializers.ModelSerializer):
         model = Progress
         fields = ['id', 'student', 'student_name', 'content', 'content_title', 'completed_at']
         read_only_fields = ['id', 'student', 'completed_at']
+

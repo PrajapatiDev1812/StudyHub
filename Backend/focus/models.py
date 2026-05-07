@@ -6,7 +6,7 @@ mode (normal/strict), status transitions, and context (subject/topic).
 """
 from django.db import models
 from django.conf import settings
-from courses.models import Subject, Topic, Content
+from courses.models import Course, Subject, Topic, Content
 
 User = settings.AUTH_USER_MODEL
 
@@ -37,6 +37,10 @@ class FocusSession(models.Model):
     )
 
     # ─── Study Context ───
+    course = models.ForeignKey(
+        Course, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='focus_sessions',
+    )
     subject = models.ForeignKey(
         Subject, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='focus_sessions',

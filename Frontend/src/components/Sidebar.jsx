@@ -13,26 +13,25 @@ export default function Sidebar() {
   };
 
   const studentLinks = [
-    { to: '/student/dashboard', icon: '📊', label: 'Dashboard' },
-    { to: '/student/courses', icon: '📚', label: 'Browse Courses' },
-    { to: '/student/my-courses', icon: '🎓', label: 'My Courses' },
-    { to: '/student/focus', icon: '🎯', label: 'Focus Mode' },
-    { to: '/student/tests', icon: '📝', label: 'Tests' },
+    { to: '/student/dashboard',   icon: '📊', label: 'Dashboard' },
+    { to: '/student/analytics',   icon: '📈', label: 'Analytics' },
+    { to: '/student/courses',     icon: '📚', label: 'Browse Courses' },
+    { to: '/student/my-courses',  icon: '🎓', label: 'My Courses' },
+    { to: '/student/focus',       icon: '🎯', label: 'Focus Mode' },
+    { to: '/student/tests',       icon: '📝', label: 'Tests' },
     { to: '/student/my-attempts', icon: '📋', label: 'My Attempts' },
-    { to: '/student/notifications', icon: '🔔', label: 'Notifications' },
-    { to: '/student/ai-chat', icon: '🤖', label: 'AI Assistant' },
-    { to: '/student/my-materials', icon: '📂', label: 'My Materials' },
+    { to: '/student/ai-chat',     icon: '🤖', label: 'AI Assistant' },
+    { to: '/student/my-materials',icon: '📂', label: 'My Materials' },
     { to: '/student/achievements', icon: '🏆', label: 'Achievements' },
-    { to: '/student/profile', icon: '👤', label: 'Profile' },
   ];
 
   const adminLinks = [
     { to: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
-    { to: '/admin/courses', icon: '📚', label: 'Courses' },
-    { to: '/admin/subjects', icon: '📖', label: 'Subjects' },
-    { to: '/admin/topics', icon: '📌', label: 'Topics' },
-    { to: '/admin/content', icon: '📄', label: 'Content' },
-    { to: '/admin/tests', icon: '📝', label: 'Tests' },
+    { to: '/admin/courses',   icon: '📚', label: 'Courses' },
+    { to: '/admin/subjects',  icon: '📖', label: 'Subjects' },
+    { to: '/admin/topics',    icon: '📌', label: 'Topics' },
+    { to: '/admin/content',   icon: '📄', label: 'Content' },
+    { to: '/admin/tests',     icon: '📝', label: 'Tests' },
   ];
 
   const links = user?.role === 'admin' ? adminLinks : studentLinks;
@@ -44,8 +43,8 @@ export default function Sidebar() {
         <span className="brand-text">StudyHub</span>
       </div>
 
-      <div 
-        className="sidebar-user" 
+      <div
+        className="sidebar-user"
         onClick={() => navigate(user?.role === 'admin' ? '/admin/profile' : '/student/profile')}
         title="View Profile"
       >
@@ -71,9 +70,12 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <button className="logout-btn" onClick={handleLogout}>
-        <span>🚪</span> Logout
-      </button>
+      {/* Logout button only for admin — students use the Settings dropdown */}
+      {user?.role === 'admin' && (
+        <button className="logout-btn" onClick={handleLogout}>
+          <span>🚪</span> Logout
+        </button>
+      )}
     </aside>
   );
 }

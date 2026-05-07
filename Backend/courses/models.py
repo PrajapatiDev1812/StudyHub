@@ -21,7 +21,32 @@ def validate_file_size(value):
 User = settings.AUTH_USER_MODEL
 
 
+class CourseCategory(models.Model):
+    """Predefined course categories (AI, Web Dev, Data Science, etc.)"""
+    name = models.CharField(max_length=100, unique=True)
+    icon = models.CharField(max_length=10, default='📚', help_text='Emoji icon for the category')
+    slug = models.SlugField(unique=True)
+
+    class Meta:
+        verbose_name_plural = 'Course Categories'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class Course(models.Model):
+    LEVEL_CHOICES = [
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+    ]
+    DURATION_CHOICES = [
+        ('short', 'Short (< 5 hrs)'),
+        ('medium', 'Medium (5–20 hrs)'),
+        ('long', 'Long (> 20 hrs)'),
+    ]
+
     name = models.CharField(max_length=200)
     description = models.TextField()
     created_by = models.ForeignKey(
@@ -31,6 +56,28 @@ class Course(models.Model):
     )
     is_public = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # ── Filtering & Discovery Fields ──────────────────────────────────────────
+    category = models.ForeignKey(
+        'CourseCategory',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='courses'
+    )
+    level = models.CharField(
+        max_length=20, choices=LEVEL_CHOICES,
+        default='beginner', blank=True
+    )
+    duration = models.CharField(
+        max_length=20, choices=DURATION_CHOICES,
+        default='medium', blank=True
+    )
+    language = models.CharField(max_length=50, default='English', blank=True)
+    price = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
+    has_certification = models.BooleanField(default=False)
+    rating = models.DecimalField(max_digits=3, decimal_places=1, default=0.0)
+    popularity_score = models.PositiveIntegerField(default=0)
+    thumbnail = models.ImageField(upload_to='course_thumbnails/', null=True, blank=True)
 
     def __str__(self):
         return self.name

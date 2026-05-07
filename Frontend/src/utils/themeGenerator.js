@@ -96,8 +96,8 @@ export const generateThemeFromImage = (file) => {
           const overallG = Math.floor(totalG / pixelCount);
           const overallB = Math.floor(totalB / pixelCount);
           
-          const [domH, domS, domL] = rgbToHsl(avgR, avgG, avgB);
-          const [accH, accS, accL] = rgbToHsl(overallR, overallG, overallB);
+          const [domH, domS] = rgbToHsl(avgR, avgG, avgB);
+          const [accH] = rgbToHsl(overallR, overallG, overallB);
           
           const domBrightness = getBrightness(overallR, overallG, overallB);
           // If image overall is dark, make the theme dark. 

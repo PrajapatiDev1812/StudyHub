@@ -3,6 +3,28 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
 
+// ── Reusable password field with show/hide toggle
+function PasswordInput({ value, onChange, placeholder, name, required = true }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="pw-wrapper">
+      <input
+        type={show ? 'text' : 'password'}
+        name={name}
+        className="form-input"
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
+      />
+      <button type="button" className="pw-toggle" onClick={() => setShow(s => !s)} tabIndex={-1} aria-label={show ? 'Hide password' : 'Show password'}>
+        {show ? '🙈' : '👁️'}
+      </button>
+    </div>
+  );
+}
+
+
 export default function Register() {
   const [form, setForm] = useState({ username: '', email: '', password: '', password2: '', role: 'student' });
   const [error, setError] = useState('');
@@ -68,12 +90,12 @@ export default function Register() {
 
           <div className="form-group">
             <label>Password</label>
-            <input type="password" name="password" className="form-input" placeholder="Create a password" value={form.password} onChange={handleChange} required />
+            <PasswordInput name="password" placeholder="Create a password" value={form.password} onChange={handleChange} />
           </div>
 
           <div className="form-group">
             <label>Confirm Password</label>
-            <input type="password" name="password2" className="form-input" placeholder="Confirm your password" value={form.password2} onChange={handleChange} required />
+            <PasswordInput name="password2" placeholder="Confirm your password" value={form.password2} onChange={handleChange} />
           </div>
 
           <button type="submit" className="btn btn-primary btn-lg auth-btn" disabled={loading}>

@@ -5,12 +5,14 @@ from rest_framework.response import Response
 from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta
+import django_filters
 
 from accounts.permissions import IsAdmin, IsStudent, IsAdminOrReadOnly
-from .models import Course, Subject, Topic, Content, Enrollment, Progress
+from .models import Course, CourseCategory, Subject, Topic, Content, Enrollment, Progress
 from .serializers import (
     CourseSerializer,
     CourseListSerializer,
+    CourseCategorySerializer,
     SubjectSerializer,
     SubjectListSerializer,
     TopicSerializer,
@@ -21,6 +23,50 @@ from .serializers import (
 )
 
 
+# ── Course Filter ─────────────────────────────────────────────────────────────
+
+class CourseFilter(django_filters.FilterSet):
+    # Exact filters
+    level = django_filters.ChoiceFilter(choices=Course.LEVEL_CHOICES)
+    duration = django_filters.ChoiceFilter(choices=Course.DURATION_CHOICES)
+    has_certification = django_filters.BooleanFilter()
+    is_public = django_filters.BooleanFilter()
+    category = django_filters.NumberFilter(field_name='category__id')
+
+    # Range filters
+    min_rating = django_filters.NumberFilter(field_name='rating', lookup_expr='gte')
+    language = django_filters.CharFilter(field_name='language', lookup_expr='iexact')
+
+    # Price filters
+    is_free = django_filters.BooleanFilter(method='filter_free')
+
+    # Recently added (last N days)
+    recently_added = django_filters.NumberFilter(method='filter_recently_added')
+
+    class Meta:
+        model = Course
+        fields = ['level', 'duration', 'has_certification', 'is_public', 'category', 'language']
+
+    def filter_free(self, queryset, name, value):
+        if value:
+            return queryset.filter(price=0)
+        return queryset.filter(price__gt=0)
+
+    def filter_recently_added(self, queryset, name, value):
+        cutoff = timezone.now() - timedelta(days=int(value))
+        return queryset.filter(created_at__gte=cutoff)
+
+
+
+# ---------- Course Category ----------
+class CourseCategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    GET /api/categories/  — list all categories with course counts.
+    """
+    queryset = CourseCategory.objects.all()
+    serializer_class = CourseCategorySerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None  # Return all categories (small list)
 
 
 # ---------- Course ----------
@@ -32,15 +78,17 @@ class CourseViewSet(viewsets.ModelViewSet):
     - Students see only public courses + courses they are enrolled in.
     - Admins see all courses.
 
-    Search:  ?search=python  (searches name and description)
-    Filter:  ?is_public=true
-    Order:   ?ordering=-created_at  or  ?ordering=name
+    Search:    ?search=python
+    Filters:   ?level=beginner  ?category=1  ?duration=short
+               ?min_rating=4  ?is_free=true  ?language=English
+               ?has_certification=true  ?recently_added=7
+    Ordering:  ?ordering=name  ?ordering=-rating  ?ordering=-popularity_score
     """
     permission_classes = [IsAdminOrReadOnly]
-    search_fields = ['name', 'description']
-    ordering_fields = ['name', 'created_at']
+    search_fields = ['name', 'description', 'language']
+    ordering_fields = ['name', 'created_at', 'rating', 'popularity_score', 'price']
     ordering = ['-created_at']
-    filterset_fields = ['is_public']
+    filterset_class = CourseFilter
 
     def get_queryset(self):
         user = self.request.user

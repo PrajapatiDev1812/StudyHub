@@ -47,15 +47,13 @@ class MaterialCommentSerializer(serializers.ModelSerializer):
 
 
 class StudentMaterialSerializer(serializers.ModelSerializer):
-    student_username = serializers.CharField(source='student.username', read_only=True)
-    file_size = serializers.ReadOnlyField()
-    # The caller's personal note (injected at view level)
-    my_note = serializers.SerializerMethodField()
-    # Access grants (shared users) — owner-only context
-    access_grants = MaterialAccessSerializer(many=True, read_only=True)
-    # Caller's access permissions (for shared materials)
-    my_access = serializers.SerializerMethodField()
-    is_owner = serializers.SerializerMethodField()
+    student_username   = serializers.CharField(source='student.username', read_only=True)
+    deleted_by_username = serializers.CharField(source='deleted_by.username', read_only=True, default=None)
+    file_size          = serializers.ReadOnlyField()
+    my_note            = serializers.SerializerMethodField()
+    access_grants      = MaterialAccessSerializer(many=True, read_only=True)
+    my_access          = serializers.SerializerMethodField()
+    is_owner           = serializers.SerializerMethodField()
 
     class Meta:
         model = StudentMaterial
@@ -67,12 +65,12 @@ class StudentMaterialSerializer(serializers.ModelSerializer):
             'subject', 'topic', 'tags',
             'visibility', 'folder_name', 'favorite',
             'ai_indexed', 'source',
-            'is_deleted',
+            'is_deleted', 'deleted_at', 'deleted_by_username',
             'uploaded_at', 'updated_at',
             'file_size',
             'my_note', 'access_grants', 'my_access', 'is_owner',
         ]
-        read_only_fields = ['id', 'student', 'uploaded_at', 'updated_at', 'ai_indexed', 'source']
+        read_only_fields = ['id', 'student', 'uploaded_at', 'updated_at', 'ai_indexed', 'source', 'deleted_at', 'deleted_by_username']
 
     def get_my_note(self, obj):
         request = self.context.get('request')

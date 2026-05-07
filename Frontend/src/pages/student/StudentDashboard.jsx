@@ -1,167 +1,234 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import ProgressGraph, { TABS } from './ProgressGraph';
 import './Dashboard.css';
 
-/* ── Circular Progress Ring (pure SVG) ── */
-function ProgressRing({ percent = 0, size = 140, stroke = 10 }) {
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (percent / 100) * circumference;
-
+/* ── Lightweight SVG Bar Chart for Dashboard ── */
+function MiniBarChart({ data, labels, height = 120 }) {
+  if (!data || data.length === 0) return null;
+  const max = Math.max(...data, 1);
   return (
-    <svg className="progress-ring" width={size} height={size}>
-      <circle
-        cx={size / 2} cy={size / 2} r={radius}
-        fill="none" stroke="var(--border-color)" strokeWidth={stroke}
-      />
-      <circle
-        cx={size / 2} cy={size / 2} r={radius}
-        fill="none" stroke="url(#progressGradient)" strokeWidth={stroke}
-        strokeDasharray={circumference} strokeDashoffset={offset}
-        strokeLinecap="round"
-        style={{ transition: 'stroke-dashoffset 1.2s ease', transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
-      />
-      <defs>
-        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="var(--accent-primary)" />
-          <stop offset="100%" stopColor="var(--accent-secondary)" />
-        </linearGradient>
-      </defs>
-      <text x="50%" y="50%" textAnchor="middle" dy="0.35em" className="progress-ring-text" style={{ fill: 'var(--text-primary)' }}>
-        {percent}%
-      </text>
-    </svg>
+    <div className="mini-chart-container" style={{ height }}>
+      <div className="mini-chart-bars">
+        {data.map((val, i) => {
+          const pct = (val / max) * 100;
+          return (
+            <div key={i} className="mini-chart-col">
+              <div className="mini-chart-bar" style={{ height: `${pct}%` }}></div>
+              <span className="mini-chart-label">{labels[i]}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
 export default function StudentDashboard() {
-  const [data, setData] = useState(null);
-  const [loadingOverview, setLoadingOverview] = useState(true);
-  const [graphOpen, setGraphOpen] = useState(false);
-
-  // Graph state lifted up to sync with pie chart
-  const [activeTab, setActiveTab] = useState(0); 
-  const [periodData, setPeriodData] = useState(null);
-  const [loadingPeriod, setLoadingPeriod] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [weekly, setWeekly] = useState(null);
+  const [recent, setRecent] = useState([]);
+  const [continueLearning, setContinueLearning] = useState(null);
+  const [insights, setInsights] = useState([]);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get('/dashboard/')
-      .then((res) => setData(res.data))
-      .catch(() => {})
-      .finally(() => setLoadingOverview(false));
+    const fetchDashboard = async () => {
+      try {
+        const [sumRes, weekRes, recRes, contRes, insRes, aiRes] = await Promise.all([
+          api.get('/dashboard/summary/'),
+          api.get('/dashboard/weekly-activity/'),
+          api.get('/dashboard/recent-activity/'),
+          api.get('/dashboard/continue-learning/'),
+          api.get('/dashboard/insights/'),
+          api.get('/dashboard/ai-summary/')
+        ]);
+        
+        setSummary(sumRes.data);
+        setWeekly(weekRes.data);
+        setRecent(recRes.data);
+        setContinueLearning(contRes.data);
+        setInsights(insRes.data);
+        setAiSummary(aiRes.data);
+      } catch (err) {
+        console.error("Dashboard load failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
   }, []);
 
-  useEffect(() => {
-    setLoadingPeriod(true);
-    api.get(`/progress-history/?days=${activeTab}`)
-      .then(res => setPeriodData(res.data))
-      .catch(() => setPeriodData(null))
-      .finally(() => setLoadingPeriod(false));
-  }, [activeTab]);
-
-  if (loadingOverview) return <div className="spinner" />;
-
-  // Overview stats
-  const completed = data?.completed_content_count || 0;
-  const total = data?.total_content_to_complete || 0;
-
-  // Sync pie chart and progress bar with either total or period gained based on tab
-  const activeTabLabel = TABS.find(t => t.days === activeTab)?.label || 'All';
-  const isAllTime = activeTab === 0;
-
-  const displayProgress = periodData?.period_progress_gained ?? data?.overall_progress_percentage ?? 0;
-  const displayCompleted = periodData?.period_completed ?? completed;
-  const displayTotal = periodData?.total_content ?? total;
-  const pieChartTitle = isAllTime ? "OVERALL PROGRESS" : `${activeTabLabel.toUpperCase()} PROGRESS`;
+  if (loading) return <div className="spinner" />;
 
   return (
-    <div className="fade-in">
+    <div className="dashboard-action-center fade-in">
       <div className="page-header">
-        <h1>Student Dashboard</h1>
-        <p>Your learning progress at a glance</p>
+        <h1>Daily Action Center</h1>
+        <p>Your learning hub for today. Pick up where you left off or start something new.</p>
       </div>
 
-      <div className="stats-grid">
-        <div 
-          className="stat-card clickable-stat"
-          onClick={() => navigate('/student/my-courses')}
-        >
-          <div className="stat-label">Enrolled Courses</div>
-          <div className="stat-value">{data?.enrolled_courses_count || 0}</div>
-        </div>
-        <div 
-          className="stat-card clickable-stat"
-          onClick={() => navigate('/student/completed-content')}
-        >
-          <div className="stat-label">Completed Content</div>
-          <div className="stat-value">{completed}</div>
-        </div>
-        <div 
-          className="stat-card clickable-stat"
-          onClick={() => navigate('/student/total-content')}
-        >
-          <div className="stat-label">Total Content</div>
-          <div className="stat-value">{total}</div>
-        </div>
-        <div className="stat-card stat-card-ring">
-          <div className="stat-label">{pieChartTitle}</div>
-          <ProgressRing percent={displayProgress} size={100} stroke={8} />
-        </div>
-      </div>
-
-      {/* ── Clickable Overall Progress → expands graph ── */}
-      <div className="glass-card progress-section">
-        <div
-          className="progress-section-header clickable"
-          onClick={() => setGraphOpen(!graphOpen)}
-        >
-          <div>
-            <h3>📈 {isAllTime ? "Overall Progress" : `${activeTabLabel} Progress`}</h3>
-            <p className="text-muted">{displayCompleted} of {displayTotal} content items completed</p>
+      {/* ── 1. Top Summary Cards (Today / This Week) ── */}
+      <div className="dashboard-summary-grid">
+        <div className="dash-card stat-card">
+          <div className="stat-icon">📚</div>
+          <div className="stat-info">
+            <span className="stat-label">Enrolled Courses</span>
+            <span className="stat-val">{summary?.enrolled_courses || 0}</span>
           </div>
-          <span className={`expand-arrow ${graphOpen ? 'open' : ''}`}>▼</span>
         </div>
-
-        <div className="progress-bar-bg" style={{ marginTop: 12 }}>
-          <div className="progress-bar-fill" style={{ width: `${displayProgress}%` }} />
+        <div className="dash-card stat-card">
+          <div className="stat-icon">⏱️</div>
+          <div className="stat-info">
+            <span className="stat-label">Study Time (Week)</span>
+            <span className="stat-val">{summary?.study_time_week_hours || 0}h</span>
+          </div>
         </div>
+        <div className="dash-card stat-card">
+          <div className="stat-icon">✅</div>
+          <div className="stat-info">
+            <span className="stat-label">Tasks Done (Week)</span>
+            <span className="stat-val">{summary?.tasks_completed_week || 0}</span>
+          </div>
+        </div>
+        <div className="dash-card stat-card highlight-card">
+          <div className="stat-icon">🔥</div>
+          <div className="stat-info">
+            <span className="stat-label">Current Streak</span>
+            <span className="stat-val">{summary?.current_streak || 0} Days</span>
+          </div>
+        </div>
+      </div>
 
-        {/* Expandable Graph */}
-        <div className={`graph-expand ${graphOpen ? 'open' : ''}`}>
-          {graphOpen && (
-            <ProgressGraph 
-              activeTab={activeTab} 
-              setActiveTab={setActiveTab} 
-              points={periodData?.history || []} 
-              loading={loadingPeriod} 
-            />
+      {/* ── 2. Quick Actions Panel ── */}
+      <div className="dash-card quick-actions-panel">
+        <h3>⚡ Quick Actions</h3>
+        <div className="actions-grid">
+          <button className="action-btn primary" onClick={() => navigate('/student/focus')}>
+            <span className="btn-icon">🎯</span> Start Focus Mode
+          </button>
+          <button className="action-btn" onClick={() => navigate('/student/ai-chat')}>
+            <span className="btn-icon">🤖</span> Open AI Assistant
+          </button>
+          <button className="action-btn" onClick={() => navigate('/student/courses')}>
+            <span className="btn-icon">🔍</span> Browse Courses
+          </button>
+          <button className="action-btn" onClick={() => navigate('/student/analytics')}>
+            <span className="btn-icon">📈</span> View Analytics
+          </button>
+        </div>
+      </div>
+
+      <div className="dashboard-main-grid">
+        {/* ── 3. Continue Learning Section ── */}
+        <div className="dash-card continue-learning-card">
+          <h3>▶️ Continue Learning</h3>
+          {continueLearning?.has_data ? (
+            <div className="cl-content">
+              <div className="cl-details">
+                <span className="cl-course">{continueLearning.course_name}</span>
+                <span className="cl-topic">Last viewed: {continueLearning.last_topic}</span>
+              </div>
+              <div className="cl-progress">
+                <div className="progress-bar-bg">
+                  <div className="progress-bar-fill" style={{ width: `${continueLearning.progress_pct}%` }}></div>
+                </div>
+                <span className="progress-text">{continueLearning.progress_pct}% Completed</span>
+              </div>
+              <button className="btn btn-primary mt-3" onClick={() => navigate(`/student/courses/${continueLearning.course_id}`)}>
+                Resume Course
+              </button>
+            </div>
+          ) : (
+            <div className="empty-dash-state">
+              <p>You haven't started any courses yet.</p>
+              <button className="btn btn-outline" onClick={() => navigate('/student/courses')}>Explore Courses</button>
+            </div>
           )}
         </div>
-      </div>
 
-      {/* Recent Activity */}
-      <div className="glass-card">
-        <h3 style={{ marginBottom: 16, fontSize: '1rem' }}>🕐 Recent Activity</h3>
-        {data?.recent_activity?.length > 0 ? (
-          <div className="activity-list">
-            {data.recent_activity.map((item, i) => (
-              <div key={i} className="activity-item">
-                <span className="activity-icon">✅</span>
-                <div>
-                  <span className="activity-title">{item.content_title}</span>
-                  <span className="activity-time">
-                    {new Date(item.completed_at).toLocaleDateString()}
-                  </span>
+        {/* ── 5. Smart Insights ── */}
+        <div className="dash-card smart-insights-card">
+          <h3>💡 Smart Insights</h3>
+          {insights && insights.length > 0 ? (
+            <div className="insights-list">
+              {insights.map((insight, i) => (
+                <div key={i} className="insight-item">
+                  <span className="bullet">•</span>
+                  <span>{insight}</span>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          ) : (
+            <div className="empty-dash-state">
+              <p>Complete tasks and sessions to unlock personalized insights.</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── 4. Weekly Activity Preview ── */}
+        <div className="dash-card weekly-activity-card">
+          <div className="card-header-flex">
+            <h3>📅 Activity This Week</h3>
+            <button className="link-btn" onClick={() => navigate('/student/analytics')}>Full Analytics →</button>
           </div>
-        ) : (
-          <p style={{ color: 'var(--text-muted)' }}>No activity yet. Start learning!</p>
-        )}
+          {weekly && weekly.study_hours && weekly.study_hours.reduce((a,b)=>a+b,0) > 0 ? (
+            <MiniBarChart data={weekly.study_hours} labels={weekly.labels} />
+          ) : (
+            <div className="empty-dash-state" style={{ height: 120 }}>
+              <p>Start a Focus session to see your activity.</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── 6. AI Assistant Summary ── */}
+        <div className="dash-card ai-summary-card">
+          <h3>🤖 AI Assistant</h3>
+          {aiSummary?.has_data ? (
+            <div className="ai-summary-content">
+              <div className="ai-top-topic">
+                <span>Top Topic:</span>
+                <strong>{aiSummary.top_topic}</strong>
+              </div>
+              <p className="ai-suggestion">{aiSummary.message}</p>
+              <button className="btn btn-outline btn-sm mt-3" onClick={() => navigate('/student/ai-chat')}>
+                Ask Another Question
+              </button>
+            </div>
+          ) : (
+            <div className="empty-dash-state">
+              <p>{aiSummary?.message || "Use the AI Assistant to get insights."}</p>
+              <button className="btn btn-outline" onClick={() => navigate('/student/ai-chat')}>Open AI Chat</button>
+            </div>
+          )}
+        </div>
+
+        {/* ── 7. Recent Activity List ── */}
+        <div className="dash-card recent-activity-card span-full">
+          <h3>⏱️ Recent Actions</h3>
+          {recent && recent.length > 0 ? (
+            <div className="recent-timeline">
+              {recent.map((item, i) => (
+                <div key={i} className={`timeline-item type-${item.type}`}>
+                  <div className="timeline-icon">
+                    {item.type === 'focus' ? '🎯' : item.type === 'task' ? '✅' : '🤖'}
+                  </div>
+                  <div className="timeline-content">
+                    <strong>{item.title}</strong>
+                    <span className="timeline-time">{new Date(item.time).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-dash-state">
+              <p>No recent activity. Start a focus session or complete a task!</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

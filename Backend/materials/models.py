@@ -44,15 +44,22 @@ class StudentMaterial(models.Model):
     source = models.CharField(max_length=50, default='student_upload')
 
     # Soft delete
-    is_deleted = models.BooleanField(default=False)
+    is_deleted  = models.BooleanField(default=False)
+    deleted_at  = models.DateTimeField(null=True, blank=True)
+    deleted_by  = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='deleted_materials'
+    )
 
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    updated_at  = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-uploaded_at']
         indexes = [
             models.Index(fields=['student', 'is_deleted']),
+            models.Index(fields=['student', 'is_deleted', 'deleted_at']),
             models.Index(fields=['student', 'favorite']),
             models.Index(fields=['student', 'folder_name']),
         ]

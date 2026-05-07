@@ -3,6 +3,27 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Auth.css';
 
+// ── Reusable password field with show/hide toggle
+function PasswordInput({ value, onChange, placeholder, required = true }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="pw-wrapper">
+      <input
+        type={show ? 'text' : 'password'}
+        className="form-input"
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
+      />
+      <button type="button" className="pw-toggle" onClick={() => setShow(s => !s)} tabIndex={-1} aria-label={show ? 'Hide password' : 'Show password'}>
+        {show ? '🙈' : '👁️'}
+      </button>
+    </div>
+  );
+}
+
+
 export default function TwoFactorSetup() {
   const [password, setPassword] = useState('');
   const [qrCode, setQrCode] = useState(null);
@@ -79,13 +100,10 @@ export default function TwoFactorSetup() {
             </p>
             <div className="form-group">
               <label>Current Password</label>
-              <input
-                type="password"
-                className="form-input"
-                placeholder="Enter password"
+              <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
+                placeholder="Enter password"
               />
             </div>
             <button type="submit" className="btn btn-primary btn-lg auth-btn" disabled={loading}>

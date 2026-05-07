@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react';
-import api from '../../services/api';
 
-export const TABS = [
+const TABS = [
   { label: '7 Days', days: 7 },
   { label: '15 Days', days: 15 },
   { label: '1 Month', days: 30 },

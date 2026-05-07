@@ -69,6 +69,12 @@ urlpatterns = [
     # ── Student Materials APIs ──
     path('api/', include('materials.urls')),
 
+    # ── Student Dashboard APIs ──
+    path('api/dashboard/', include('dashboard.urls')),
+
+    # ── Student Analytics APIs ──
+    path('api/student/analytics/', include('analytics.urls')),
+
     # ── Token Verify ──
     path('api/auth/token/verify/', TokenVerifyView.as_view(), name='auth-token-verify'),
 

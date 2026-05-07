@@ -3,6 +3,29 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
 
+// ── Reusable password field with show/hide toggle
+function PasswordInput({ value, onChange, placeholder = 'Enter your password', name, required = true, autoComplete }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="pw-wrapper">
+      <input
+        type={show ? 'text' : 'password'}
+        name={name}
+        className="form-input"
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
+        autoComplete={autoComplete}
+      />
+      <button type="button" className="pw-toggle" onClick={() => setShow(s => !s)} tabIndex={-1} aria-label={show ? 'Hide password' : 'Show password'}>
+        {show ? '🙈' : '👁️'}
+      </button>
+    </div>
+  );
+}
+
+
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -109,13 +132,10 @@ export default function Login() {
 
             <div className="form-group">
               <label>Password</label>
-              <input
-                type="password"
-                className="form-input"
-                placeholder="Enter your password"
+              <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
+                placeholder="Enter your password"
               />
             </div>
 

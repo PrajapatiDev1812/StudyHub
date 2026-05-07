@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../services/api';
 import './MyMaterials.css';
+import { SearchInput, SortDropdown } from '../../components/FilterSystem/FilterComponents';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -458,9 +459,50 @@ function ViewModal({ material, onClose }) {
   );
 }
 
-// ── Material Card ──────────────────────────────────────────────────────────
+// ── Confirm Modal ─────────────────────────────────────────────────────────
 
-function MaterialCard({ item, currentUser, onAction }) {
+function ConfirmModal({ title, message, confirmLabel, danger, onConfirm, onClose }) {
+  return (
+    <div className="mm-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="mm-modal mm-confirm-modal">
+        <div className={`mm-confirm-icon ${danger ? 'danger' : 'accent'}`}>
+          {danger ? '⚠️' : '💬'}
+        </div>
+        <h3 className="mm-confirm-title">{title}</h3>
+        <p className="mm-confirm-message">{message}</p>
+        <div className="mm-modal-footer" style={{ justifyContent: 'center', gap: 12 }}>
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button
+            className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`}
+            onClick={() => { onConfirm(); onClose(); }}
+          >{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Bulk Action Bar ────────────────────────────────────────────────────────
+
+function BulkActionBar({ count, isTrash, onDeselect, onBulkTrash, onBulkRestore, onBulkDelete }) {
+  if (count === 0) return null;
+  return (
+    <div className="mm-bulk-bar">
+      <button className="mm-bulk-deselect" onClick={onDeselect} title="Clear selection">✕</button>
+      <span className="mm-bulk-count">{count} selected</span>
+      {isTrash ? (
+        <>
+          <button className="btn btn-secondary btn-sm" onClick={onBulkRestore}>↩️ Restore</button>
+          <button className="btn btn-danger btn-sm" onClick={onBulkDelete}>🗑️ Delete Permanently</button>
+        </>
+      ) : (
+        <button className="btn btn-danger btn-sm" onClick={onBulkTrash}>🗑️ Move to Trash</button>
+      )}
+    </div>
+  );
+}
+
+function MaterialCard({ item, onAction, selected, onToggleSelect, selectionMode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const tm = TYPE_META[item.material_type] || TYPE_META.text;
@@ -485,20 +527,41 @@ function MaterialCard({ item, currentUser, onAction }) {
     ...(isOwner ? [{ label: '🗑️ Move to Trash', action: 'trash', danger: true }] : []),
   ];
 
+  const handleCardClick = () => {
+    if (selectionMode) { onToggleSelect(item.id); return; }
+    if (!isTrash) onAction('view', item);
+  };
+
   return (
-    <div className={`mm-card ${isTrash ? 'is-deleted' : ''}`} onClick={() => !isTrash && onAction('view', item)} style={!isTrash ? { cursor: 'pointer' } : {}}>
+    <div
+      className={`mm-card ${isTrash ? 'is-deleted' : ''} ${selected ? 'selected' : ''}`}
+      onClick={handleCardClick}
+      style={{ cursor: 'pointer', position: 'relative' }}
+    >
+      {/* Checkbox */}
+      <div className="mm-card-checkbox-wrap" onClick={e => { e.stopPropagation(); onToggleSelect(item.id); }}>
+        <input type="checkbox" className="mm-card-checkbox" checked={selected} onChange={() => onToggleSelect(item.id)} />
+      </div>
+
       <div className="mm-card-header">
         <div className={`mm-type-icon ${tm.cls}`}>{tm.icon}</div>
         <div className="mm-card-title-block">
           <div className="mm-card-title" title={item.title}>{item.title}</div>
           <div className="mm-card-meta">
-            {tm.label} · {formatDate(item.uploaded_at)}
+            {tm.label} · {isTrash ? `Deleted ${formatDate(item.deleted_at)}` : formatDate(item.uploaded_at)}
             {!isOwner && <span className="mm-owner-badge">by {item.student_username}</span>}
           </div>
         </div>
       </div>
 
       {item.description && <div className="mm-card-body">{item.description}</div>}
+
+      {/* Trash metadata */}
+      {isTrash && item.deleted_at && (
+        <div className="mm-trash-meta">
+          🗓️ {formatDate(item.deleted_at)}{item.deleted_by_username ? ` · by ${item.deleted_by_username}` : ''}
+        </div>
+      )}
 
       <div className="mm-card-footer">
         <div className="mm-card-tags">
@@ -509,11 +572,7 @@ function MaterialCard({ item, currentUser, onAction }) {
         </div>
         <div className="mm-card-actions" onClick={e => e.stopPropagation()}>
           {!isTrash && isOwner && (
-            <button
-              className={`mm-icon-btn fav ${item.favorite ? 'active' : ''}`}
-              title={item.favorite ? 'Unfavorite' : 'Favorite'}
-              onClick={() => onAction('toggle-fav', item)}
-            >⭐</button>
+            <button className={`mm-icon-btn fav ${item.favorite ? 'active' : ''}`} title={item.favorite ? 'Unfavorite' : 'Favorite'} onClick={() => onAction('toggle-fav', item)}>⭐</button>
           )}
           <div className="mm-menu-wrapper" ref={menuRef}>
             <button className="mm-icon-btn" onClick={() => setMenuOpen(o => !o)} title="More options">⋮</button>
@@ -573,29 +632,45 @@ function FolderModal({ material, folders, onClose, onMoved }) {
 // ── Main Page ──────────────────────────────────────────────────────────────
 
 export default function MyMaterials() {
-  const [activeTab, setActiveTab] = useState('all');
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
-  const [folders, setFolders] = useState([]);
+  const [activeTab, setActiveTab]     = useState('all');
+  const [items, setItems]             = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [search, setSearch]           = useState('');
+  const [typeFilter, setTypeFilter]   = useState('');
+  const [visFilter, setVisFilter]     = useState('');
+  const [deletedDate, setDeletedDate] = useState('');
+  const [sortBy, setSortBy]           = useState('newest');
+  const [folders, setFolders]         = useState([]);
+
+  // Multi-select
+  const [selectedIds, setSelectedIds]     = useState(new Set());
+  const selectionMode                     = selectedIds.size > 0;
+
+  // Confirm modal
+  const [confirm, setConfirm] = useState(null); // { title, message, confirmLabel, danger, onConfirm }
 
   // Modals
-  const [modal, setModal] = useState(null); // { type: 'upload'|'edit'|'share'|'view'|'move', item? }
+  const [modal, setModal] = useState(null);
+
+  const isTrash = activeTab === 'trash';
+
+  // Reset selection when tab changes
+  useEffect(() => { setSelectedIds(new Set()); }, [activeTab]);
 
   const fetchMaterials = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ tab: activeTab });
-      if (search) params.append('search', search);
-      if (typeFilter) params.append('type', typeFilter);
+      if (search)      params.append('search', search);
+      if (typeFilter)  params.append('type', typeFilter);
+      if (visFilter)   params.append('visibility', visFilter);
+      if (deletedDate && isTrash) params.append('deleted_date', deletedDate);
       params.append('sort', sortBy);
       const res = await api.get(`/materials/?${params}`);
       setItems(res.data.results ?? res.data);
     } catch { /* ignore */ }
     finally { setLoading(false); }
-  }, [activeTab, search, typeFilter, sortBy]);
+  }, [activeTab, search, typeFilter, visFilter, deletedDate, sortBy]);
 
   const fetchFolders = useCallback(async () => {
     try {
@@ -605,14 +680,32 @@ export default function MyMaterials() {
   }, []);
 
   useEffect(() => { fetchMaterials(); }, [fetchMaterials]);
-  useEffect(() => { fetchFolders(); }, [fetchFolders]);
+  useEffect(() => { fetchFolders(); },   [fetchFolders]);
 
+  // ── Toggle select ──────────────────────────────────────────────────────
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === items.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(items.map(i => i.id)));
+    }
+  };
+
+  // ── Individual actions ─────────────────────────────────────────────────
   const handleAction = async (action, item) => {
     switch (action) {
-      case 'view':           setModal({ type: 'view', item }); break;
-      case 'edit':           setModal({ type: 'edit', item }); break;
-      case 'share':          setModal({ type: 'share', item }); break;
-      case 'move':           setModal({ type: 'move', item }); break;
+      case 'view':       setModal({ type: 'view', item }); break;
+      case 'edit':       setModal({ type: 'edit', item }); break;
+      case 'share':      setModal({ type: 'share', item }); break;
+      case 'move':       setModal({ type: 'move', item }); break;
       case 'toggle-fav': {
         try {
           const res = await api.post(`/materials/${item.id}/toggle-favorite/`);
@@ -621,11 +714,18 @@ export default function MyMaterials() {
         break;
       }
       case 'trash': {
-        if (!window.confirm('Move this material to trash?')) break;
-        try {
-          await api.delete(`/materials/${item.id}/`);
-          setItems(prev => prev.filter(x => x.id !== item.id));
-        } catch { /* ignore */ }
+        setConfirm({
+          title: 'Move to Trash',
+          message: `Move "${item.title}" to trash?`,
+          confirmLabel: 'Move to Trash',
+          danger: false,
+          onConfirm: async () => {
+            try {
+              await api.delete(`/materials/${item.id}/`);
+              setItems(prev => prev.filter(x => x.id !== item.id));
+            } catch { /* ignore */ }
+          },
+        });
         break;
       }
       case 'restore': {
@@ -636,15 +736,89 @@ export default function MyMaterials() {
         break;
       }
       case 'permanent-delete': {
-        if (!window.confirm('Permanently delete? This cannot be undone.')) break;
-        try {
-          await api.delete(`/materials/${item.id}/permanent-delete/`);
-          setItems(prev => prev.filter(x => x.id !== item.id));
-        } catch { /* ignore */ }
+        setConfirm({
+          title: 'Permanently Delete',
+          message: `Permanently delete "${item.title}"? This cannot be undone.`,
+          confirmLabel: 'Delete Forever',
+          danger: true,
+          onConfirm: async () => {
+            try {
+              await api.delete(`/materials/${item.id}/permanent-delete/`);
+              setItems(prev => prev.filter(x => x.id !== item.id));
+            } catch { /* ignore */ }
+          },
+        });
         break;
       }
       default: break;
     }
+  };
+
+  // ── Bulk actions ───────────────────────────────────────────────────────
+  const selectedList = [...selectedIds];
+
+  const handleBulkTrash = () => {
+    setConfirm({
+      title: 'Move to Trash',
+      message: `Move ${selectedList.length} item(s) to trash?`,
+      confirmLabel: 'Move to Trash',
+      danger: false,
+      onConfirm: async () => {
+        try {
+          await api.post('/materials/bulk-trash/', { ids: selectedList });
+          setItems(prev => prev.filter(x => !selectedIds.has(x.id)));
+          setSelectedIds(new Set());
+        } catch { /* ignore */ }
+      },
+    });
+  };
+
+  const handleBulkRestore = () => {
+    setConfirm({
+      title: 'Restore Items',
+      message: `Restore ${selectedList.length} item(s) from trash?`,
+      confirmLabel: 'Restore',
+      danger: false,
+      onConfirm: async () => {
+        try {
+          await api.post('/materials/bulk-restore/', { ids: selectedList });
+          setItems(prev => prev.filter(x => !selectedIds.has(x.id)));
+          setSelectedIds(new Set());
+        } catch { /* ignore */ }
+      },
+    });
+  };
+
+  const handleBulkDelete = () => {
+    setConfirm({
+      title: 'Permanently Delete',
+      message: `Permanently delete ${selectedList.length} item(s)? This cannot be undone.`,
+      confirmLabel: 'Delete Forever',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await api.delete('/materials/bulk-permanent-delete/', { data: { ids: selectedList } });
+          setItems(prev => prev.filter(x => !selectedIds.has(x.id)));
+          setSelectedIds(new Set());
+        } catch { /* ignore */ }
+      },
+    });
+  };
+
+  const handleEmptyTrash = () => {
+    setConfirm({
+      title: '💣 Empty Trash',
+      message: `Permanently delete all ${items.length} item(s) in your trash? This cannot be undone.`,
+      confirmLabel: 'Empty Trash',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await api.delete('/materials/empty-trash/');
+          setItems([]);
+          setSelectedIds(new Set());
+        } catch { /* ignore */ }
+      },
+    });
   };
 
   const handleSaved = (savedItem) => {
@@ -669,12 +843,14 @@ export default function MyMaterials() {
   };
 
   const EMPTY_MESSAGES = {
-    all:       { icon: '🗂️', title: 'No materials yet', text: 'Upload your first study material!' },
-    uploads:   { icon: '⬆️', title: 'No uploads yet',   text: 'Click "+ Upload" to add your own materials.' },
-    shared:    { icon: '🤝', title: 'Nothing shared',    text: 'No one has shared materials with you yet.' },
-    favorites: { icon: '⭐', title: 'No favorites',      text: 'Star your important materials to find them here.' },
-    trash:     { icon: '🗑️', title: 'Trash is empty',   text: 'Deleted materials will appear here.' },
+    all:       { icon: '🗂️', title: 'No materials yet',  text: 'Upload your first study material!' },
+    uploads:   { icon: '⬆️', title: 'No uploads yet',    text: 'Click "+ Upload" to add your own materials.' },
+    shared:    { icon: '🤝', title: 'Nothing shared',     text: 'No one has shared materials with you yet.' },
+    favorites: { icon: '⭐', title: 'No favorites',       text: 'Star your important materials to find them here.' },
+    trash:     { icon: '🗑️', title: 'Trash is empty',    text: 'Deleted materials will appear here.' },
   };
+
+  const allSelected = items.length > 0 && selectedIds.size === items.length;
 
   return (
     <div className="fade-in">
@@ -689,7 +865,7 @@ export default function MyMaterials() {
           <button
             key={t.key}
             className={`mm-tab ${activeTab === t.key ? 'active' : ''}`}
-            onClick={() => setActiveTab(t.key)}
+            onClick={() => { setActiveTab(t.key); setSortBy(t.key === 'trash' ? 'newest_deleted' : 'newest'); }}
           >
             {t.icon} {t.label}
             {tabCounts[t.key] !== null && <span className="mm-tab-count">{tabCounts[t.key]}</span>}
@@ -699,31 +875,76 @@ export default function MyMaterials() {
 
       {/* Toolbar */}
       <div className="mm-toolbar">
-        <div className="mm-search">
-          <span className="mm-search-icon">🔍</span>
+        {/* Select All */}
+        <label className="mm-select-all-label" title="Select all">
           <input
+            type="checkbox"
+            className="mm-card-checkbox"
+            checked={allSelected}
+            onChange={toggleSelectAll}
+          />
+          <span className="mm-select-all-text">All</span>
+        </label>
+
+        {/* Search */}
+        <div className="mm-search">
+          <SearchInput
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={val => setSearch(val)}
             placeholder="Search by title, subject or topic..."
           />
         </div>
+
+        {/* Filters */}
         <div className="mm-filter-row">
-          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+          <select className="mm-filter-select" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
             <option value="">All Types</option>
             {Object.entries(TYPE_META).map(([k, v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
           </select>
-          <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="az">A → Z</option>
-            <option value="za">Z → A</option>
+
+          <select className="mm-filter-select" value={visFilter} onChange={e => setVisFilter(e.target.value)}>
+            <option value="">All Visibility</option>
+            <option value="private">🔒 Private</option>
+            <option value="shared">🤝 Shared</option>
           </select>
+
+          {isTrash && (
+            <select className="mm-filter-select" value={deletedDate} onChange={e => setDeletedDate(e.target.value)}>
+              <option value="">All Time</option>
+              <option value="today">Today</option>
+              <option value="7days">Last 7 Days</option>
+              <option value="30days">Last 30 Days</option>
+            </select>
+          )}
+
+          <SortDropdown
+            value={sortBy}
+            onChange={val => setSortBy(val)}
+            options={
+              isTrash ? [
+                { value: 'newest_deleted', label: 'Newest Deleted', icon: '🕒' },
+                { value: 'oldest_deleted', label: 'Oldest Deleted', icon: '📅' },
+                { value: 'az',             label: 'A → Z',          icon: '🔤' },
+                { value: 'za',             label: 'Z → A',          icon: '🔡' },
+              ] : [
+                { value: 'newest', label: 'Newest First', icon: '🆕' },
+                { value: 'oldest', label: 'Oldest First', icon: '📅' },
+                { value: 'az',     label: 'A → Z',        icon: '🔤' },
+                { value: 'za',     label: 'Z → A',        icon: '🔡' },
+              ]
+            }
+          />
         </div>
-        {activeTab !== 'trash' && (
-          <button className="mm-upload-btn" onClick={() => setModal({ type: 'upload' })}>
-            ➕ Upload
-          </button>
-        )}
+
+        {/* Actions */}
+        <div className="mm-toolbar-actions">
+          {!isTrash && (
+            <button className="mm-upload-btn" onClick={() => setModal({ type: 'upload' })}>➕ Upload</button>
+          )}
+          {isTrash && items.length > 0 && (
+            <button className="mm-empty-trash-btn" onClick={handleEmptyTrash}>💣 Empty Trash</button>
+          )}
+        </div>
       </div>
 
       {/* Grid */}
@@ -747,27 +968,47 @@ export default function MyMaterials() {
       ) : (
         <div className="mm-grid">
           {items.map(item => (
-            <MaterialCard key={item.id} item={item} onAction={handleAction} />
+            <MaterialCard
+              key={item.id}
+              item={item}
+              onAction={handleAction}
+              selected={selectedIds.has(item.id)}
+              onToggleSelect={toggleSelect}
+              selectionMode={selectionMode}
+            />
           ))}
         </div>
       )}
 
+      {/* Bulk Action Bar */}
+      <BulkActionBar
+        count={selectedIds.size}
+        isTrash={isTrash}
+        onDeselect={() => setSelectedIds(new Set())}
+        onBulkTrash={handleBulkTrash}
+        onBulkRestore={handleBulkRestore}
+        onBulkDelete={handleBulkDelete}
+      />
+
+      {/* Confirm Modal */}
+      {confirm && (
+        <ConfirmModal
+          title={confirm.title}
+          message={confirm.message}
+          confirmLabel={confirm.confirmLabel}
+          danger={confirm.danger}
+          onConfirm={confirm.onConfirm}
+          onClose={() => setConfirm(null)}
+        />
+      )}
+
       {/* Modals */}
-      {modal?.type === 'upload' && (
-        <MaterialModal folders={folders} onClose={() => setModal(null)} onSaved={handleSaved} />
-      )}
-      {modal?.type === 'edit' && (
-        <MaterialModal initial={modal.item} folders={folders} onClose={() => setModal(null)} onSaved={handleSaved} />
-      )}
-      {modal?.type === 'view' && (
-        <ViewModal material={modal.item} onClose={() => setModal(null)} />
-      )}
-      {modal?.type === 'share' && (
-        <ShareModal material={modal.item} onClose={() => setModal(null)} />
-      )}
-      {modal?.type === 'move' && (
-        <FolderModal material={modal.item} folders={folders} onClose={() => setModal(null)} onMoved={handleMoved} />
-      )}
+      {modal?.type === 'upload' && <MaterialModal folders={folders} onClose={() => setModal(null)} onSaved={handleSaved} />}
+      {modal?.type === 'edit'   && <MaterialModal initial={modal.item} folders={folders} onClose={() => setModal(null)} onSaved={handleSaved} />}
+      {modal?.type === 'view'   && <ViewModal material={modal.item} onClose={() => setModal(null)} />}
+      {modal?.type === 'share'  && <ShareModal material={modal.item} onClose={() => setModal(null)} />}
+      {modal?.type === 'move'   && <FolderModal material={modal.item} folders={folders} onClose={() => setModal(null)} onMoved={handleMoved} />}
     </div>
   );
 }
+

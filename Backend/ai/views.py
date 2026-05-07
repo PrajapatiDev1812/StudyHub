@@ -27,6 +27,8 @@ from .throttles import AIDailyThrottle, AIBurstThrottle, AIAnonThrottle
 from .services.ai_usage import increment_usage, get_usage_summary
 from .services.ai_prompt_builder import build_prompt
 from .services.moderation import classify_content, moderate_response, is_academic
+from .services.logging_service import log_ai_request, log_blocked_request
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +72,9 @@ class ChatbotView(APIView):
     throttle_classes = [AIDailyThrottle, AIBurstThrottle, AIAnonThrottle]
 
     def post(self, request):
+        # ── Capture request start time for response_time_ms logging ──
+        _start_time = time.time()
+
         serializer = ChatRequestSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -156,6 +161,11 @@ class ChatbotView(APIView):
                 role='ai',
                 content=refusal,
             )
+            # Log blocked request
+            log_blocked_request(
+                request, reason='unsafe_adult', query_text=message,
+                request_type='chat',
+            )
             return Response({
                 'reply': refusal,
                 'session_id': session.id,
@@ -173,6 +183,11 @@ class ChatbotView(APIView):
                 session=session,
                 role='ai',
                 content=refusal,
+            )
+            # Log blocked (borderline) request
+            log_blocked_request(
+                request, reason='borderline_content', query_text=message,
+                request_type='chat',
             )
             return Response({
                 'reply': refusal,
@@ -259,6 +274,24 @@ class ChatbotView(APIView):
         # ── Step 5: Track usage (only after successful AI response) ──
         increment_usage(request.user)
         usage_summary = get_usage_summary(request.user)
+
+        # ── Log successful AI request ──
+        _elapsed_ms = int((time.time() - _start_time) * 1000)
+        log_ai_request(
+            request,
+            request_type='chat',
+            status='success',
+            response_time_ms=_elapsed_ms,
+            query_text=message,
+            subject=subject,
+            topic=topic,
+            extra_metadata={
+                'mode': mode,
+                'level': level,
+                'session_id': str(session.id),
+                'fallback_used': fallback_used,
+            },
+        )
 
         # Gamification hook
         from gamification.services import track_event
@@ -454,6 +487,7 @@ class SummaryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        _start_time = time.time()
         content_id = request.data.get('content_id')
         if not content_id:
             return Response(
@@ -482,10 +516,32 @@ class SummaryView(APIView):
             f"Keep it educational and structured:\n\n{text[:3000]}"
         )
 
-        ai_summary = generate_response(
-            prompt=prompt,
-            system_instruction=BASE_SYSTEM_INSTRUCTION,
-        )
+        try:
+            ai_summary = generate_response(
+                prompt=prompt,
+                system_instruction=BASE_SYSTEM_INSTRUCTION,
+            )
+            _elapsed_ms = int((time.time() - _start_time) * 1000)
+            # Log successful summary request
+            log_ai_request(
+                request,
+                request_type='summary',
+                status='success',
+                response_time_ms=_elapsed_ms,
+                query_text=content.title,
+                extra_metadata={'content_id': content_id},
+            )
+        except Exception as exc:
+            _elapsed_ms = int((time.time() - _start_time) * 1000)
+            log_ai_request(
+                request,
+                request_type='summary',
+                status='failed',
+                response_time_ms=_elapsed_ms,
+                error_code='gemini_error',
+                extra_metadata={'content_id': content_id},
+            )
+            raise
 
         return Response({
             'content_id': content.id,
