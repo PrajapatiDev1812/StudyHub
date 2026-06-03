@@ -6,7 +6,7 @@ import api from '../services/api';
 const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   
   // State for the currently active theme (either saved or previewed)
   const [activeTheme, setActiveTheme] = useState(null);
@@ -41,7 +41,7 @@ export function ThemeProvider({ children }) {
       setActiveTheme(savedTheme);
       applyThemeVariables(savedTheme.config, savedTheme.background_image);
       localStorage.setItem('studyhub_theme_cache', JSON.stringify(savedTheme));
-    } else {
+    } else if (loading) {
       // Check if we have a locally cached theme to prevent flashing during data load
       const cached = localStorage.getItem('studyhub_theme_cache');
       if (cached) {
@@ -59,8 +59,14 @@ export function ThemeProvider({ children }) {
       const defaultTheme = getThemeById('light');
       setActiveTheme(defaultTheme);
       applyThemeVariables(defaultTheme.config, defaultTheme.background_image);
+    } else {
+      // User is logged out, force light theme on public pages
+      const defaultTheme = getThemeById('light');
+      setActiveTheme(defaultTheme);
+      applyThemeVariables(defaultTheme.config, defaultTheme.background_image);
+      localStorage.removeItem('studyhub_theme_cache');
     }
-  }, [user, applyThemeVariables]);
+  }, [user, loading, applyThemeVariables]);
 
   /**
    * Previews a theme locally without saving to DB.

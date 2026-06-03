@@ -23,14 +23,12 @@ export default function Sidebar() {
     { to: '/student/ai-chat',     icon: '🤖', label: 'AI Assistant' },
     { to: '/student/my-materials',icon: '📂', label: 'My Materials' },
     { to: '/student/achievements', icon: '🏆', label: 'Achievements' },
+    { to: '/student/lms-panel',   icon: '💻', label: 'LMS Panel' },
   ];
 
   const adminLinks = [
     { to: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
-    { to: '/admin/courses',   icon: '📚', label: 'Courses' },
-    { to: '/admin/subjects',  icon: '📖', label: 'Subjects' },
-    { to: '/admin/topics',    icon: '📌', label: 'Topics' },
-    { to: '/admin/content',   icon: '📄', label: 'Content' },
+    { to: '/admin/courses',   icon: '📚', label: 'Curriculum' },
     { to: '/admin/tests',     icon: '📝', label: 'Tests' },
   ];
 

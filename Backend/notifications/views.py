@@ -1,8 +1,13 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import viewsets, status
+# pyrefly: ignore [missing-import]
 from rest_framework.decorators import action
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
+# pyrefly: ignore [missing-import]
 from rest_framework.permissions import IsAuthenticated
 from .models import Notification
+# pyrefly: ignore [missing-import]
 from .serializers import NotificationSerializer
 from accounts.permissions import IsAdmin
 
@@ -37,7 +42,17 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Admin can specify a target user via 'user' field, or defaults to self."""
-        serializer.save()
+        # pyrefly: ignore [import-outside-toplevel, missing-import]
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        user_id = self.request.data.get('user')
+        target_user = self.request.user
+        if user_id:
+            try:
+                target_user = User.objects.get(id=int(user_id))
+            except (User.DoesNotExist, ValueError):
+                pass
+        serializer.save(user=target_user)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def mark_read(self, request, pk=None):

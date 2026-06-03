@@ -359,6 +359,28 @@ function FocusPreferencesTab() {
   );
 }
 
+function NotificationsTab() {
+  return (
+    <div className="slide-up profile-grid">
+      <div className="glass-card span-full">
+        <h3>Notifications</h3>
+        <p className="text-muted mt-2">Notification preferences coming soon.</p>
+      </div>
+    </div>
+  );
+}
+
+function ActivitySummaryTab() {
+  return (
+    <div className="slide-up profile-grid">
+      <div className="glass-card span-full">
+        <h3>Activity & Privacy</h3>
+        <p className="text-muted mt-2">Activity and privacy settings coming soon.</p>
+      </div>
+    </div>
+  );
+}
+
 // ── TAB metadata: label + subtitle shown as page header ──────────────────────
 
 const SECTION_META = {

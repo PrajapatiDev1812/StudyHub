@@ -81,13 +81,28 @@ const AchievementsPage = () => {
             <div className="achievements-categories">
                 {Object.keys(groupedBadges).map(category => (
                     <div key={category} className="achievement-category">
-                        <h2>{category.charAt(0).toUpperCase() + category.slice(1)} Badges</h2>
-                        <div className="badges-grid">
+                        <div className="achievement-category-header">
+                            <h2>
+                                {category === 'streak'     ? '🔥' :
+                                 category === 'content'    ? '📚' :
+                                 category === 'course'     ? '🎓' :
+                                 category === 'quiz'       ? '📋' :
+                                 category === 'milestone'  ? '🏅' : '🏆'}{' '}
+                                {category.charAt(0).toUpperCase() + category.slice(1)} Badges
+                            </h2>
+                            <span className="cat-count">
+                                {groupedBadges[category].filter(b => !!earnedBadgesMap[b.id]).length}
+                                {' / '}
+                                {groupedBadges[category].length} earned
+                            </span>
+                        </div>
+
+                        <div className="badges-row">
                             {groupedBadges[category].map(badge => {
                                 const userBadge = earnedBadgesMap[badge.id];
                                 const isEarned = !!userBadge;
                                 const tierClass = badge.tier || 'none';
-                                
+
                                 return (
                                     <div key={badge.id} className={`badge-card ${isEarned ? 'earned' : 'locked'} ${tierClass}`}>
                                         {isEarned && userBadge.earned_count > 1 && (

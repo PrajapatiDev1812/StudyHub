@@ -1,8 +1,14 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import generics, status
+# pyrefly: ignore [missing-import]
 from rest_framework.views import APIView
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
+# pyrefly: ignore [missing-import]
 from rest_framework.permissions import IsAuthenticated
+# pyrefly: ignore [missing-import]
 from django.contrib.auth import get_user_model
+# pyrefly: ignore [missing-import]
 from django.contrib.auth.hashers import check_password
 
 from .models import UserPreference, NotificationPreference, LoginActivity, ActiveSession, User2FA
@@ -48,6 +54,7 @@ class ProfileActivitySummaryView(APIView):
         from concurrent.futures import ThreadPoolExecutor
         from ai.models import AIRequestLog
         from focus.models import FocusSession
+        # pyrefly: ignore [missing-import]
         from django.db.models import Sum
         from materials.models import StudentMaterial
         from assessments.models import StudentAttempt
@@ -116,8 +123,16 @@ class SecurityLogoutOthersView(APIView):
         ActiveSession.objects.filter(user=request.user).update(is_active=False)
         return Response({"message": "Logged out from other devices successfully."})
 
+# pyrefly: ignore [import-outside-toplevel, missing-import]
+from rest_framework.throttling import UserRateThrottle
+
+class PasswordChangeThrottle(UserRateThrottle):
+    scope = 'password_change'
+
+
 class SecurityChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [PasswordChangeThrottle]
 
     def post(self, request):
         user = request.user
@@ -145,22 +160,24 @@ class SecurityToggle2FAView(APIView):
         action = request.data.get('action') # 'enable' or 'disable'
         
         if action == 'disable':
+            password = request.data.get('password')
+            if not password or not request.user.check_password(password):
+                return Response({"error": "Incorrect password. Valid password is required to disable 2FA."}, status=status.HTTP_403_FORBIDDEN)
             user2fa.is_enabled = False
             user2fa.is_setup_complete = False
             user2fa.save()
             return Response({"message": "2FA disabled successfully.", "is_enabled": False})
         else:
-            # We don't fully enable here, we just mark intent if using TOTP setup flow
-            # For simplicity, we just enable it if requested (though a real flow requires OTP verification)
-            user2fa.is_enabled = True
-            user2fa.is_setup_complete = True
-            user2fa.save()
-            return Response({"message": "2FA enabled successfully.", "is_enabled": True})
+            return Response(
+                {"error": "2FA cannot be enabled directly. Please use the /api/auth/2fa/setup/ and /api/auth/2fa/activate/ endpoints to verify your OTP and enable 2FA."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class SecurityRegenerateBackupCodesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        # pyrefly: ignore [missing-import]
         import bcrypt
         import secrets
         

@@ -1,13 +1,14 @@
 /* ===== StudyHub — Premium Dark Theme Design System ===== */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss/theme";
+@import "tailwindcss/utilities";
 
 /* ---------- CSS Variables ---------- */
 :root {
   /* Background */
   --bg-primary: #0a0a1a;
   --bg-secondary: #111128;
-  --bg-surface: rgba(25, 25, 60, 0.85);
   --backgroundOverlay: transparent;
   --bg-card: rgba(25, 25, 60, 0.6);
   --bg-card-hover: rgba(35, 35, 80, 0.8);
@@ -247,6 +248,16 @@ body.focus-mode-active .main-content {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none !important;
+}
+
+.lms-btn-transparent {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: pointer;
 }
 
 /* ---------- Forms ---------- */

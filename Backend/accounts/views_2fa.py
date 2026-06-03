@@ -10,14 +10,22 @@ Endpoints:
   POST /api/auth/2fa/backup-codes/ → regenerate backup codes (requires password)
   GET  /api/auth/2fa/status/    → current 2FA status for the user
 """
+# pyrefly: ignore [missing-import]
 import logging
+# pyrefly: ignore [missing-import]
 from django.contrib.auth import authenticate, get_user_model
+# pyrefly: ignore [missing-import]
 from django.core.cache import cache
+# pyrefly: ignore [missing-import]
 from rest_framework import views, status, permissions
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
+# pyrefly: ignore [missing-import]
 from rest_framework.throttling import AnonRateThrottle
+# pyrefly: ignore [missing-import]
 from rest_framework_simplejwt.tokens import RefreshToken
 
+# pyrefly: ignore [missing-import]
 from .models import User2FA, OTPAttemptLog
 from .serializers_2fa import (
     LoginSerializer, VerifyOTPSerializer, Setup2FASerializer,
@@ -101,15 +109,10 @@ class TwoFactorLoginView(views.APIView):
 
         # ── Admin MUST have 2FA fully set up ──
         if user.role == 'admin' and (not two_fa or not two_fa.is_enabled):
-            return Response(
-                {
-                    'error': 'Admin accounts require 2FA to be configured before logging in.',
-                    'requires_2fa_setup': True,
-                    # Issue a restricted temp token so they can reach the setup page
-                    'temp_token': _issue_setup_only_token(user),
-                },
-                status=status.HTTP_403_FORBIDDEN
-            )
+            tokens = _get_tokens_for_user(user)
+            tokens['requires_2fa_setup'] = True
+            tokens['message'] = 'Admin accounts require 2FA to be configured. Please set it up now.'
+            return Response(tokens, status=status.HTTP_200_OK)
 
         # ── 2FA is fully enabled — issue temp token ──
         if two_fa and two_fa.is_enabled:

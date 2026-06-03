@@ -107,7 +107,10 @@ export default function StudentDashboard() {
       <div className="dash-card quick-actions-panel">
         <h3>⚡ Quick Actions</h3>
         <div className="actions-grid">
-          <button className="action-btn primary" onClick={() => navigate('/student/focus')}>
+          <button className="action-btn" onClick={() => navigate('/student/lms-panel')}>
+            <span className="btn-icon">📚</span> Open LMS Panel
+          </button>
+          <button className="action-btn" onClick={() => navigate('/student/focus')}>
             <span className="btn-icon">🎯</span> Start Focus Mode
           </button>
           <button className="action-btn" onClick={() => navigate('/student/ai-chat')}>

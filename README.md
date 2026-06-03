@@ -1,75 +1,16 @@
-# 📚 StudyHub – Academic Content Management Platform
+# React + Vite
 
-## 🚀 Overview
-StudyHub is a web-based academic platform designed to organize, manage, and access study materials efficiently. It provides a structured learning system for students and administrators with future integration of AI-based assistance.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
----
+Currently, two official plugins are available:
 
-## 🎯 Key Features
-- 📂 Course → Subject → Topic → Content hierarchy
-- 👨‍🏫 Admin panel for uploading and managing study materials
-- 👨‍🎓 Student panel for accessing and saving notes
-- 🔐 JWT-based authentication system
-- 📊 Organized storage for admin and student data
-- 🤖 Planned AI integration using Gemini API (RAG-based system)
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
----
+## React Compiler
 
-## 🛠️ Tech Stack
-- **Backend:** Django, Django REST Framework
-- **Database:** PostgreSQL
-- **Authentication:** JWT (SimpleJWT)
-- **Frontend:** HTML, CSS, JavaScript (basic)
-- **API Testing:** Swagger / Postman
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
----
+## Expanding the ESLint configuration
 
-## 🧠 AI Integration (Planned)
-- Retrieval-Augmented Generation (RAG)
-- Embeddings + Vector Search
-- Separate indexing for:
-  - Admin data
-  - Student notes
-- Context-aware academic assistant
-
----
-
-## 📊 System Architecture
-- Admin uploads structured study material
-- Data stored in relational database
-- Content indexed for AI retrieval
-- Students interact via dashboard
-
----
-
-## 📸 Screenshots
-*(Add screenshots here – very important)*
-- Admin Panel
-- Course Structure
-- Dashboard UI
-
----
-
-## ⚙️ Installation & Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/your-username/studyhub.git
-
-# Navigate to project
-cd studyhub
-
-# Create virtual environment
-python -m venv env
-
-# Activate environment
-env\Scripts\activate   # Windows
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run migrations
-python manage.py migrate
-
-# Run server
-python manage.py runserver
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.

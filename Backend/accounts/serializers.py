@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import serializers
+# pyrefly: ignore [missing-import]
 from django.contrib.auth import get_user_model
 from .models import Theme, UserAppearance, UserPreference, NotificationPreference, LoginActivity, ActiveSession
 
@@ -42,10 +44,16 @@ class RegisterSerializer(serializers.ModelSerializer):
     """Serializer for user registration."""
 
     password = serializers.CharField(write_only=True, min_length=8)
+    role = serializers.CharField(required=False, default='student')
 
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'password', 'role']
+
+    def validate_role(self, value):
+        if value == 'admin':
+            raise serializers.ValidationError("Registration as admin is not allowed.")
+        return value
 
     def create(self, validated_data):
         # Use create_user so the password gets hashed properly
@@ -53,7 +61,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             email=validated_data.get('email', ''),
             password=validated_data['password'],
-            role=validated_data.get('role', 'student'),
+            role='student',
         )
         return user
 

@@ -37,13 +37,11 @@ import FocusHistory from './pages/student/FocusMode/FocusHistory';
 import AchievementsPage from './pages/student/AchievementsPage';
 import MyMaterials from './pages/student/MyMaterials';
 import StudentAnalyticsPage from './pages/student/StudentAnalyticsPage';
+import LmsPanel from './pages/student/LmsPanel';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
-import ManageCourses from './pages/admin/ManageCourses';
-import ManageSubjects from './pages/admin/ManageSubjects';
-import ManageTopics from './pages/admin/ManageTopics';
-import ManageContent from './pages/admin/ManageContent';
+import CurriculumManager from './pages/admin/CurriculumManager';
 import ManageTests from './pages/admin/ManageTests';
 import ManageQuestions from './pages/admin/ManageQuestions';
 import TestAnalytics from './pages/admin/TestAnalytics';
@@ -104,6 +102,7 @@ function App() {
 
             {/* Student Routes */}
             <Route path="/student/dashboard" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
+            <Route path="/student/lms-panel" element={<StudentRoute><LmsPanel /></StudentRoute>} />
             <Route path="/student/analytics" element={<StudentRoute><StudentAnalyticsPage /></StudentRoute>} />
             <Route path="/student/courses" element={<StudentRoute><BrowseCourses /></StudentRoute>} />
             <Route path="/student/courses/:id" element={<StudentRoute><CourseDetail /></StudentRoute>} />
@@ -126,10 +125,7 @@ function App() {
 
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-            <Route path="/admin/courses" element={<AdminRoute><ManageCourses /></AdminRoute>} />
-            <Route path="/admin/subjects" element={<AdminRoute><ManageSubjects /></AdminRoute>} />
-            <Route path="/admin/topics" element={<AdminRoute><ManageTopics /></AdminRoute>} />
-            <Route path="/admin/content" element={<AdminRoute><ManageContent /></AdminRoute>} />
+            <Route path="/admin/courses" element={<AdminRoute><CurriculumManager /></AdminRoute>} />
             <Route path="/admin/tests" element={<AdminRoute><ManageTests /></AdminRoute>} />
             <Route path="/admin/tests/:testId/questions" element={<AdminRoute><ManageQuestions /></AdminRoute>} />
             <Route path="/admin/tests/:id/analytics" element={<AdminRoute><TestAnalytics /></AdminRoute>} />

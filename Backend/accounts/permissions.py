@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from rest_framework.permissions import BasePermission
 
 
@@ -61,3 +62,23 @@ class IsOwnerOrAdmin(BasePermission):
         # Handle different naming conventions: 'user' or 'student'
         owner = getattr(obj, 'user', getattr(obj, 'student', None))
         return owner == request.user
+
+
+class OwnedObjectMixin:
+    """
+    Mixin to automatically scope querysets to the logged-in user's own objects.
+    Assumes model has a 'user' or 'student' attribute.
+    Admins can see everything.
+    """
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_authenticated and user.role != 'admin':
+            model = qs.model
+            fields = [f.name for f in model._meta.get_fields()]
+            if 'student' in fields:
+                qs = qs.filter(student=user)
+            elif 'user' in fields:
+                qs = qs.filter(user=user)
+        return qs
+

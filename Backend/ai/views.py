@@ -1,11 +1,18 @@
 import os
 import logging
+# pyrefly: ignore [missing-import]
 from rest_framework.views import APIView
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
+# pyrefly: ignore [missing-import]
 from rest_framework import status, generics
+# pyrefly: ignore [missing-import]
 from rest_framework.permissions import IsAuthenticated
+# pyrefly: ignore [missing-import]
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+# pyrefly: ignore [missing-import]
 from django.shortcuts import get_object_or_404
+# pyrefly: ignore [missing-import]
 from courses.models import Content
 from accounts.permissions import IsAdmin
 
@@ -460,6 +467,7 @@ class ChatFileUploadView(APIView):
 
         # We'll create a temporary attachment (no message yet)
         # The frontend will reference this when sending the chat message
+        # pyrefly: ignore [missing-import]
         from django.core.files.storage import default_storage
         path = default_storage.save(
             f'chat_attachments/{request.user.id}/{uploaded_file.name}',
@@ -496,7 +504,15 @@ class SummaryView(APIView):
             )
 
         try:
-            content = Content.objects.get(id=content_id)
+            # pyrefly: ignore [missing-import]
+            from django.db.models import Q
+            user = request.user
+            if user.role == 'student':
+                content = Content.objects.filter(
+                    Q(topic__subject__course__is_published=True) | Q(topic__subject__course__enrollments__student=user)
+                ).distinct().get(id=content_id)
+            else:
+                content = Content.objects.get(id=content_id)
         except Content.DoesNotExist:
             return Response(
                 {'error': 'Content not found.'},

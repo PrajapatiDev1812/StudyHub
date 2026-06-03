@@ -5,7 +5,9 @@ Lists available Gemini models using the current configuration.
 """
 
 import os
+# pyrefly: ignore [missing-import]
 import django
+# pyrefly: ignore [missing-import]
 from google import genai
 
 # Setup Django (to get env vars)

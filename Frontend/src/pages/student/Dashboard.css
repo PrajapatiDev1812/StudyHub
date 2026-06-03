@@ -22,7 +22,7 @@
 }
 
 .dash-card {
-  background: var(--bg-surface);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1.5rem;
@@ -42,7 +42,7 @@
 
 .stat-icon {
   font-size: 2rem;
-  background: var(--bg-surface-hover);
+  background: var(--bg-card-hover);
   padding: 0.5rem;
   border-radius: 12px;
 }
@@ -68,7 +68,7 @@
 /* ── Quick Actions ── */
 .quick-actions-panel {
   margin-bottom: 2rem;
-  background: var(--bg-surface-hover);
+  background: var(--bg-card-hover);
 }
 
 .quick-actions-panel h3 {
@@ -90,7 +90,7 @@
   padding: 1rem;
   border-radius: 8px;
   border: 1px solid var(--border-color);
-  background: var(--bg-surface);
+  background: var(--bg-card);
   color: var(--text-primary);
   font-weight: 600;
   cursor: pointer;
@@ -269,13 +269,13 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: var(--bg-surface-hover);
+  background: var(--bg-card-hover);
   border-radius: 8px;
 }
 
 .timeline-icon {
   font-size: 1.5rem;
-  background: var(--bg-surface);
+  background: var(--bg-card);
   padding: 0.5rem;
   border-radius: 50%;
 }

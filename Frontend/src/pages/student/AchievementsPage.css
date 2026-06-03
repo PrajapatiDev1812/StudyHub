@@ -24,9 +24,10 @@
   font-size: 1.1rem;
 }
 
+/* ── Stats Panel ─────────────────────────────────────────────────────────── */
 .achievements-stats-panel {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 20px;
   margin-bottom: 40px;
 }
@@ -41,80 +42,108 @@
   transition: transform 0.2s;
 }
 
-.stat-card:hover {
-  transform: translateY(-5px);
-}
+.stat-card:hover { transform: translateY(-5px); }
+.stat-card h3 { color: var(--text-secondary, #a0aec0); font-size: 1rem; margin-bottom: 12px; }
+.stat-value { font-size: 2.2rem; font-weight: 700; color: var(--text-primary, #fff); margin-bottom: 8px; }
+.stat-sub { font-size: 0.85rem; color: var(--text-secondary, #a0aec0); }
 
-.stat-card h3 {
-  color: var(--text-secondary, #a0aec0);
-  font-size: 1.1rem;
-  margin-bottom: 15px;
-}
-
-.stat-value {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--text-primary, #ffffff);
-  margin-bottom: 10px;
-}
-
-.stat-sub {
-  font-size: 0.9rem;
-  color: var(--text-secondary, #a0aec0);
-}
-
-.level-card .stat-value { color: #9333ea; }
-.streak-card .stat-value { color: #ff9900; }
+.level-card .stat-value      { color: #9333ea; }
+.streak-card .stat-value     { color: #ff9900; }
 .completion-card .stat-value { color: #4ade80; }
 
+/* ── Category Section ────────────────────────────────────────────────────── */
 .achievement-category {
-  margin-bottom: 40px;
+  margin-bottom: 36px;
 }
 
-.achievement-category h2 {
-  font-size: 1.5rem;
-  margin-bottom: 20px;
+.achievement-category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
-.badges-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+.achievement-category-header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: capitalize;
 }
 
+.cat-count {
+  font-size: 0.8rem;
+  color: var(--text-muted, #888);
+  background: rgba(255,255,255,0.05);
+  padding: 3px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ── Horizontal Scrollable Badge Row ─────────────────────────────────────── */
+.badges-row {
+  display: flex;
+  flex-direction: row;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.badges-row::-webkit-scrollbar { height: 5px; }
+.badges-row::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 4px; }
+.badges-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+.badges-row::-webkit-scrollbar-thumb:hover { background: rgba(108,99,255,0.5); }
+
+/* ── Badge Card — Horizontal compact layout ──────────────────────────────── */
 .badge-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
   background: var(--bg-card, #2A2A35);
-  border-radius: 16px;
-  padding: 20px;
-  text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.3s ease;
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.25s ease;
   position: relative;
   overflow: hidden;
+  min-width: 240px;
+  max-width: 260px;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}
+
+.badge-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  border-color: rgba(255,255,255,0.14);
 }
 
 .badge-card.earned {
-  border-color: rgba(255, 204, 0, 0.3);
-  box-shadow: 0 4px 20px rgba(255, 204, 0, 0.1);
+  border-color: rgba(255, 204, 0, 0.25);
+  box-shadow: 0 4px 16px rgba(255, 204, 0, 0.08);
 }
 
 .badge-card.locked {
-  opacity: 0.6;
-  filter: grayscale(100%);
+  opacity: 0.55;
+  filter: grayscale(80%);
 }
 
+/* ── Badge Icon ──────────────────────────────────────────────────────────── */
 .badge-icon-container {
-  width: 90px;
-  height: 90px;
-  margin: 0 auto 15px;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
   border-radius: 50%;
   background: rgba(255,255,255,0.05);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  flex-shrink: 0;
 }
 
 .badge-card.earned .badge-icon-container {
@@ -128,92 +157,121 @@
   object-fit: contain;
 }
 
-.badge-placeholder {
-  font-size: 2.5rem;
-}
+.badge-placeholder { font-size: 1.8rem; }
 
 .lock-overlay {
   position: absolute;
-  top: -5px;
-  right: -5px;
+  top: -4px;
+  right: -4px;
   background: #1a1a24;
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9rem;
+  font-size: 0.7rem;
   border: 2px solid #333;
 }
 
+/* ── Badge Info ──────────────────────────────────────────────────────────── */
+.badge-info {
+  flex: 1;
+  min-width: 0;
+}
+
 .badge-info h4 {
-  font-size: 1.1rem;
-  margin-bottom: 5px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .badge-info p {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: var(--text-secondary, #a0aec0);
-  margin-bottom: 10px;
-  line-height: 1.3;
+  margin-bottom: 7px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .badge-xp {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.71rem;
+  font-weight: 700;
   color: #4ade80;
-  background: rgba(74, 222, 128, 0.1);
-  padding: 3px 8px;
-  border-radius: 12px;
+  background: rgba(74, 222, 128, 0.12);
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
 }
 
 .earned-count-badge {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  background: var(--accent-primary);
+  top: 7px;
+  right: 7px;
+  background: var(--accent-primary, #6c63ff);
   color: white;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  padding: 1px 6px;
+  border-radius: 8px;
 }
 
-/* Tiered Card Styles */
-.badge-card.bronze.earned { 
-    border-color: rgba(205, 127, 50, 0.4); 
-    box-shadow: 0 4px 20px rgba(205, 127, 50, 0.15);
+/* ── Tier Colors ─────────────────────────────────────────────────────────── */
+.badge-card.bronze.earned {
+  border-color: rgba(205, 127, 50, 0.35);
+  box-shadow: 0 4px 16px rgba(205, 127, 50, 0.12);
 }
-.badge-card.bronze.earned .badge-icon-container { 
-    border-color: #cd7f32; 
-    background: linear-gradient(135deg, rgba(205, 127, 50, 0.2), rgba(139, 69, 19, 0.2));
-}
-
-.badge-card.silver.earned { 
-    border-color: rgba(192, 192, 192, 0.4); 
-    box-shadow: 0 4px 20px rgba(192, 192, 192, 0.15);
-}
-.badge-card.silver.earned .badge-icon-container { 
-    border-color: #c0c0c0; 
-    background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), rgba(128, 128, 128, 0.2));
+.badge-card.bronze.earned .badge-icon-container {
+  border-color: #cd7f32;
+  background: linear-gradient(135deg, rgba(205,127,50,0.2), rgba(139,69,19,0.2));
 }
 
-.badge-card.gold.earned { 
-    border-color: rgba(255, 215, 0, 0.4); 
-    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.15);
+.badge-card.silver.earned {
+  border-color: rgba(192, 192, 192, 0.35);
+  box-shadow: 0 4px 16px rgba(192,192,192,0.12);
 }
-.badge-card.gold.earned .badge-icon-container { 
-    border-color: #ffd700; 
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(184, 134, 11, 0.2));
+.badge-card.silver.earned .badge-icon-container {
+  border-color: #c0c0c0;
+  background: linear-gradient(135deg, rgba(192,192,192,0.2), rgba(128,128,128,0.2));
 }
 
-.badge-card.legendary.earned { 
-    border-color: rgba(108, 99, 255, 0.4); 
-    box-shadow: 0 4px 25px rgba(108, 99, 255, 0.25);
+.badge-card.gold.earned {
+  border-color: rgba(255, 215, 0, 0.35);
+  box-shadow: 0 4px 16px rgba(255,215,0,0.12);
 }
-.badge-card.legendary.earned .badge-icon-container { 
-    border-color: #6c63ff; 
-    background: linear-gradient(135deg, rgba(108, 99, 255, 0.2), rgba(59, 130, 246, 0.2));
+.badge-card.gold.earned .badge-icon-container {
+  border-color: #ffd700;
+  background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(184,134,11,0.2));
+}
+
+.badge-card.legendary.earned {
+  border-color: rgba(108, 99, 255, 0.35);
+  box-shadow: 0 4px 20px rgba(108,99,255,0.2);
+}
+.badge-card.legendary.earned .badge-icon-container {
+  border-color: #6c63ff;
+  background: linear-gradient(135deg, rgba(108,99,255,0.2), rgba(59,130,246,0.2));
+}
+
+/* ── Loading ─────────────────────────────────────────────────────────────── */
+.achievements-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--text-muted, #888);
+  font-size: 1rem;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .achievements-page { padding: 16px; }
+  .achievements-header h1 { font-size: 1.8rem; }
+  .badge-card { min-width: 200px; padding: 12px; }
 }

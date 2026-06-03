@@ -1,14 +1,22 @@
 from decimal import Decimal
 
+# pyrefly: ignore [missing-import]
 from django.db.models import Avg, Count, Q
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
+# pyrefly: ignore [missing-import]
 from rest_framework import viewsets, generics, status
+# pyrefly: ignore [missing-import]
 from rest_framework.decorators import action
+# pyrefly: ignore [missing-import]
 from rest_framework.permissions import IsAuthenticated
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
 
-from accounts.permissions import IsAdmin, IsStudent, IsAdminOrReadOnly
+# pyrefly: ignore [missing-import]
+from accounts.permissions import IsAdmin, IsStudent, IsAdminOrReadOnly, OwnedObjectMixin
 from .models import Test, Question, Option, StudentAttempt, StudentAnswer
+# pyrefly: ignore [import-import]
 from .serializers import (
     TestSerializer,
     TestListSerializer,
@@ -226,32 +234,25 @@ class OptionViewSet(viewsets.ModelViewSet):
 
 
 # ---------- My Attempts (Student) ----------
-class MyAttemptsView(generics.ListAPIView):
+class MyAttemptsView(OwnedObjectMixin, generics.ListAPIView):
     """
     GET /api/my-attempts/
     List all test attempts for the current student.
     """
     serializer_class = StudentAttemptListSerializer
     permission_classes = [IsAuthenticated]
+    queryset = StudentAttempt.objects.all()
 
     def get_queryset(self):
-        return StudentAttempt.objects.filter(
-            student=self.request.user
-        ).order_by('-started_at')
+        return super().get_queryset().order_by('-started_at')
 
 
 # ---------- Attempt Detail ----------
-class AttemptDetailView(generics.RetrieveAPIView):
+class AttemptDetailView(OwnedObjectMixin, generics.RetrieveAPIView):
     """
     GET /api/attempts/{id}/
     View detailed result of a specific attempt (with all answers).
     """
     serializer_class = StudentAttemptSerializer
     permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        user = self.request.user
-        if user.role == 'admin':
-            return StudentAttempt.objects.all()
-        # Students can only see their own attempts
-        return StudentAttempt.objects.filter(student=user)
+    queryset = StudentAttempt.objects.all()

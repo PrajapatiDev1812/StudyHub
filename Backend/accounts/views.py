@@ -1,12 +1,20 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import generics, status
+# pyrefly: ignore [missing-import]
 from rest_framework.permissions import AllowAny, IsAuthenticated
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
+# pyrefly: ignore [missing-import]
 from rest_framework.parsers import MultiPartParser, FormParser
+# pyrefly: ignore [missing-import]
 from rest_framework_simplejwt.views import TokenObtainPairView
+# pyrefly: ignore [missing-import]
 from django.contrib.auth.models import update_last_login
 
 from .models import Theme, UserAppearance
+# pyrefly: ignore [import-import]
 from .serializers import RegisterSerializer, UserSerializer, ThemeSerializer, UserAppearanceSerializer, CustomThemeCreateSerializer
+# pyrefly: ignore [missing-import]
 from django.db.models import Q
 
 
@@ -128,7 +136,9 @@ class UpdateAppearanceView(generics.UpdateAPIView):
             return Response({"error": "selected_theme is required."}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            theme = Theme.objects.get(id=theme_id)
+            theme = Theme.objects.filter(
+                Q(theme_type='builtin') | Q(created_by=request.user) | Q(is_public=True)
+            ).get(id=theme_id)
             instance.selected_theme = theme
             instance.save()
             
@@ -138,6 +148,13 @@ class UpdateAppearanceView(generics.UpdateAPIView):
             return Response({"error": "Theme not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
+# pyrefly: ignore [missing-import]
+from rest_framework.throttling import AnonRateThrottle
+
+class RegisterThrottle(AnonRateThrottle):
+    scope = 'register'
+
+
 class RegisterView(generics.CreateAPIView):
     """
     POST /api/auth/register/
@@ -145,6 +162,7 @@ class RegisterView(generics.CreateAPIView):
     """
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [RegisterThrottle]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

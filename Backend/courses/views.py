@@ -1,106 +1,95 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import viewsets, status, generics, filters
+# pyrefly: ignore [missing-import]
 from rest_framework.decorators import action
+# pyrefly: ignore [missing-import]
 from rest_framework.permissions import IsAuthenticated
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
+# pyrefly: ignore [missing-import]
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+# pyrefly: ignore [missing-import]
 from django.db.models import Q
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
 from datetime import timedelta
 import django_filters
 
+# pyrefly: ignore [missing-import]
 from accounts.permissions import IsAdmin, IsStudent, IsAdminOrReadOnly
-from .models import Course, CourseCategory, Subject, Topic, Content, Enrollment, Progress
+# pyrefly: ignore [missing-import]
+from .models import Course, CourseCategory, Subject, Topic, Material, Content, Enrollment, Progress
+# pyrefly: ignore [import-import]
 from .serializers import (
-    CourseSerializer,
-    CourseListSerializer,
-    CourseCategorySerializer,
-    SubjectSerializer,
-    SubjectListSerializer,
-    TopicSerializer,
-    TopicListSerializer,
-    ContentSerializer,
-    EnrollmentSerializer,
-    ProgressSerializer,
+    CourseSerializer, CourseListSerializer, CourseCategorySerializer,
+    SubjectSerializer, SubjectListSerializer,
+    TopicSerializer, TopicListSerializer,
+    MaterialSerializer, MaterialListSerializer,
+    ContentSerializer, EnrollmentSerializer, ProgressSerializer,
+    ReorderSerializer,
 )
 
 
 # ── Course Filter ─────────────────────────────────────────────────────────────
 
 class CourseFilter(django_filters.FilterSet):
-    # Exact filters
     level = django_filters.ChoiceFilter(choices=Course.LEVEL_CHOICES)
     duration = django_filters.ChoiceFilter(choices=Course.DURATION_CHOICES)
     has_certification = django_filters.BooleanFilter()
-    is_public = django_filters.BooleanFilter()
+    is_published = django_filters.BooleanFilter()
     category = django_filters.NumberFilter(field_name='category__id')
-
-    # Range filters
     min_rating = django_filters.NumberFilter(field_name='rating', lookup_expr='gte')
     language = django_filters.CharFilter(field_name='language', lookup_expr='iexact')
-
-    # Price filters
     is_free = django_filters.BooleanFilter(method='filter_free')
-
-    # Recently added (last N days)
     recently_added = django_filters.NumberFilter(method='filter_recently_added')
 
     class Meta:
         model = Course
-        fields = ['level', 'duration', 'has_certification', 'is_public', 'category', 'language']
+        fields = ['level', 'duration', 'has_certification', 'is_published', 'category', 'language']
 
     def filter_free(self, queryset, name, value):
-        if value:
-            return queryset.filter(price=0)
-        return queryset.filter(price__gt=0)
+        return queryset.filter(price=0) if value else queryset.filter(price__gt=0)
 
     def filter_recently_added(self, queryset, name, value):
         cutoff = timezone.now() - timedelta(days=int(value))
         return queryset.filter(created_at__gte=cutoff)
 
 
+# ── CourseCategory ─────────────────────────────────────────────────────────────
 
-# ---------- Course Category ----------
 class CourseCategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    GET /api/categories/  — list all categories with course counts.
-    """
     queryset = CourseCategory.objects.all()
     serializer_class = CourseCategorySerializer
     permission_classes = [IsAuthenticated]
-    pagination_class = None  # Return all categories (small list)
+    pagination_class = None
 
 
-# ---------- Course ----------
+# ── Course ─────────────────────────────────────────────────────────────────────
+
 class CourseViewSet(viewsets.ModelViewSet):
     """
-    CRUD for Courses.
-    - Any authenticated user can list / retrieve.
-    - Only admins can create / update / delete.
-    - Students see only public courses + courses they are enrolled in.
-    - Admins see all courses.
-
+    Full CRUD for Courses with statistics, enrollment, and publish actions.
     Search:    ?search=python
-    Filters:   ?level=beginner  ?category=1  ?duration=short
-               ?min_rating=4  ?is_free=true  ?language=English
-               ?has_certification=true  ?recently_added=7
-    Ordering:  ?ordering=name  ?ordering=-rating  ?ordering=-popularity_score
+    Filters:   ?level=beginner ?category=1 ?is_published=true
+    Ordering:  ?ordering=-rating ?ordering=-popularity_score
     """
     permission_classes = [IsAdminOrReadOnly]
-    search_fields = ['name', 'description', 'language']
-    ordering_fields = ['name', 'created_at', 'rating', 'popularity_score', 'price']
+    search_fields = ['title', 'description', 'language']
+    ordering_fields = ['title', 'created_at', 'rating', 'popularity_score', 'price']
     ordering = ['-created_at']
     filterset_class = CourseFilter
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
         user = self.request.user
-        qs = Course.objects.all()
+        qs = Course.objects.select_related('category', 'created_by').prefetch_related('subjects', 'enrollments')
 
-        # Students only see public courses + their enrolled courses
         if user.role == 'student':
             qs = qs.filter(
-                Q(is_public=True) | Q(enrollments__student=user)
+                Q(is_published=True) | Q(enrollments__student=user)
             ).distinct()
 
-        return qs.order_by('-created_at')
+        return qs
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -108,98 +97,253 @@ class CourseViewSet(viewsets.ModelViewSet):
         return CourseSerializer
 
     def perform_create(self, serializer):
-        # Automatically set the course creator to the logged-in admin
         serializer.save(created_by=self.request.user)
 
-    # ---- Enrollment Actions ----
+    @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
+    def publish(self, request, pk=None):
+        course = self.get_object()
+        course.is_published = True
+        course.save()
+        return Response({'message': f'"{course.title}" is now published.'})
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
+    def unpublish(self, request, pk=None):
+        course = self.get_object()
+        course.is_published = False
+        course.save()
+        return Response({'message': f'"{course.title}" has been unpublished.'})
 
     @action(detail=True, methods=['post'], permission_classes=[IsStudent])
     def enroll(self, request, pk=None):
-        """
-        POST /api/courses/{id}/enroll/
-        Enroll the current student in this course.
-        """
         course = self.get_object()
-
-        # Check if already enrolled
         if Enrollment.objects.filter(student=request.user, course=course).exists():
-            return Response(
-                {'error': 'You are already enrolled in this course.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        enrollment = Enrollment.objects.create(
-            student=request.user,
-            course=course,
-        )
+            return Response({'error': 'You are already enrolled in this course.'}, status=status.HTTP_400_BAD_REQUEST)
+        enrollment = Enrollment.objects.create(student=request.user, course=course)
         serializer = EnrollmentSerializer(enrollment)
-        return Response(
-            {'message': f'Successfully enrolled in {course.name}.', 'enrollment': serializer.data},
-            status=status.HTTP_201_CREATED,
-        )
+        return Response({'message': f'Successfully enrolled in {course.title}.', 'enrollment': serializer.data}, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'], permission_classes=[IsStudent])
     def unenroll(self, request, pk=None):
-        """
-        POST /api/courses/{id}/unenroll/
-        Remove the current student from this course.
-        """
         course = self.get_object()
-
-        enrollment = Enrollment.objects.filter(
-            student=request.user, course=course
-        ).first()
-
+        enrollment = Enrollment.objects.filter(student=request.user, course=course).first()
         if not enrollment:
-            return Response(
-                {'error': 'You are not enrolled in this course.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
+            return Response({'error': 'You are not enrolled in this course.'}, status=status.HTTP_400_BAD_REQUEST)
         enrollment.delete()
-        return Response(
-            {'message': f'Successfully unenrolled from {course.name}.'},
-            status=status.HTTP_200_OK,
-        )
+        return Response({'message': f'Successfully unenrolled from {course.title}.'})
 
     @action(detail=True, methods=['get'], permission_classes=[IsAdmin])
     def students(self, request, pk=None):
-        """
-        GET /api/courses/{id}/students/
-        List all students enrolled in this course (admin only).
-        """
         course = self.get_object()
-
-        enrollments = Enrollment.objects.filter(course=course)
+        enrollments = Enrollment.objects.filter(course=course).select_related('student')
         serializer = EnrollmentSerializer(enrollments, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['get'], permission_classes=[IsAdmin])
-    def analytics(self, request, pk=None):
-        """
-        GET /api/courses/{id}/analytics/
-        Admin view for course engagement analytics.
-        """
-        course = self.get_object()
 
-        total_enrollments = course.enrollments.count()
-        total_content = Content.objects.filter(topic__subject__course=course).count()
-        total_completions = Progress.objects.filter(content__topic__subject__course=course).count()
+# ── Subject ───────────────────────────────────────────────────────────────────
 
-        return Response({
-            'course': course.name,
-            'total_enrollments': total_enrollments,
-            'total_content_items': total_content,
-            'total_content_completions': total_completions,
-        })
+class SubjectViewSet(viewsets.ModelViewSet):
+    """
+    CRUD for Subjects.
+    Filter: ?course=<id>
+    Ordering: ?ordering=order
+    """
+    queryset = Subject.objects.select_related('course').prefetch_related('topics').order_by('order', 'created_at')
+    permission_classes = [IsAdminOrReadOnly]
+    search_fields = ['title', 'description']
+    ordering_fields = ['title', 'order', 'created_at']
+    filterset_fields = ['course', 'is_published']
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_serializer_class(self):
+        return SubjectListSerializer if self.action == 'list' else SubjectSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.role == 'student':
+            qs = qs.filter(
+                Q(course__is_published=True) | Q(course__enrollments__student=user)
+            ).distinct()
+        course_id = self.request.query_params.get('course')
+        if course_id:
+            qs = qs.filter(course_id=course_id)
+        return qs
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAdmin])
+    def reorder(self, request):
+        """POST /api/subjects/reorder/ — accepts {ids: [1,2,3]} to set order."""
+        serializer = ReorderSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        ids = list(set(serializer.validated_data['ids']))
+        owned_count = Subject.objects.filter(id__in=ids, course__created_by=request.user).count()
+        if owned_count != len(ids):
+            return Response({'error': 'Unauthorized to reorder one or more items.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        for index, subject_id in enumerate(serializer.validated_data['ids']):
+            Subject.objects.filter(pk=subject_id).update(order=index)
+        return Response({'message': 'Subjects reordered successfully.'})
 
 
-# ---------- My Courses (Student's enrolled courses) ----------
+# ── Topic ─────────────────────────────────────────────────────────────────────
+
+class TopicViewSet(viewsets.ModelViewSet):
+    """
+    CRUD for Topics.
+    Filter: ?subject=<id>  ?course=<id> (cross-filter)
+    """
+    queryset = Topic.objects.select_related('subject__course').prefetch_related('materials', 'contents').order_by('order', 'created_at')
+    permission_classes = [IsAdminOrReadOnly]
+    search_fields = ['title', 'description']
+    ordering_fields = ['title', 'order', 'created_at']
+    filterset_fields = ['subject', 'is_published', 'difficulty']
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_serializer_class(self):
+        return TopicListSerializer if self.action == 'list' else TopicSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.role == 'student':
+            qs = qs.filter(
+                Q(subject__course__is_published=True) | Q(subject__course__enrollments__student=user)
+            ).distinct()
+        subject_id = self.request.query_params.get('subject')
+        course_id = self.request.query_params.get('course')
+        if subject_id:
+            qs = qs.filter(subject_id=subject_id)
+        if course_id:
+            qs = qs.filter(subject__course_id=course_id)
+        return qs
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAdmin])
+    def reorder(self, request):
+        """POST /api/topics/reorder/ — accepts {ids: [1,2,3]} to set order."""
+        serializer = ReorderSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        ids = list(set(serializer.validated_data['ids']))
+        owned_count = Topic.objects.filter(id__in=ids, subject__course__created_by=request.user).count()
+        if owned_count != len(ids):
+            return Response({'error': 'Unauthorized to reorder one or more items.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        for index, topic_id in enumerate(serializer.validated_data['ids']):
+            Topic.objects.filter(pk=topic_id).update(order=index)
+        return Response({'message': 'Topics reordered successfully.'})
+
+
+# ── Material ──────────────────────────────────────────────────────────────────
+
+class MaterialViewSet(viewsets.ModelViewSet):
+    """
+    CRUD for Materials (upgraded Content).
+    Filter: ?topic=<id>  ?material_type=video  ?subject=<id>  ?course=<id>
+    """
+    queryset = Material.objects.select_related('topic__subject__course').order_by('order', 'created_at')
+    permission_classes = [IsAdminOrReadOnly]
+    search_fields = ['title', 'description']
+    ordering_fields = ['title', 'order', 'created_at']
+    filterset_fields = ['topic', 'material_type', 'is_published', 'is_downloadable']
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_serializer_class(self):
+        return MaterialListSerializer if self.action == 'list' else MaterialSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.role == 'student':
+            qs = qs.filter(
+                Q(topic__subject__course__is_published=True) | Q(topic__subject__course__enrollments__student=user)
+            ).distinct()
+        topic_id = self.request.query_params.get('topic')
+        subject_id = self.request.query_params.get('subject')
+        course_id = self.request.query_params.get('course')
+        material_type = self.request.query_params.get('material_type')
+        if topic_id:
+            qs = qs.filter(topic_id=topic_id)
+        if subject_id:
+            qs = qs.filter(topic__subject_id=subject_id)
+        if course_id:
+            qs = qs.filter(topic__subject__course_id=course_id)
+        if material_type:
+            qs = qs.filter(material_type=material_type)
+        return qs
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAdmin])
+    def reorder(self, request):
+        """POST /api/materials/reorder/ — accepts {ids: [1,2,3]} to set order."""
+        serializer = ReorderSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        ids = list(set(serializer.validated_data['ids']))
+        owned_count = Material.objects.filter(id__in=ids, topic__subject__course__created_by=request.user).count()
+        if owned_count != len(ids):
+            return Response({'error': 'Unauthorized to reorder one or more items.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        for index, mat_id in enumerate(serializer.validated_data['ids']):
+            Material.objects.filter(pk=mat_id).update(order=index)
+        return Response({'message': 'Materials reordered successfully.'})
+
+    @action(detail=True, methods=['post'], permission_classes=[IsStudent])
+    def track_view(self, request, pk=None):
+        material = self.get_object()
+        material.view_count += 1
+        material.save(update_fields=['view_count'])
+        return Response({'view_count': material.view_count})
+
+
+# ── Content (Legacy) ──────────────────────────────────────────────────────────
+
+class ContentViewSet(viewsets.ModelViewSet):
+    """Legacy endpoint kept for backward compatibility."""
+    queryset = Content.objects.all().order_by('-created_at')
+    serializer_class = ContentSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    search_fields = ['title']
+    ordering_fields = ['title', 'created_at']
+    filterset_fields = ['topic', 'content_type']
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.role == 'student':
+            qs = qs.filter(
+                Q(topic__subject__course__is_published=True) | Q(topic__subject__course__enrollments__student=user)
+            ).distinct()
+        topic_id = self.request.query_params.get('topic')
+        if topic_id:
+            qs = qs.filter(topic_id=topic_id)
+        return qs
+
+    @action(detail=True, methods=['post'], permission_classes=[IsStudent])
+    def mark_complete(self, request, pk=None):
+        content = self.get_object()
+        progress, created = Progress.objects.get_or_create(student=request.user, content=content)
+        if created:
+            try:
+                from gamification.services import track_event
+                unlocked_badges = track_event(request.user, 'task_complete')
+                response_data = {'message': f'Marked "{content.title}" as complete.'}
+                if unlocked_badges:
+                    response_data['badge_unlocked'] = True
+                    response_data['badge'] = {
+                        "name": unlocked_badges[0].name,
+                        "description": unlocked_badges[0].description,
+                        "icon": unlocked_badges[0].icon.url if unlocked_badges[0].icon else None,
+                        "xp": unlocked_badges[0].xp_reward,
+                    }
+                return Response(response_data, status=status.HTTP_201_CREATED)
+            except Exception:
+                return Response({'message': f'Marked "{content.title}" as complete.'}, status=status.HTTP_201_CREATED)
+        return Response({'message': 'Already complete.', 'badge_unlocked': False})
+
+
+# ── Dashboard ─────────────────────────────────────────────────────────────────
+
 class MyCoursesView(generics.ListAPIView):
-    """
-    GET /api/my-courses/
-    Lists all courses the current student is enrolled in.
-    """
     serializer_class = CourseListSerializer
     permission_classes = [IsAuthenticated]
 
@@ -209,138 +353,19 @@ class MyCoursesView(generics.ListAPIView):
         ).order_by('-enrollments__enrolled_at')
 
 
-# ---------- Subject ----------
-class SubjectViewSet(viewsets.ModelViewSet):
-    """
-    CRUD for Subjects.
-    Filter: ?course=<id>
-    Order:  ?ordering=name
-    """
-    queryset = Subject.objects.all().order_by('id')
-    permission_classes = [IsAdminOrReadOnly]
-    search_fields = ['name', 'description']
-    ordering_fields = ['name', 'id']
-    filterset_fields = ['course']
-
-    def get_serializer_class(self):
-        if self.action == 'list':
-            return SubjectListSerializer
-        return SubjectSerializer
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        course_id = self.request.query_params.get('course')
-        if course_id:
-            qs = qs.filter(course_id=course_id)
-        return qs
-
-
-# ---------- Topic ----------
-class TopicViewSet(viewsets.ModelViewSet):
-    """
-    CRUD for Topics.
-    Filter: ?subject=<id>
-    Order:  ?ordering=name
-    """
-    queryset = Topic.objects.all().order_by('id')
-    permission_classes = [IsAdminOrReadOnly]
-    search_fields = ['name', 'description']
-    ordering_fields = ['name', 'id']
-    filterset_fields = ['subject']
-
-    def get_serializer_class(self):
-        if self.action == 'list':
-            return TopicListSerializer
-        return TopicSerializer
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        subject_id = self.request.query_params.get('subject')
-        if subject_id:
-            qs = qs.filter(subject_id=subject_id)
-        return qs
-
-
-# ---------- Content ----------
-class ContentViewSet(viewsets.ModelViewSet):
-    """
-    CRUD for Content.
-    Filter: ?topic=<id>  ?content_type=video
-    Order:  ?ordering=-created_at
-    """
-    queryset = Content.objects.all().order_by('-created_at')
-    serializer_class = ContentSerializer
-    permission_classes = [IsAdminOrReadOnly]
-    search_fields = ['title']
-    ordering_fields = ['title', 'created_at']
-    filterset_fields = ['topic', 'content_type']
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        topic_id = self.request.query_params.get('topic')
-        if topic_id:
-            qs = qs.filter(topic_id=topic_id)
-        return qs
-
-    @action(detail=True, methods=['post'], permission_classes=[IsStudent])
-    def mark_complete(self, request, pk=None):
-        """
-        POST /api/contents/{id}/mark_complete/
-        Mark a content item as completed by the student.
-        """
-        content = self.get_object()
-
-        progress, created = Progress.objects.get_or_create(
-            student=request.user,
-            content=content,
-        )
-
-        if created:
-            # Gamification hook
-            from gamification.services import track_event
-            unlocked_badges = track_event(request.user, 'task_complete')
-            
-            response_data = {'message': f'Marked "{content.title}" as complete.'}
-            if unlocked_badges:
-                response_data['badge_unlocked'] = True
-                response_data['badge'] = {
-                    "name": unlocked_badges[0].name,
-                    "description": unlocked_badges[0].description,
-                    "icon": unlocked_badges[0].icon.url if unlocked_badges[0].icon else None,
-                    "xp": unlocked_badges[0].xp_reward
-                }
-            
-            return Response(response_data, status=status.HTTP_201_CREATED)
-            
-        return Response(
-            {'message': 'Content was already marked as complete.', 'badge_unlocked': False},
-            status=status.HTTP_200_OK,
-        )
-
-
-# ---------- Dashboard (Student) ----------
 class DashboardView(generics.RetrieveAPIView):
-    """
-    GET /api/dashboard/
-    Student dashboard with progress % and recent activity.
-    """
     permission_classes = [IsStudent]
 
     def get(self, request, *args, **kwargs):
         enrolled_courses = Course.objects.filter(enrollments__student=request.user)
-        total_content_in_enrolled = Content.objects.filter(topic__subject__course__in=enrolled_courses).count()
+        total_content = Content.objects.filter(topic__subject__course__in=enrolled_courses).count()
         completed_content = Progress.objects.filter(student=request.user).count()
-
-        progress_percentage = 0
-        if total_content_in_enrolled > 0:
-            progress_percentage = round((completed_content / total_content_in_enrolled) * 100, 2)
-
+        progress_percentage = round((completed_content / total_content) * 100, 2) if total_content > 0 else 0
         recent_activity = Progress.objects.filter(student=request.user).order_by('-completed_at')[:5]
         serializer = ProgressSerializer(recent_activity, many=True)
-
         return Response({
             'enrolled_courses_count': enrolled_courses.count(),
-            'total_content_to_complete': total_content_in_enrolled,
+            'total_content_to_complete': total_content,
             'completed_content_count': completed_content,
             'overall_progress_percentage': progress_percentage,
             'recent_activity': serializer.data,
@@ -348,24 +373,14 @@ class DashboardView(generics.RetrieveAPIView):
 
 
 class MyCompletedContentView(generics.ListAPIView):
-    """
-    GET /api/my-completed-content/
-    Lists all progress/completed content records for the student.
-    """
     serializer_class = ProgressSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Progress.objects.filter(
-            student=self.request.user
-        ).order_by('-completed_at')
+        return Progress.objects.filter(student=self.request.user).order_by('-completed_at')
 
 
 class MyTotalContentView(generics.ListAPIView):
-    """
-    GET /api/my-total-content/
-    Lists all content items inside the courses the student is enrolled in.
-    """
     serializer_class = ContentSerializer
     permission_classes = [IsAuthenticated]
 
@@ -373,57 +388,47 @@ class MyTotalContentView(generics.ListAPIView):
         enrolled_courses = Course.objects.filter(enrollments__student=self.request.user)
         return Content.objects.filter(
             topic__subject__course__in=enrolled_courses
-        ).order_by('topic__subject__course__name', 'topic__name', 'title')
+        ).order_by('topic__subject__course__title', 'topic__title', 'title')
 
 
-# ---------- Progress History (time-series for graph) ----------
 class ProgressHistoryView(generics.GenericAPIView):
-    """
-    GET /api/progress-history/?days=7
-    Returns daily cumulative progress % for the authenticated student.
-    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        days = int(request.query_params.get('days', 7))
+        try:
+            days = int(request.query_params.get('days', 7))
+            if days < 0 or days > 365:
+                raise ValueError
+        except ValueError:
+            return Response({"error": "Invalid days parameter. Must be an integer between 0 and 365."}, status=status.HTTP_400_BAD_REQUEST)
         now = timezone.now()
-        
         all_progress = Progress.objects.filter(student=request.user)
-        
+
+        course_id = request.query_params.get('course')
+        if course_id:
+            try:
+                course_id = int(course_id)
+                if not Course.objects.filter(enrollments__student=request.user, id=course_id).exists():
+                    return Response({"error": "You are not enrolled in this course."}, status=status.HTTP_403_FORBIDDEN)
+                enrolled_courses = Course.objects.filter(id=course_id)
+                all_progress = all_progress.filter(content__topic__subject__course_id=course_id)
+            except ValueError:
+                return Response({"error": "Invalid course ID parameter."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            enrolled_courses = Course.objects.filter(enrollments__student=request.user)
+
         if days == 0:
-            # "All" time tab selected — find earliest progress record
             first_progress = all_progress.order_by('completed_at').first()
             if first_progress:
                 start_date = first_progress.completed_at.date()
-                days = (now.date() - start_date).days
-                # Ensure we show at least a 7-day window even if they just started
-                if days < 7:
-                    days = 7
-                    start_date = (now - timedelta(days=7)).date()
+                days = max((now.date() - start_date).days, 7)
             else:
-                # Default to 30 days if no progress yet
                 days = 30
-                start_date = (now - timedelta(days=30)).date()
+            start_date = (now - timedelta(days=days)).date()
         else:
             start_date = (now - timedelta(days=days)).date()
 
-        enrolled_courses = Course.objects.filter(enrollments__student=request.user)
-        total_content = Content.objects.filter(
-            topic__subject__course__in=enrolled_courses
-        ).count()
-
-        if total_content == 0:
-            result = []
-            for i in range(days + 1):
-                d = start_date + timedelta(days=i)
-                if d <= now.date():
-                    result.append({'date': d.isoformat(), 'progress': 0})
-            return Response({
-                "history": result,
-                "period_completed": 0,
-                "total_content": 0,
-                "period_progress_gained": 0
-            })
+        total_content = Content.objects.filter(topic__subject__course__in=enrolled_courses).count()
 
         result = []
         for i in range(days + 1):
@@ -431,17 +436,17 @@ class ProgressHistoryView(generics.GenericAPIView):
             if d > now.date():
                 break
             completed_by_day = all_progress.filter(completed_at__date__lte=d).count()
-            pct = round((completed_by_day / total_content) * 100, 1)
+            pct = round((completed_by_day / total_content) * 100, 1) if total_content > 0 else 0
             result.append({'date': d.isoformat(), 'progress': pct})
 
         start_completions = all_progress.filter(completed_at__date__lt=start_date).count()
-        end_completions = all_progress.filter(completed_at__date__lte=now.date()).count()
+        end_completions = all_progress.count()
         period_completed = end_completions - start_completions
-        period_gained = round((period_completed / total_content) * 100, 1)
+        period_gained = round((period_completed / total_content) * 100, 1) if total_content > 0 else 0
 
         return Response({
             "history": result,
             "period_completed": period_completed,
             "total_content": total_content,
-            "period_progress_gained": period_gained
+            "period_progress_gained": period_gained,
         })

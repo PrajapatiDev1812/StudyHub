@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
@@ -77,11 +77,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# CORS - Allow frontend to connect
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-]
+CORS_ALLOWED_ORIGINS = os.environ.get(
+    "CORS_ALLOWED_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173"
+).split(",")
 
 ROOT_URLCONF = 'config.urls'
 
@@ -109,11 +108,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'studyhub_db',
-        'USER': 'postgres',
-        'PASSWORD': 'Dev#18jk',
-        'HOST': 'localhost',
-        'PORT': '5432'
+        'NAME': os.environ.get('DB_NAME', 'studyhub_db'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'Dev#18jk'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432')
     }
 }
 
@@ -176,11 +175,15 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
 
-    # ── No global throttling — each view applies its own throttle class ──
-    'DEFAULT_THROTTLE_CLASSES': [],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
 
     # ── AI-specific rate limits (change values here to adjust limits) ──
     'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',
+        'user': '1000/day',
         'ai_daily': '50/day',    # Authenticated students: 50 messages/day
         'ai_burst': '5/min',     # Authenticated students: 5 messages/minute
         'ai_anon':  '5/day',     # Anonymous users: 5 messages/day
@@ -221,6 +224,8 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({
 REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({
     'otp_verify': '5/min',   # Max 5 OTP attempts per minute per IP
     'otp_setup':  '10/hour',   # Max 10 setup attempts per hour
+    'register': '10/hour',     # Max 10 registration attempts per hour per IP
+    'password_change': '5/hour', # Max 5 password changes per hour per user
 })
 
 # Temp token TTL for 2FA step-up (seconds)
@@ -250,7 +255,8 @@ RECAPTCHA_MIN_SCORE = 0.5
 
 # ---------- Production Security Settings ----------
 # These will be enforced when deployed. For now, we prepare them.
-if not DEBUG:
+import sys
+if not DEBUG and not ('test' in sys.argv):
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
@@ -272,7 +278,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
 
 # ---------- RAG Debug Mode ----------
 DEBUG_RAG = os.getenv('DEBUG_RAG', 'False').lower() in ('true', '1', 'yes')
@@ -322,3 +328,13 @@ SWAGGER_SETTINGS = {
     'REFETCH_SCHEMA_WITH_AUTH': True,
     'REFETCH_SCHEMA_ON_LOGOUT': True,
 }
+
+# Enforce secure configuration in production
+# pyrefly: ignore [missing-import]
+from django.core.exceptions import ImproperlyConfigured
+if not DEBUG and not ('test' in sys.argv):
+    if SECRET_KEY == "dev-secret-key":
+        raise ImproperlyConfigured("SECRET_KEY must be set to a secure value in production!")
+    if DATABASES['default']['PASSWORD'] == "Dev#18jk":
+        raise ImproperlyConfigured("Database PASSWORD must be changed to a secure value in production!")
+
