@@ -14,6 +14,7 @@ from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta
 import django_filters
+from django.db.models import Count, Q
 
 # pyrefly: ignore [missing-import]
 from accounts.permissions import IsAdmin, IsStudent, IsAdminOrReadOnly
@@ -58,7 +59,9 @@ class CourseFilter(django_filters.FilterSet):
 # ── CourseCategory ─────────────────────────────────────────────────────────────
 
 class CourseCategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = CourseCategory.objects.all()
+    queryset = CourseCategory.objects.annotate(
+        course_count=Count('courses', filter=Q(courses__is_published=True), distinct=True)
+    )
     serializer_class = CourseCategorySerializer
     permission_classes = [IsAuthenticated]
     pagination_class = None
@@ -82,7 +85,10 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Course.objects.select_related('category', 'created_by').prefetch_related('subjects', 'enrollments')
+        qs = Course.objects.select_related('category', 'created_by').prefetch_related('subjects', 'enrollments').annotate(
+            topics_count=Count('subjects__topics', distinct=True),
+            materials_count=Count('subjects__topics__materials', distinct=True),
+        )
 
         if user.role == 'student':
             qs = qs.filter(
@@ -147,7 +153,9 @@ class SubjectViewSet(viewsets.ModelViewSet):
     Filter: ?course=<id>
     Ordering: ?ordering=order
     """
-    queryset = Subject.objects.select_related('course').prefetch_related('topics').order_by('order', 'created_at')
+    queryset = Subject.objects.select_related('course').prefetch_related('topics').annotate(
+        materials_count=Count('topics__materials', distinct=True)
+    ).order_by('order', 'created_at')
     permission_classes = [IsAdminOrReadOnly]
     search_fields = ['title', 'description']
     ordering_fields = ['title', 'order', 'created_at']
@@ -192,7 +200,9 @@ class TopicViewSet(viewsets.ModelViewSet):
     CRUD for Topics.
     Filter: ?subject=<id>  ?course=<id> (cross-filter)
     """
-    queryset = Topic.objects.select_related('subject__course').prefetch_related('materials', 'contents').order_by('order', 'created_at')
+    queryset = Topic.objects.select_related('subject__course').prefetch_related('materials', 'contents').annotate(
+        materials_count=Count('materials', distinct=True)
+    ).order_by('order', 'created_at')
     permission_classes = [IsAdminOrReadOnly]
     search_fields = ['title', 'description']
     ordering_fields = ['title', 'order', 'created_at']

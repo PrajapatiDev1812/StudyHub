@@ -12,7 +12,7 @@ class CourseCategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'icon', 'slug', 'course_count']
 
     def get_course_count(self, obj):
-        return obj.courses.filter(is_published=True).count()
+        return getattr(obj, 'course_count', obj.courses.filter(is_published=True).count())
 
 
 # ── Material ──────────────────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ class TopicSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
 
     def get_total_materials(self, obj):
-        return obj.materials.count()
+        return getattr(obj, 'materials_count', obj.materials.count())
 
 
 class TopicListSerializer(serializers.ModelSerializer):
@@ -88,7 +88,7 @@ class TopicListSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'slug', 'created_at']
 
     def get_total_materials(self, obj):
-        return obj.materials.count()
+        return getattr(obj, 'materials_count', obj.materials.count())
 
 
 # ── Subject ───────────────────────────────────────────────────────────────────
@@ -111,7 +111,7 @@ class SubjectSerializer(serializers.ModelSerializer):
         return obj.topics.count()
 
     def get_total_materials(self, obj):
-        return obj.total_materials
+        return getattr(obj, 'materials_count', obj.total_materials)
 
 
 class SubjectListSerializer(serializers.ModelSerializer):
@@ -132,7 +132,7 @@ class SubjectListSerializer(serializers.ModelSerializer):
         return obj.topics.count()
 
     def get_total_materials(self, obj):
-        return obj.total_materials
+        return getattr(obj, 'materials_count', obj.total_materials)
 
 
 # ── Course ─────────────────────────────────────────────────────────────────────
@@ -169,17 +169,17 @@ class CourseSerializer(serializers.ModelSerializer):
     def get_is_enrolled(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return obj.enrollments.filter(student=request.user).exists()
+            return any(e.student_id == request.user.id for e in obj.enrollments.all())
         return False
 
     def get_total_subjects(self, obj):
         return obj.subjects.count()
 
     def get_total_topics(self, obj):
-        return obj.total_topics
+        return getattr(obj, 'topics_count', obj.total_topics)
 
     def get_total_materials(self, obj):
-        return obj.total_materials
+        return getattr(obj, 'materials_count', obj.total_materials)
 
 
 class CourseListSerializer(serializers.ModelSerializer):
@@ -212,17 +212,17 @@ class CourseListSerializer(serializers.ModelSerializer):
     def get_is_enrolled(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return obj.enrollments.filter(student=request.user).exists()
+            return any(e.student_id == request.user.id for e in obj.enrollments.all())
         return False
 
     def get_total_subjects(self, obj):
         return obj.subjects.count()
 
     def get_total_topics(self, obj):
-        return obj.total_topics
+        return getattr(obj, 'topics_count', obj.total_topics)
 
     def get_total_materials(self, obj):
-        return obj.total_materials
+        return getattr(obj, 'materials_count', obj.total_materials)
 
 
 # ── Reorder ───────────────────────────────────────────────────────────────────
