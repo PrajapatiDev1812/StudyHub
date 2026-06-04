@@ -108,7 +108,13 @@ class DashboardService:
 
     def get_continue_learning(self):
         """Returns the last accessed course/topic based on progress or enrollment."""
-        last_progress = Progress.objects.filter(student=self.user).order_by('-completed_at').first()
+        last_progress = (
+            Progress.objects
+            .filter(student=self.user)
+            .select_related('content__topic__subject__course')
+            .order_by('-completed_at')
+            .first()
+        )
         
         if last_progress:
             content = last_progress.content

@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from django.contrib import admin
 from .models import Test, Question, Option, StudentAttempt, StudentAnswer
 
@@ -22,6 +23,7 @@ class TestAdmin(admin.ModelAdmin):
     list_display = ('title', 'topic', 'created_by', 'time_limit_minutes', 'passing_score', 'is_active')
     list_filter = ('is_active', 'topic__subject__course')
     inlines = [QuestionInline]
+    list_select_related = ('topic', 'created_by')
 
 
 class StudentAnswerInline(admin.TabularInline):

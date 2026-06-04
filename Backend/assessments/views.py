@@ -47,7 +47,7 @@ class TestViewSet(viewsets.ModelViewSet):
     filterset_fields = ['topic', 'is_active']
 
     def get_queryset(self):
-        qs = Test.objects.all()
+        qs = Test.objects.select_related('topic__subject', 'created_by')
         # Students only see active tests
         if self.request.user.role == 'student':
             qs = qs.filter(is_active=True)
@@ -241,7 +241,7 @@ class MyAttemptsView(OwnedObjectMixin, generics.ListAPIView):
     """
     serializer_class = StudentAttemptListSerializer
     permission_classes = [IsAuthenticated]
-    queryset = StudentAttempt.objects.all()
+    queryset = StudentAttempt.objects.select_related('test', 'student')
 
     def get_queryset(self):
         return super().get_queryset().order_by('-started_at')
@@ -255,4 +255,7 @@ class AttemptDetailView(OwnedObjectMixin, generics.RetrieveAPIView):
     """
     serializer_class = StudentAttemptSerializer
     permission_classes = [IsAuthenticated]
-    queryset = StudentAttempt.objects.all()
+    queryset = StudentAttempt.objects.select_related('test', 'student').prefetch_related(
+        'answers__question__options',
+        'answers__selected_option',
+    )

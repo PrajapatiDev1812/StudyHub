@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from django.contrib import admin
 from .models import CourseCategory, Course, Subject, Topic, Material, Content, Enrollment, Progress
 
@@ -43,6 +44,7 @@ class SubjectAdmin(admin.ModelAdmin):
     readonly_fields = ('slug', 'created_at', 'updated_at')
     inlines = [TopicInline]
     list_editable = ('order', 'is_published')
+    list_select_related = ('course',)
 
 
 class MaterialInline(admin.TabularInline):
@@ -60,6 +62,7 @@ class TopicAdmin(admin.ModelAdmin):
     readonly_fields = ('slug', 'created_at', 'updated_at')
     inlines = [MaterialInline]
     list_editable = ('order', 'is_published')
+    list_select_related = ('subject__course',)
 
 
 @admin.register(Material)
@@ -69,6 +72,7 @@ class MaterialAdmin(admin.ModelAdmin):
     search_fields = ('title', 'description')
     readonly_fields = ('slug', 'created_at', 'updated_at', 'view_count', 'download_count')
     list_editable = ('order', 'is_published')
+    list_select_related = ('topic__subject__course',)
 
 
 @admin.register(Content)
@@ -83,6 +87,7 @@ class EnrollmentAdmin(admin.ModelAdmin):
     list_display = ('student', 'course', 'enrolled_at')
     list_filter = ('course',)
     search_fields = ('student__username', 'course__title')
+    list_select_related = ('student', 'course')
 
 
 @admin.register(Progress)
@@ -90,3 +95,4 @@ class ProgressAdmin(admin.ModelAdmin):
     list_display = ('student', 'content', 'completed_at')
     list_filter = ('content__topic__subject__course',)
     search_fields = ('student__username',)
+    list_select_related = ('student', 'content')

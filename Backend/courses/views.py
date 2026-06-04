@@ -298,7 +298,7 @@ class MaterialViewSet(viewsets.ModelViewSet):
 
 class ContentViewSet(viewsets.ModelViewSet):
     """Legacy endpoint kept for backward compatibility."""
-    queryset = Content.objects.all().order_by('-created_at')
+    queryset = Content.objects.select_related('topic__subject__course').order_by('-created_at')
     serializer_class = ContentSerializer
     permission_classes = [IsAdminOrReadOnly]
     search_fields = ['title']
@@ -348,9 +348,19 @@ class MyCoursesView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Course.objects.filter(
-            enrollments__student=self.request.user
-        ).order_by('-enrollments__enrolled_at')
+        from django.db.models import Count, Q
+        user = self.request.user
+        return (
+            Course.objects
+            .filter(enrollments__student=user)
+            .select_related('category', 'created_by')
+            .prefetch_related('subjects', 'enrollments')
+            .annotate(
+                topics_count=Count('subjects__topics', distinct=True),
+                materials_count=Count('subjects__topics__materials', distinct=True),
+            )
+            .order_by('-enrollments__enrolled_at')
+        )
 
 
 class DashboardView(generics.RetrieveAPIView):
