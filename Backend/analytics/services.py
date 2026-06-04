@@ -89,34 +89,41 @@ class StudentAnalyticsService:
         labels = []
         study_hours = []
         tasks = []
+
+        fs_q = self._get_date_filter('start_time')
+        focus_rows = (
+            FocusSession.objects.filter(student=self.user, status='completed').filter(fs_q)
+            .annotate(day=TruncDate('start_time'))
+            .values('day')
+            .annotate(total=Sum('total_focus_seconds'))
+        )
+        focus_map = {row['day']: row['total'] for row in focus_rows}
+
+        task_rows = (
+            Task.objects.filter(user=self.user, completed=True).filter(self._get_date_filter('completed_at'))
+            .annotate(day=TruncDate('completed_at'))
+            .values('day')
+            .annotate(count=Count('id'))
+        )
+        task_map = {row['day']: row['count'] for row in task_rows}
+
+        prog_rows = (
+            Progress.objects.filter(student=self.user).filter(self._get_date_filter('completed_at'))
+            .annotate(day=TruncDate('completed_at'))
+            .values('day')
+            .annotate(count=Count('id'))
+        )
+        prog_map = {row['day']: row['count'] for row in prog_rows}
         
         for i in range(days + 1):
             current_date = start + datetime.timedelta(days=i)
             labels.append(current_date.strftime('%b %d'))
             
-            # This is not highly optimized for large date ranges, 
-            # but works well for 7-30 days. For production, we'd use trunc_date.
-            dt_start = timezone.make_aware(datetime.datetime.combine(current_date, datetime.time.min))
-            dt_end = timezone.make_aware(datetime.datetime.combine(current_date, datetime.time.max))
-            
-            # Focus Time
-            f_sec = FocusSession.objects.filter(
-                student=self.user,
-                status='completed',
-                start_time__range=(dt_start, dt_end)
-            ).aggregate(total=Sum('total_focus_seconds'))['total'] or 0
+            f_sec = focus_map.get(current_date, 0) or 0
             study_hours.append(round(f_sec / 3600, 2))
             
-            # Tasks + Content
-            t_count = Task.objects.filter(
-                user=self.user,
-                completed=True,
-                completed_at__range=(dt_start, dt_end)
-            ).count()
-            c_count = Progress.objects.filter(
-                student=self.user,
-                completed_at__range=(dt_start, dt_end)
-            ).count()
+            t_count = task_map.get(current_date, 0) or 0
+            c_count = prog_map.get(current_date, 0) or 0
             tasks.append(t_count + c_count)
             
         return {
@@ -156,11 +163,16 @@ class StudentAnalyticsService:
 
     def get_time_of_day_analysis(self):
         """Aggregates focus sessions into Morning, Afternoon, Evening, Night."""
+        from django.db.models.functions import ExtractHour
+        from django.db.models import Sum
+
         fs_q = self._get_date_filter('start_time')
-        sessions = FocusSession.objects.filter(
-            student=self.user,
-            status='completed'
-        ).filter(fs_q)
+        rows = (
+            FocusSession.objects.filter(student=self.user, status='completed').filter(fs_q)
+            .annotate(hour=ExtractHour('start_time'))
+            .values('hour')
+            .annotate(total=Sum('total_focus_seconds'))
+        )
         
         distribution = {
             'Morning (6 AM - 12 PM)': 0,
@@ -169,12 +181,9 @@ class StudentAnalyticsService:
             'Night (10 PM - 6 AM)': 0
         }
         
-        for session in sessions:
-            # Use local time if possible, here using UTC hour for simplicity, 
-            # ideally we'd use timezone.localtime(session.start_time)
-            local_time = timezone.localtime(session.start_time)
-            hour = local_time.hour
-            sec = session.total_focus_seconds
+        for row in rows:
+            hour = row['hour']
+            sec = row['total'] or 0
             
             if 6 <= hour < 12:
                 distribution['Morning (6 AM - 12 PM)'] += sec
@@ -185,13 +194,14 @@ class StudentAnalyticsService:
             else:
                 distribution['Night (10 PM - 6 AM)'] += sec
                 
-        # Convert to hours
-        for k in distribution:
-            distribution[k] = round(distribution[k] / 3600, 2)
-            
         return {
             'labels': list(distribution.keys()),
-            'values': list(distribution.values())
+            'values': [
+                round(distribution['Morning (6 AM - 12 PM)'] / 3600, 2),
+                round(distribution['Afternoon (12 PM - 5 PM)'] / 3600, 2),
+                round(distribution['Evening (5 PM - 10 PM)'] / 3600, 2),
+                round(distribution['Night (10 PM - 6 AM)'] / 3600, 2)
+            ]
         }
 
     def get_focus_mode_analytics(self):

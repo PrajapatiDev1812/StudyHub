@@ -448,16 +448,32 @@ class ProgressHistoryView(generics.GenericAPIView):
         else:
             start_date = (now - timedelta(days=days)).date()
 
+        from django.db.models.functions import TruncDate
+        from django.db.models import Count
+
         total_content = Content.objects.filter(topic__subject__course__in=enrolled_courses).count()
 
+        # Query all progress counts grouped by day within range
+        daily_rows = (
+            all_progress
+            .filter(completed_at__date__gte=start_date, completed_at__date__lte=now.date())
+            .annotate(day=TruncDate('completed_at'))
+            .values('day')
+            .annotate(count=Count('id'))
+            .order_by('day')
+        )
+        day_count_map = {row['day']: row['count'] for row in daily_rows}
+
+        # Calculate start total (anything completed before start_date)
+        running_total = all_progress.filter(completed_at__date__lt=start_date).count()
+
         result = []
-        for i in range(days + 1):
-            d = start_date + timedelta(days=i)
-            if d > now.date():
-                break
-            completed_by_day = all_progress.filter(completed_at__date__lte=d).count()
-            pct = round((completed_by_day / total_content) * 100, 1) if total_content > 0 else 0
-            result.append({'date': d.isoformat(), 'progress': pct})
+        current = start_date
+        while current <= now.date():
+            running_total += day_count_map.get(current, 0)
+            pct = round((running_total / total_content) * 100, 1) if total_content > 0 else 0
+            result.append({'date': current.isoformat(), 'progress': pct})
+            current += timedelta(days=1)
 
         start_completions = all_progress.filter(completed_at__date__lt=start_date).count()
         end_completions = all_progress.count()

@@ -58,7 +58,7 @@ class BadgeEngine:
                 continue
                 
             if BadgeEngine.is_badge_earned(stats, badge):
-                _, created, xp = badge_service.award_badge(user, badge)
+                _, created, xp = badge_service.award_badge(user, badge, stats=stats)
                 if created:
                     unlocked.append(badge)
                 

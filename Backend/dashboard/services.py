@@ -57,23 +57,28 @@ class DashboardService:
 
     def get_weekly_activity(self):
         """Returns a small graph data for the last 7 days."""
+        from django.db.models.functions import TruncDate
+        from django.db.models import Sum
+
         days = 7
         labels = []
         study_hours = []
+
+        week_ago = (self.now - datetime.timedelta(days=7)).date()
+        rows = (
+            FocusSession.objects
+            .filter(student=self.user, status='completed', start_time__date__gte=week_ago)
+            .annotate(day=TruncDate('start_time'))
+            .values('day')
+            .annotate(total=Sum('total_focus_seconds'))
+        )
+        sec_map = {row['day']: row['total'] for row in rows}
         
         for i in range(days):
             d = (self.now - datetime.timedelta(days=days - 1 - i)).date()
             labels.append(d.strftime('%a')) # Mon, Tue, etc.
             
-            dt_start = timezone.make_aware(datetime.datetime.combine(d, datetime.time.min))
-            dt_end = timezone.make_aware(datetime.datetime.combine(d, datetime.time.max))
-            
-            sec = FocusSession.objects.filter(
-                student=self.user,
-                status='completed',
-                start_time__range=(dt_start, dt_end)
-            ).aggregate(total=Sum('total_focus_seconds'))['total'] or 0
-            
+            sec = sec_map.get(d, 0) or 0
             study_hours.append(round(sec / 3600, 1))
             
         return {
