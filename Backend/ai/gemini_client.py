@@ -5,6 +5,7 @@ Wrapper around the Google GenAI SDK (new google-genai package).
 import os
 import logging
 from google import genai
+# pyrefly: ignore [missing-import]
 from google.genai import types
 from dotenv import load_dotenv
 
