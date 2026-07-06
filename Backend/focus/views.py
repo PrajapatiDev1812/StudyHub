@@ -79,9 +79,9 @@ class FocusSessionViewSet(viewsets.ModelViewSet):
         return qs
 
     def destroy(self, request, *args, **kwargs):
-        """DELETE /api/focus/sessions/<id>/ — delete a single session (student's own only)."""
+        """DELETE /api/focus/sessions/<id>/ — soft-delete a single session (student's own only)."""
         session = get_object_or_404(FocusSession, pk=kwargs['pk'], student=request.user)
-        session.delete()
+        session.delete(soft=True, user=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     # ── Bulk delete all ended sessions ─────────────────────────────
@@ -89,8 +89,9 @@ class FocusSessionViewSet(viewsets.ModelViewSet):
     def clear_history(self, request):
         """
         DELETE /api/focus/sessions/clear_history/
-        Deletes all completed + abandoned sessions for the current student.
+        Soft-deletes all completed + abandoned sessions for the current student.
         Active/paused/break sessions are preserved.
+        Session data is retained for analytics dashboards even after soft-deletion.
         """
         mode = request.query_params.get('mode')  # optional: only clear 'strict' or 'normal'
         qs = FocusSession.objects.filter(
@@ -99,8 +100,9 @@ class FocusSessionViewSet(viewsets.ModelViewSet):
         )
         if mode in ('normal', 'strict'):
             qs = qs.filter(mode=mode)
-        deleted_count, _ = qs.delete()
-        return Response({'deleted': deleted_count}, status=status.HTTP_200_OK)
+        # Soft-delete: preserves data for analytics, hides from active queries
+        deleted_count = qs.delete(soft=True, user=request.user)
+        return Response({'cleared': deleted_count}, status=status.HTTP_200_OK)
 
     # ── Aggregated history stats ────────────────────────────────────
     @action(detail=False, methods=['get'], url_path='stats')

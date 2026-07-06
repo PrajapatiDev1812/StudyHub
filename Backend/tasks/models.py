@@ -1,10 +1,11 @@
 from django.db import models
 from django.conf import settings
 from courses.models import Course, Subject, Topic
+from config.soft_delete import SoftDeleteModel
 
 User = settings.AUTH_USER_MODEL
 
-class Task(models.Model):
+class Task(SoftDeleteModel):
     PRIORITY_CHOICES = [
         ('low', 'Low'),
         ('medium', 'Medium'),

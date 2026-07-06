@@ -7,11 +7,12 @@ mode (normal/strict), status transitions, and context (subject/topic).
 from django.db import models
 from django.conf import settings
 from courses.models import Course, Subject, Topic, Content
+from config.soft_delete import SoftDeleteModel
 
 User = settings.AUTH_USER_MODEL
 
 
-class FocusSession(models.Model):
+class FocusSession(SoftDeleteModel):
     MODE_CHOICES = [
         ('normal', 'Normal Mode'),
         ('strict', 'Strict Mode'),
