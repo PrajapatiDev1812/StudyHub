@@ -1,10 +1,15 @@
 """
 StudyHub AI — RAG Retrieval System
 Finds the most relevant chunks for a user question using cosine similarity.
+
+Soft-Delete Safety:
+  All chunk queries exclude content from soft-deleted courses, subjects,
+  topics, or source_content to prevent the AI from citing deleted materials.
 """
 import json
 import logging
 import numpy as np
+from django.db import models
 from .models import AdminContentChunk, StudentContentChunk
 from .gemini_client import generate_query_embedding
 
@@ -62,11 +67,23 @@ def retrieve_relevant_chunks(
             'error': str(e),
         }
 
-    # Step 2: Search admin chunks
+    # Step 2: Search admin chunks — exclude chunks linked to soft-deleted content
     admin_results = []
     admin_chunks = AdminContentChunk.objects.exclude(
         embedding__isnull=True
-    ).exclude(embedding='')
+    ).exclude(embedding='').filter(
+        # Only include chunks from ACTIVE (non-soft-deleted) parents
+        course__is_deleted=False,
+    ).filter(
+        # Exclude chunks whose subject is soft-deleted (if subject exists)
+        models.Q(subject__isnull=True) | models.Q(subject__is_deleted=False)
+    ).filter(
+        # Exclude chunks whose topic is soft-deleted (if topic exists)
+        models.Q(topic__isnull=True) | models.Q(topic__is_deleted=False)
+    ).filter(
+        # Exclude chunks whose source content is soft-deleted (if exists)
+        models.Q(source_content__isnull=True) | models.Q(source_content__is_deleted=False)
+    ).select_related('course', 'subject', 'topic')
 
     for chunk in admin_chunks:
         try:
@@ -100,7 +117,13 @@ def retrieve_relevant_chunks(
             source_note__moderation_status__in=['approved_academic', 'approved_medical']
         ).exclude(
             embedding__isnull=True
-        ).exclude(embedding='')
+        ).exclude(embedding='').filter(
+            # Exclude student chunks linked to soft-deleted topics (if topic set)
+            models.Q(source_note__topic__isnull=True) | models.Q(source_note__topic__is_deleted=False)
+        ).filter(
+            # Exclude student chunks linked to soft-deleted subjects
+            models.Q(source_note__subject__isnull=True) | models.Q(source_note__subject__is_deleted=False)
+        )
 
         for chunk in student_chunks:
             try:
