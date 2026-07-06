@@ -2,7 +2,10 @@ from django.db import models
 from django.conf import settings
 from django.utils.text import slugify
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 import os
+
+from config.soft_delete import SoftDeleteModel
 
 
 # ── Validators ────────────────────────────────────────────────────────────────
@@ -23,7 +26,8 @@ def unique_slug(model, title, parent_field=None, parent_value=None):
     """Generate a unique slug within the scope of a parent object."""
     base = slugify(title) or 'item'
     slug = base
-    qs = model.objects.all()
+    # Use all_objects to avoid collisions with soft-deleted slugs
+    qs = model.all_objects.all()
     if parent_field and parent_value:
         qs = qs.filter(**{parent_field: parent_value})
     counter = 1
@@ -54,7 +58,7 @@ class CourseCategory(models.Model):
 
 # ── Course ─────────────────────────────────────────────────────────────────────
 
-class Course(models.Model):
+class Course(SoftDeleteModel):
     LEVEL_CHOICES = [
         ('beginner', 'Beginner'),
         ('intermediate', 'Intermediate'),
@@ -134,7 +138,7 @@ class Course(models.Model):
 
 # ── Subject ─────────────────────────────────────────────────────────────────────
 
-class Subject(models.Model):
+class Subject(SoftDeleteModel):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='subjects')
     title = models.CharField(max_length=200, default='')
     slug = models.SlugField(max_length=220, blank=True, default='')
@@ -152,7 +156,13 @@ class Subject(models.Model):
 
     class Meta:
         ordering = ['order', 'created_at']
-        unique_together = [['course', 'slug']]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['course', 'slug'],
+                condition=Q(is_deleted=False),
+                name='unique_subject_course_slug_active',
+            )
+        ]
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -173,7 +183,7 @@ class Subject(models.Model):
 
 # ── Topic ─────────────────────────────────────────────────────────────────────
 
-class Topic(models.Model):
+class Topic(SoftDeleteModel):
     DIFFICULTY_CHOICES = [
         ('easy', 'Easy'),
         ('medium', 'Medium'),
@@ -199,7 +209,13 @@ class Topic(models.Model):
 
     class Meta:
         ordering = ['order', 'created_at']
-        unique_together = [['subject', 'slug']]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['subject', 'slug'],
+                condition=Q(is_deleted=False),
+                name='unique_topic_subject_slug_active',
+            )
+        ]
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -221,7 +237,7 @@ class Topic(models.Model):
 
 # ── Material (formerly Content) ───────────────────────────────────────────────
 
-class Material(models.Model):
+class Material(SoftDeleteModel):
     MATERIAL_TYPE_CHOICES = [
         ('video', 'Video'),
         ('pdf', 'PDF'),
@@ -275,7 +291,13 @@ class Material(models.Model):
 
     class Meta:
         ordering = ['order', 'created_at']
-        unique_together = [['topic', 'slug']]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['topic', 'slug'],
+                condition=Q(is_deleted=False),
+                name='unique_material_topic_slug_active',
+            )
+        ]
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -288,7 +310,7 @@ class Material(models.Model):
 
 # ── Content alias (backward compat for Progress, ContentViewer, etc.) ─────────
 
-class Content(models.Model):
+class Content(SoftDeleteModel):
     """Legacy proxy-style model kept for backward compatibility with Progress model.
     New code should use Material directly."""
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='contents')
@@ -314,7 +336,7 @@ class Content(models.Model):
 
 # ── Enrollment ────────────────────────────────────────────────────────────────
 
-class Enrollment(models.Model):
+class Enrollment(SoftDeleteModel):
     student = models.ForeignKey(
         User, on_delete=models.CASCADE,
         related_name='enrollments',
@@ -325,9 +347,11 @@ class Enrollment(models.Model):
 
     class Meta:
         constraints = [
+            # Conditional unique: only one active enrollment per student+course
             models.UniqueConstraint(
                 fields=['student', 'course'],
-                name='unique_enrollment_per_user_course'
+                condition=Q(is_deleted=False),
+                name='unique_enrollment_per_user_course_active'
             )
         ]
         ordering = ['-enrolled_at']
@@ -338,7 +362,12 @@ class Enrollment(models.Model):
 
 # ── Progress ──────────────────────────────────────────────────────────────────
 
-class Progress(models.Model):
+class Progress(SoftDeleteModel):
+    """
+    Tracks which Content items a student has completed.
+    NOTE: Progress records are intentionally kept even when courses/topics
+    are soft-deleted, to preserve student history in analytics dashboards.
+    """
     student = models.ForeignKey(
         User, on_delete=models.CASCADE,
         related_name='progress',
@@ -348,7 +377,13 @@ class Progress(models.Model):
     completed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('student', 'content')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['student', 'content'],
+                condition=Q(is_deleted=False),
+                name='unique_progress_student_content_active',
+            )
+        ]
         ordering = ['-completed_at']
         verbose_name_plural = 'Progress'
 

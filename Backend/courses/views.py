@@ -134,7 +134,8 @@ class CourseViewSet(viewsets.ModelViewSet):
         enrollment = Enrollment.objects.filter(student=request.user, course=course).first()
         if not enrollment:
             return Response({'error': 'You are not enrolled in this course.'}, status=status.HTTP_400_BAD_REQUEST)
-        enrollment.delete()
+        # Soft-delete the enrollment so analytics history is preserved
+        enrollment.delete(soft=True, user=request.user)
         return Response({'message': f'Successfully unenrolled from {course.title}.'})
 
     @action(detail=True, methods=['get'], permission_classes=[IsAdmin])
@@ -143,6 +144,32 @@ class CourseViewSet(viewsets.ModelViewSet):
         enrollments = Enrollment.objects.filter(course=course).select_related('student')
         serializer = EnrollmentSerializer(enrollments, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    def trash(self, request):
+        """GET /api/courses/trash/ — list all soft-deleted courses (admin only)."""
+        qs = Course.objects.deleted_only().select_related('category', 'created_by')
+        serializer = CourseListSerializer(qs, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
+    def restore(self, request, pk=None):
+        """POST /api/courses/{id}/restore/ — restore a soft-deleted course."""
+        course = Course.all_objects.filter(pk=pk, is_deleted=True).first()
+        if not course:
+            return Response({'error': 'Soft-deleted course not found.'}, status=status.HTTP_404_NOT_FOUND)
+        course.restore()
+        return Response({'message': f'"{course.title}" has been restored.'})
+
+    @action(detail=True, methods=['delete'], permission_classes=[IsAdmin])
+    def permanent_delete(self, request, pk=None):
+        """DELETE /api/courses/{id}/permanent_delete/ — irreversibly delete a course."""
+        course = Course.all_objects.filter(pk=pk).first()
+        if not course:
+            return Response({'error': 'Course not found.'}, status=status.HTTP_404_NOT_FOUND)
+        title = course.title
+        course.hard_delete()
+        return Response({'message': f'"{title}" has been permanently deleted.'})
 
 
 # ── Subject ───────────────────────────────────────────────────────────────────
