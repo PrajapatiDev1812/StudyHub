@@ -115,9 +115,9 @@ class EnrollmentUniqueConstraintTest(TestCase):
         """The UniqueConstraint must exist in Meta.constraints with the correct name."""
         constraint_names = [c.name for c in Enrollment._meta.constraints]
         self.assertIn(
-            'unique_enrollment_per_user_course',
+            'unique_enrollment_per_user_course_active',
             constraint_names,
-            msg="Expected 'unique_enrollment_per_user_course' in Enrollment._meta.constraints"
+            msg="Expected 'unique_enrollment_per_user_course_active' in Enrollment._meta.constraints"
         )
         print("  PASS  Meta check: UniqueConstraint 'unique_enrollment_per_user_course' is present.")
 
