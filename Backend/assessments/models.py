@@ -1,11 +1,14 @@
+# pyrefly: ignore [missing-import]
 from django.db import models
+# pyrefly: ignore [missing-import]
 from django.conf import settings
 from courses.models import Topic
+from config.soft_delete import SoftDeleteModel
 
 User = settings.AUTH_USER_MODEL
 
 
-class Test(models.Model):
+class Test(SoftDeleteModel):
     """A quiz/test linked to a specific topic."""
 
     topic = models.ForeignKey(
@@ -44,7 +47,7 @@ class Test(models.Model):
         return self.questions.count()
 
 
-class Question(models.Model):
+class Question(SoftDeleteModel):
     """A single question in a test."""
 
     QUESTION_TYPES = [
@@ -76,7 +79,7 @@ class Question(models.Model):
         return f"Q{self.order}: {self.text[:50]}"
 
 
-class Option(models.Model):
+class Option(SoftDeleteModel):
     """An answer option for a question."""
 
     question = models.ForeignKey(
@@ -93,7 +96,13 @@ class Option(models.Model):
 
 
 class StudentAttempt(models.Model):
-    """Records each time a student takes a test."""
+    """
+    Records each time a student takes a test.
+
+    IMMUTABLE — no soft delete. Student attempt records are permanent
+    audit trails for academic integrity and historical score analytics.
+    Even if a Test is soft-deleted, StudentAttempt rows are preserved.
+    """
 
     student = models.ForeignKey(
         User,
@@ -127,7 +136,12 @@ class StudentAttempt(models.Model):
 
 
 class StudentAnswer(models.Model):
-    """Records a student's answer to a specific question."""
+    """
+    Records a student's answer to a specific question.
+
+    IMMUTABLE — no soft delete. Answer records form the audit trail
+    of each StudentAttempt and cannot be individually deleted.
+    """
 
     attempt = models.ForeignKey(
         StudentAttempt,
