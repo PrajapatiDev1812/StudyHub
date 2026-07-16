@@ -8,9 +8,13 @@ Soft-Delete Safety:
 """
 import json
 import logging
+# pyrefly: ignore [missing-import]
 import numpy as np
+# pyrefly: ignore [missing-import]
 from django.db import models
+# pyrefly: ignore [missing-import]
 from .models import AdminContentChunk, StudentContentChunk
+# pyrefly: ignore [missing-import]
 from .gemini_client import generate_query_embedding
 
 logger = logging.getLogger(__name__)

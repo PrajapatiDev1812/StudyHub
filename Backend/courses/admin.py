@@ -1,6 +1,8 @@
 # pyrefly: ignore [missing-import]
 from django.contrib import admin
+# pyrefly: ignore [missing-import]
 from django.utils.html import format_html
+# pyrefly: ignore [missing-import]
 from .models import CourseCategory, Course, Subject, Topic, Material, Content, Enrollment, Progress
 
 

@@ -4,9 +4,13 @@ focus/models.py
 FocusSession — tracks each student study session with timer data,
 mode (normal/strict), status transitions, and context (subject/topic).
 """
+# pyrefly: ignore [missing-import]
 from django.db import models
+# pyrefly: ignore [missing-import]
 from django.conf import settings
+# pyrefly: ignore [missing-import]
 from courses.models import Course, Subject, Topic, Content
+# pyrefly: ignore [missing-import]
 from config.soft_delete import SoftDeleteModel
 
 User = settings.AUTH_USER_MODEL

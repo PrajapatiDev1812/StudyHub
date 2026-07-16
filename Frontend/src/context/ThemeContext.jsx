@@ -56,12 +56,12 @@ export function ThemeProvider({ children }) {
       }
       
       // Absolute fallback
-      const defaultTheme = getThemeById('light');
+      const defaultTheme = getThemeById('dark');
       setActiveTheme(defaultTheme);
       applyThemeVariables(defaultTheme.config, defaultTheme.background_image);
     } else {
-      // User is logged out, force light theme on public pages
-      const defaultTheme = getThemeById('light');
+      // User is logged out, force dark theme on public pages
+      const defaultTheme = getThemeById('dark');
       setActiveTheme(defaultTheme);
       applyThemeVariables(defaultTheme.config, defaultTheme.background_image);
       localStorage.removeItem('studyhub_theme_cache');
@@ -87,7 +87,7 @@ export function ThemeProvider({ children }) {
       setActiveTheme(savedTheme);
       applyThemeVariables(savedTheme.config, savedTheme.background_image);
     } else {
-      const defaultTheme = getThemeById('light');
+      const defaultTheme = getThemeById('dark');
       setActiveTheme(defaultTheme);
       applyThemeVariables(defaultTheme.config, defaultTheme.background_image);
     }

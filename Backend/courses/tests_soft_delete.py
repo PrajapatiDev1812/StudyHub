@@ -7,10 +7,14 @@ Run with:
     python manage.py test courses.tests_soft_delete --verbosity=2
 """
 
+# pyrefly: ignore [missing-import]
 from django.test import TestCase
+# pyrefly: ignore [missing-import]
 from django.contrib.auth import get_user_model
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
 
+# pyrefly: ignore [missing-import]
 from courses.models import Course, Subject, Topic, Material, Content, Enrollment, Progress
 
 User = get_user_model()
@@ -193,6 +197,7 @@ class SubjectConditionalConstraintTest(TestCase):
         Creating a subject with a slug that already exists but is soft-deleted
         should NOT raise an IntegrityError.
         """
+        # pyrefly: ignore [import-import, missing-import]
         from django.db import IntegrityError
 
         s1 = Subject.objects.create(course=self.course, title='Intro', slug='intro')

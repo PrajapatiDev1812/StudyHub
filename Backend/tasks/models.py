@@ -1,6 +1,10 @@
+# pyrefly: ignore [missing-import]
 from django.db import models
+# pyrefly: ignore [missing-import]
 from django.conf import settings
+# pyrefly: ignore [missing-import]
 from courses.models import Course, Subject, Topic
+# pyrefly: ignore [missing-import]
 from config.soft_delete import SoftDeleteModel
 
 User = settings.AUTH_USER_MODEL
