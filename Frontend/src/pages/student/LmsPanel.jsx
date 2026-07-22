@@ -2,9 +2,12 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Search, Bell, User, Menu, X, ChevronRight, ChevronDown, CheckCircle, 
   Home, BookOpen, Book, Folder, Pin, FileText, Video, ClipboardList, PenTool, Code, Link, Presentation, 
-  Play, Download, Copy, ExternalLink, Bookmark, Star
+  Play, Download, Copy, ExternalLink, Bookmark, Star, LayoutDashboard, PlayCircle, Library, ClipboardCheck,
+  Bot, MessageSquare, Brain, ChartColumn, Target, TriangleAlert, FolderOpen, NotebookPen, Users, FileBarChart, Sparkles, Database, Settings
 } from 'lucide-react';
+import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
 
 const DATA = {
   courses: [
@@ -170,17 +173,34 @@ const safeSet = (key, val) => {
 // --- Icons Mapping ---
 const ICONS = {
   Home: Home,
-  CoursesRoot: BookOpen,
-  Course: Book,
-  Subject: Folder,
+  Dashboard: LayoutDashboard,
+  PlayCircle: PlayCircle,
+  CoursesRoot: Library,
+  Course: BookOpen,
+  Subject: Book,
   Topic: Pin,
   pdf: FileText,
   video: Video,
-  quiz: ClipboardList,
-  assignment: PenTool,
+  quiz: ClipboardCheck,
+  assignment: ClipboardList,
   code: Code,
   link: Link,
-  ppt: Presentation
+  ppt: Presentation,
+  Bot: Bot,
+  MessageSquare: MessageSquare,
+  Brain: Brain,
+  ChartColumn: ChartColumn,
+  Target: Target,
+  TriangleAlert: TriangleAlert,
+  FolderOpen: FolderOpen,
+  NotebookPen: NotebookPen,
+  Bookmark: Bookmark,
+  Star: Star,
+  Users: Users,
+  FileBarChart: FileBarChart,
+  Sparkles: Sparkles,
+  Database: Database,
+  Settings: Settings
 };
 
 // --- Components ---
@@ -232,7 +252,7 @@ export default function LmsPanel() {
         name: 'Dashboard Overview',
         color: 'var(--accent-primary, #6c63ff)',
         gradient: 'var(--accent-gradient, linear-gradient(135deg, #6c63ff 0%, #3b82f6 100%))',
-        bgGlow: 'rgba(108, 99, 255, 0.15)'
+        bgGlow: 'var(--glassTint)'
       };
     }
     if (navState.currentPage === 'material' && navState.selectedMaterial) {
@@ -286,7 +306,7 @@ export default function LmsPanel() {
       name: 'Curriculum Browsing',
       color: 'var(--accent-primary, #6c63ff)',
       gradient: 'var(--accent-gradient, linear-gradient(135deg, #6c63ff 0%, #3b82f6 100%))',
-      bgGlow: 'rgba(108, 99, 255, 0.15)'
+      bgGlow: 'var(--glassTint)'
     };
   }, [navState.currentPage, navState.selectedMaterial]);
 
@@ -294,8 +314,10 @@ export default function LmsPanel() {
   const [completedMats, setCompletedMats] = useState(() => safeGet('lms_completed', []));
   const [bookmarkedMats, setBookmarkedMats] = useState(() => safeGet('lms_bookmarks', []));
   const [lastMaterialId, setLastMaterialId] = useState(() => safeGet('lms_last_material', null));
+  const [favorites, setFavorites] = useState(() => safeGet('lms_favorites', []));
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => safeGet('lms_sidebar_collapsed', false));
   const [isLoading, setIsLoading] = useState(false);
 
   // Persistence effects
@@ -303,6 +325,8 @@ export default function LmsPanel() {
   useEffect(() => { safeSet('lms_completed', completedMats); }, [completedMats]);
   useEffect(() => { safeSet('lms_bookmarks', bookmarkedMats); }, [bookmarkedMats]);
   useEffect(() => { if (lastMaterialId) safeSet('lms_last_material', lastMaterialId); }, [lastMaterialId]);
+  useEffect(() => { safeSet('lms_favorites', favorites); }, [favorites]);
+  useEffect(() => { safeSet('lms_sidebar_collapsed', isSidebarCollapsed); }, [isSidebarCollapsed]);
 
   // Navigation action
   const navigateTo = useCallback((page, ctx = {}) => {
@@ -410,26 +434,46 @@ export default function LmsPanel() {
 
   // --- Sub-components ---
 
-  const SidebarNode = ({ id, label, icon: Icon, isExpanded, onToggle, onClick, isActive, children, level = 0 }) => (
+  const SmartSidebarNode = ({ 
+    id, label, icon: Icon, isExpanded, onToggle, onClick, isActive, children, level = 0,
+    badgeText, badgeColor = 'bg-lms-accent', rightElement, isCollapsedMode
+  }) => (
     <div className="w-full">
       <div 
-        className={`flex items-center px-3 py-2 cursor-pointer transition-colors group
-          ${isActive ? 'bg-[var(--bg-card-hover)] text-lms-accent border-l-4 border-lms-accent' : 'lms-text-secondary hover:bg-[var(--bg-card-hover)] hover:text-lms-text-primary border-l-4 border-transparent'}
+        className={`flex items-center py-2 cursor-pointer transition-colors group relative
+          ${isActive ? 'bg-[var(--bg-card-hover)] text-lms-accent' : 'lms-text-secondary hover:bg-[var(--bg-card-hover)] hover:text-lms-text-primary'}
+          ${isCollapsedMode ? 'justify-center px-0 mx-2 rounded-xl' : 'px-3'}
         `}
-        style={{ paddingLeft: `${(level * 16) + 12}px` }}
+        style={{ paddingLeft: isCollapsedMode ? '0' : `${(level * 16) + 12}px` }}
         onClick={onClick}
+        title={isCollapsedMode ? label : undefined}
       >
-        <button 
-          onClick={(e) => onToggle(e, id)}
-          className={`p-1 mr-1 rounded hover:bg-[var(--bg-card-hover)] transition-transform duration-200 ${children ? (isExpanded ? 'rotate-90' : '') : 'invisible'} lms-btn-transparent`}
-          style={{ background: 'transparent', border: 'none', outline: 'none', boxShadow: 'none', cursor: 'pointer' }}
-        >
-          <ChevronRight size={14} />
-        </button>
-        <Icon size={16} className={`mr-2 ${isActive ? 'text-lms-accent' : 'lms-text-muted group-hover:text-lms-text-primary'}`} />
-        <span className="text-[13px] font-medium truncate select-none">{label}</span>
+        {isActive && !isCollapsedMode && <div className="absolute left-0 top-0 bottom-0 w-1 bg-lms-accent rounded-r-md"></div>}
+        
+        {!isCollapsedMode && (
+          <button 
+            onClick={(e) => { if (onToggle) onToggle(e, id); else onClick(e); }}
+            className={`p-1 mr-1 rounded transition-transform duration-200 ${children ? (isExpanded ? 'rotate-90' : '') : 'invisible'} lms-btn-transparent flex-shrink-0`}
+          >
+            <ChevronRight size={14} className={children ? "lms-text-muted group-hover:text-lms-text-primary" : ""} />
+          </button>
+        )}
+        
+        <Icon size={isCollapsedMode ? 20 : 16} className={`${isCollapsedMode ? '' : 'mr-2'} ${isActive ? 'text-lms-accent' : 'lms-text-muted group-hover:text-lms-text-primary'} flex-shrink-0 transition-colors`} />
+        
+        {!isCollapsedMode && (
+          <>
+            <span className="text-[13px] font-medium truncate select-none flex-1">{label}</span>
+            {badgeText && (
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${badgeColor} text-white ml-2 flex-shrink-0`}>
+                {badgeText}
+              </span>
+            )}
+            {rightElement && <div className="ml-2 flex-shrink-0">{rightElement}</div>}
+          </>
+        )}
       </div>
-      {isExpanded && children && (
+      {isExpanded && !isCollapsedMode && children && (
         <div className="flex flex-col">
           {children}
         </div>
@@ -460,132 +504,479 @@ export default function LmsPanel() {
   // --- Pages ---
 
   const HomePage = () => {
-    const lastMaterial = lastMaterialId ? getMaterialById(lastMaterialId) : null;
-    const lastMatCourse = lastMaterial ? DATA.courses.find(c => c.id === lastMaterial.courseId) : null;
-    const overallProgress = lastMatCourse ? getCourseProgress(lastMatCourse) : 40; // mock 40 if none
+    const DAILY_STUDY_GOAL_MINUTES = 90; // Configurable — wire to /api/dashboard/daily-goal/ when ready
+
+    const [lmsHomeData, setLmsHomeData] = useState({
+      summary: null,
+      aiSummary: null,
+      insights: [],
+      isLoading: true,
+    });
+
+    useEffect(() => {
+      Promise.allSettled([
+        api.get('/dashboard/summary/'),
+        api.get('/dashboard/ai-summary/'),
+        api.get('/dashboard/insights/'),
+      ]).then(([summaryRes, aiRes, insightsRes]) => {
+        setLmsHomeData({
+          summary:   summaryRes.status === 'fulfilled' ? summaryRes.value.data : null,
+          aiSummary: aiRes.status === 'fulfilled'      ? aiRes.value.data      : null,
+          insights:  insightsRes.status === 'fulfilled' ? insightsRes.value.data : [],
+          isLoading: false,
+        });
+      });
+    }, []);
+
+    const getGreeting = () => {
+      const h = new Date().getHours();
+      if (h < 12) return 'Good Morning';
+      if (h < 17) return 'Good Afternoon';
+      return 'Good Evening';
+    };
+
+    const getStudentName = () => {
+      const fn = user?.first_name || '';
+      const ln = user?.last_name || '';
+      if (fn && ln) return `${fn} ${ln}`;
+      if (fn) return fn;
+      if (user?.full_name) return user.full_name;
+      return user?.username || 'Student';
+    };
+
+    const lastMaterial   = lastMaterialId ? getMaterialById(lastMaterialId) : null;
+    const lastMatCourse  = lastMaterial ? DATA.courses.find(c => c.id === lastMaterial.courseId) : null;
+    const overallProgress = lastMatCourse ? getCourseProgress(lastMatCourse) : 0;
+    const streak          = lmsHomeData.summary?.current_streak ?? 0;
+    const studyHoursWeek  = lmsHomeData.summary?.study_time_week_hours ?? 0;
+    const studyMinToday   = Math.round((studyHoursWeek / 7) * 60);
+
+    // Build recent activity feed from local LMS state
+    const recentActivity = useMemo(() => {
+      const items = [];
+      if (lastMaterial) {
+        items.push({ id: `v-${lastMaterial.id}`, type: 'viewed', icon: '👁️', label: lastMaterial.title, sub: `${lastMaterial.courseTitle} · ${lastMaterial.subjectTitle}`, mat: lastMaterial });
+      }
+      [...completedMats].reverse().slice(0, 4).forEach(id => {
+        const mat = getMaterialById(id);
+        if (mat && mat.id !== lastMaterial?.id) {
+          items.push({ id: `c-${id}`, type: 'completed', icon: '✅', label: mat.title, sub: `${mat.courseTitle} · ${mat.subjectTitle}`, mat });
+        }
+      });
+      [...bookmarkedMats].reverse().slice(0, 2).forEach(id => {
+        const mat = getMaterialById(id);
+        if (mat && !items.find(i => i.id === `c-${id}`)) {
+          items.push({ id: `b-${id}`, type: 'bookmarked', icon: '🔖', label: mat.title, sub: mat.courseTitle || '', mat });
+        }
+      });
+      return items.slice(0, 6);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [completedMats, bookmarkedMats, lastMaterialId]);
+
+    const { aiSummary, insights, isLoading } = lmsHomeData;
+
+    // Course thumbnail gradient map (future-proof: add more as needed)
+    const THUMB = {
+      // Theme-aware: uses the active accent gradient so thumbnails always match the current theme
+      'bg-blue-500':  'var(--accent-gradient)',
+      'bg-green-500': 'linear-gradient(rgba(0,0,0,0.18),rgba(0,0,0,0.18)), var(--accent-gradient)',
+    };
+
+    // Shared inline style helpers
+    const card = { borderRadius: 16, padding: '1.5rem' };
+    const label = { fontSize: '0.73rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text-secondary)', margin: '0 0 1.1rem', display: 'flex', alignItems: 'center', gap: 6 };
+    const skeletonLine = (w, h = 11) => ({ height: h, borderRadius: 5, background: 'var(--border-color)', width: `${w}%`, opacity: 0.5 });
 
     return (
-      <div className="animate-fade-in space-y-8">
-        <div className="lms-card p-6 rounded-xl flex items-center gap-4">
-          <Search className="lms-text-secondary" size={24} />
-          <input type="text" placeholder="Search across courses, topics, or materials..." className="w-full text-lg outline-none bg-transparent lms-text-primary placeholder:text-[var(--text-muted)]" />
+      <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+        {/* ── 1. WELCOME BANNER ── */}
+        <div style={{
+          background: 'linear-gradient(135deg, var(--lms-accent-glow) 0%, rgba(255,255,255,0.02) 100%)',
+          border: '1px solid var(--lms-accent)',
+          borderRadius: 20, padding: '1.75rem 2rem',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem',
+          position: 'relative', overflow: 'hidden',
+        }}>
+          {/* Background orb */}
+          <div style={{ position: 'absolute', top: '-30%', right: '-5%', width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, var(--lms-accent-glow) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+          <div>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '0 0 0.2rem', fontWeight: 500 }}>{getGreeting()} 👋</p>
+            <h1 style={{ fontSize: '1.85rem', fontWeight: 800, margin: '0 0 0.35rem', background: 'var(--lms-accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', lineHeight: 1.2 }}>
+              {getStudentName()}
+            </h1>
+            <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '0 0 1rem' }}>
+              {DATA.courses.length > 0
+                ? `${DATA.courses.length} course${DATA.courses.length !== 1 ? 's' : ''} in your learning workspace`
+                : 'Start your learning journey today.'}
+            </p>
+            <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '0.28rem 0.7rem', borderRadius: 20, background: 'rgba(239,68,68,0.15)', color: '#f87171', fontSize: '0.74rem', fontWeight: 700 }}>
+                🔥 {streak} Day Streak
+              </span>
+              {overallProgress > 0 && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '0.28rem 0.7rem', borderRadius: 20, background: 'var(--lms-accent-glow)', color: 'var(--lms-accent)', fontSize: '0.74rem', fontWeight: 700 }}>
+                  📈 {overallProgress}% Progress
+                </span>
+              )}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '0.28rem 0.7rem', borderRadius: 20, background: 'rgba(34,197,94,0.12)', color: '#4ade80', fontSize: '0.74rem', fontWeight: 700 }}>
+                ⏱️ {studyHoursWeek}h This Week
+              </span>
+            </div>
+          </div>
+
+          {/* Circular progress ring */}
+          <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem' }}>
+            <div style={{ position: 'relative', width: 80, height: 80 }}>
+              <svg width={80} height={80} style={{ transform: 'rotate(-90deg)', position: 'absolute', top: 0, left: 0 }}>
+                <circle cx={40} cy={40} r={32} fill="none" stroke="var(--border-color)" strokeWidth={6} />
+                <circle cx={40} cy={40} r={32} fill="none" stroke="var(--lms-accent)" strokeWidth={6}
+                  strokeDasharray={2 * Math.PI * 32}
+                  strokeDashoffset={2 * Math.PI * 32 * (1 - overallProgress / 100)}
+                  strokeLinecap="round"
+                  style={{ transition: 'stroke-dashoffset 1.2s ease' }}
+                />
+              </svg>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                {overallProgress}%
+              </div>
+            </div>
+            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.3, margin: 0 }}>Overall<br/>Progress</p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Column */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Continue Learning */}
-            <section>
-              <h2 className="text-xl font-bold lms-text-primary mb-4 flex items-center gap-2"><Play size={20} className="text-lms-accent"/> Continue Learning</h2>
-              <div 
-                className="lms-card lms-card-hover rounded-xl p-6 cursor-pointer hover:-translate-y-1 transition-all group"
-                onClick={() => {
-                  if (lastMaterial) {
-                    const c = DATA.courses.find(c=>c.id===lastMaterial.courseId);
-                    const s = c.subjects.find(s=>s.id===lastMaterial.subjectId);
-                    const t = s.topics.find(t=>t.id===lastMaterial.topicId);
-                    navigateTo('material', { selectedCourse: c, selectedSubject: s, selectedTopic: t, selectedMaterial: lastMaterial });
-                  } else {
-                    navigateTo('courses');
-                  }
-                }}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-sm font-semibold text-lms-accent mb-1">{lastMatCourse ? lastMatCourse.title : 'No Recent Course'}</h3>
-                    <p className="text-lg font-bold lms-text-primary">{lastMaterial ? lastMaterial.title : 'Browse Courses to start learning'}</p>
-                  </div>
-                  {lastMaterial && <div className="bg-[var(--lms-accent-glow)] text-lms-accent border border-[var(--lms-accent)]/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">{lastMaterial.type}</div>}
-                </div>
-                <div className="flex items-center gap-4 mt-6">
-                  <div className="flex-1"><ProgressBar pct={overallProgress} /></div>
-                  <span className="text-sm font-bold lms-text-secondary">{overallProgress}%</span>
-                </div>
-              </div>
-            </section>
+        {/* ── 2. CONTINUE LEARNING + AI SUGGESTIONS ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem' }}>
 
-            {/* My Courses */}
-            <section>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold lms-text-primary flex items-center gap-2"><BookOpen size={20} className="text-lms-accent"/> My Courses</h2>
-                <button onClick={() => navigateTo('courses')} className="text-lms-accent text-sm font-semibold hover:underline bg-transparent border-none">View All</button>
+          {/* Continue Learning */}
+          <div className="lms-card" style={card}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.1rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, ...label, margin: 0 }}>
+                <Play size={13} /> Continue Learning
+              </span>
+              {lastMatCourse && (
+                <button onClick={() => navigateTo('courses')} style={{ background: 'none', border: 'none', color: 'var(--lms-accent)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                  All Courses →
+                </button>
+              )}
+            </div>
+
+            {lastMaterial ? (
+              <>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.4rem', lineHeight: 1.3 }}>{lastMaterial.title}</h2>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <span style={{ background: 'var(--lms-accent-glow)', color: 'var(--lms-accent)', fontSize: '0.68rem', fontWeight: 700, padding: '0.15rem 0.55rem', borderRadius: 20, textTransform: 'uppercase' }}>
+                    {lastMaterial.type}
+                  </span>
+                  {lastMaterial.courseTitle} · {lastMaterial.subjectTitle}
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.1rem' }}>
+                  <div style={{ flex: 1, height: 6, background: 'var(--border-color)', borderRadius: 99, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${overallProgress}%`, background: 'var(--lms-accent-gradient)', borderRadius: 99, transition: 'width 1s ease' }} />
+                  </div>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--lms-accent)' }}>{overallProgress}%</span>
+                </div>
+                <button
+                  onClick={() => {
+                    const c = DATA.courses.find(c => c.id === lastMaterial.courseId);
+                    const s = c?.subjects.find(s => s.id === lastMaterial.subjectId);
+                    const t = s?.topics.find(t => t.id === lastMaterial.topicId);
+                    if (c && s && t) navigateTo('material', { selectedCourse: c, selectedSubject: s, selectedTopic: t, selectedMaterial: lastMaterial });
+                  }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0.6rem 1.4rem', borderRadius: 12, border: 'none', cursor: 'pointer', fontSize: '0.86rem', fontWeight: 700, color: '#fff', background: 'var(--lms-accent-gradient)', boxShadow: '0 4px 14px var(--lms-accent-glow)', transition: 'opacity 0.15s, transform 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity='0.88'; e.currentTarget.style.transform='translateY(-1px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity='1';    e.currentTarget.style.transform='translateY(0)'; }}
+                >
+                  <Play size={15} /> Resume
+                </button>
+              </>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '1.5rem 0', gap: '0.65rem' }}>
+                <BookOpen size={32} style={{ color: 'var(--lms-accent)', opacity: 0.45 }} />
+                <p style={{ fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>No activity yet</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>Open any material to start tracking your progress.</p>
+                <button onClick={() => navigateTo('courses')} style={{ padding: '0.5rem 1.25rem', borderRadius: 10, border: 'none', background: 'var(--lms-accent-gradient)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}>
+                  Browse Courses
+                </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {DATA.courses.map(course => {
-                  const pct = getCourseProgress(course);
+            )}
+          </div>
+
+          {/* AI Suggestions */}
+          <div className="lms-card" style={card}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: '1.1rem' }}>
+              <span style={{ fontSize: '0.73rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--lms-accent)' }}>🤖 AI Suggestions</span>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', display: 'inline-block', flexShrink: 0, animation: 'pulseGlow 2s infinite alternate' }} />
+            </div>
+
+            {isLoading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[80, 95, 70].map((w, i) => <div key={i} style={skeletonLine(w)} />)}
+              </div>
+            ) : aiSummary?.has_data || insights?.length > 0 ? (
+              <>
+                {aiSummary?.message && (
+                  <div style={{ background: 'var(--lms-accent-glow)', border: '1px solid var(--border-color)', borderRadius: 10, padding: '0.7rem 0.9rem', marginBottom: '0.75rem', fontSize: '0.83rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>
+                    💡 {aiSummary.message}
+                  </div>
+                )}
+                {insights?.slice(0, 3).map((insight, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 7, lineHeight: 1.4, alignItems: 'flex-start' }}>
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--lms-accent)', flexShrink: 0, marginTop: 7 }} />
+                    {insight}
+                  </div>
+                ))}
+                <RouterLink to="/student/ai-chat" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.78rem', fontWeight: 700, color: 'var(--lms-accent)', textDecoration: 'none', marginTop: 6 }}>
+                  Ask AI Tutor →
+                </RouterLink>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                <div style={{ fontSize: 26, marginBottom: 8 }}>🤖</div>
+                <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', margin: '0 0 4px', fontWeight: 500 }}>No recommendations yet</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 0.75rem' }}>Complete lessons to unlock AI suggestions.</p>
+                <RouterLink to="/student/ai-chat" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.78rem', fontWeight: 700, color: 'var(--lms-accent)', textDecoration: 'none' }}>
+                  Ask AI Tutor →
+                </RouterLink>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── 3. DAILY GOAL + UPCOMING + QUICK STATS ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.25rem' }}>
+
+          {/* Daily Goal */}
+          <div className="lms-card" style={card}>
+            <p style={label}>🎯 Today's Goal</p>
+            {isLoading ? (
+              <div style={skeletonLine(100, 44)} />
+            ) : (
+              <>
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)' }}>{studyMinToday}</span>
+                  <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)', fontWeight: 500 }}> / {DAILY_STUDY_GOAL_MINUTES} min</span>
+                </div>
+                <div style={{ height: 7, background: 'var(--border-color)', borderRadius: 99, overflow: 'hidden', marginBottom: '0.55rem' }}>
+                  <div style={{ height: '100%', width: `${Math.min((studyMinToday / DAILY_STUDY_GOAL_MINUTES) * 100, 100)}%`, background: studyMinToday >= DAILY_STUDY_GOAL_MINUTES ? '#22c55e' : 'var(--lms-accent-gradient)', borderRadius: 99, transition: 'width 1s ease' }} />
+                </div>
+                <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: 0 }}>
+                  {studyMinToday >= DAILY_STUDY_GOAL_MINUTES ? '🎉 Daily goal reached!' : `${DAILY_STUDY_GOAL_MINUTES - studyMinToday} min remaining`}
+                </p>
+                {studyMinToday === 0 && <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>☕ Start a Focus session to track time</p>}
+              </>
+            )}
+          </div>
+
+          {/* Upcoming — empty state, API-ready for GET /api/dashboard/upcoming/ */}
+          <div className="lms-card" style={card}>
+            <p style={label}>📅 Upcoming</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0.75rem 0', gap: '0.4rem', color: 'var(--text-muted)' }}>
+              <span style={{ fontSize: 22 }}>🎉</span>
+              <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', margin: 0, fontWeight: 500 }}>No upcoming activities</p>
+              <p style={{ fontSize: '0.74rem', margin: 0 }}>You're all caught up!</p>
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="lms-card" style={card}>
+            <p style={label}>📊 Progress</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              {[
+                { icon: <BookOpen size={15} />, lbl: 'Courses',    val: DATA.courses.length,    color: 'var(--lms-accent)',       bg: 'var(--lms-accent-glow)' },
+                { icon: <CheckCircle size={15} />, lbl: 'Completed', val: completedMats.length,   color: '#4ade80',                 bg: 'rgba(34,197,94,0.12)' },
+                { icon: <Bookmark size={15} />,   lbl: 'Bookmarked',val: bookmarkedMats.length,  color: '#fbbf24',                 bg: 'rgba(245,158,11,0.12)' },
+              ].map(({ icon, lbl, val, color, bg }) => (
+                <div key={lbl} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 9, background: bg, border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color }}>
+                    {icon}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 1px', lineHeight: 1 }}>{val}</p>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{lbl}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── 4. MY COURSES ── */}
+        <section>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.9rem' }}>
+            <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
+              <BookOpen size={16} style={{ color: 'var(--lms-accent)' }} /> My Courses
+            </h2>
+            <button onClick={() => navigateTo('courses')} style={{ background: 'none', border: 'none', color: 'var(--lms-accent)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+              View All →
+            </button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: '1rem' }}>
+            {DATA.courses.map(course => {
+              const pct  = getCourseProgress(course);
+              const mats = course.subjects.flatMap(s => s.topics.flatMap(t => t.materials));
+              const done = mats.filter(m => completedMats.includes(m.id)).length;
+              return (
+                <div
+                  key={course.id} className="lms-card lms-card-hover"
+                  onClick={() => navigateTo('course', { selectedCourse: course })}
+                  style={{ borderRadius: 16, overflow: 'hidden', cursor: 'pointer', transition: 'all 0.18s' }}
+                >
+                  <div style={{ height: 76, background: THUMB[course.thumbnail] || 'var(--lms-accent-gradient)', position: 'relative', display: 'flex', alignItems: 'flex-end', padding: '0 1rem 0.65rem' }}>
+                    <div style={{ position: 'absolute', top: '0.55rem', right: '0.55rem', background: 'rgba(0,0,0,0.4)', borderRadius: 20, padding: '0.18rem 0.55rem', fontSize: '0.67rem', fontWeight: 700, color: '#fff' }}>
+                      {pct}% done
+                    </div>
+                    <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#fff', textShadow: '0 1px 6px rgba(0,0,0,0.5)', lineHeight: 1.2 }}>{course.title}</span>
+                  </div>
+                  <div style={{ padding: '0.85rem 1rem' }}>
+                    <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '0 0 0.75rem' }}>{course.instructor}</p>
+                    <div style={{ height: 4, background: 'var(--border-color)', borderRadius: 99, overflow: 'hidden', marginBottom: '0.45rem' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: 'var(--lms-accent-gradient)', borderRadius: 99, transition: 'width 1s ease' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      <span>{done}/{mats.length} materials</span>
+                      <span style={{ fontWeight: 600, color: 'var(--lms-accent)' }}>{course.subjects.length} subjects</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ── 5. RECENT ACTIVITY + WEAK AREAS ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.25rem' }}>
+
+          {/* Recent Activity */}
+          <div className="lms-card" style={card}>
+            <p style={label}>⚡ Recent Activity</p>
+            {recentActivity.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '1.5rem 0', color: 'var(--text-muted)' }}>
+                <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', margin: '0 0 4px', fontWeight: 500 }}>No activity yet</p>
+                <p style={{ fontSize: '0.76rem', margin: 0 }}>Open a material or complete a lesson to see your activity here.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {recentActivity.map(item => {
+                  const colorMap = { completed: '#4ade80', viewed: 'var(--lms-accent)', bookmarked: '#fbbf24' };
+                  const bgMap    = { completed: 'rgba(34,197,94,0.12)', viewed: 'var(--lms-accent-glow)', bookmarked: 'rgba(245,158,11,0.12)' };
                   return (
-                    <div 
-                      key={course.id} 
-                      className="lms-card lms-card-hover rounded-xl overflow-hidden cursor-pointer hover:-translate-y-1 transition-all"
-                      onClick={() => navigateTo('course', { selectedCourse: course })}
+                    <div
+                      key={item.id}
+                      onClick={() => {
+                        const mat = item.mat;
+                        const c = DATA.courses.find(c => c.id === mat.courseId);
+                        const s = c?.subjects.find(s => s.id === mat.subjectId);
+                        const t = s?.topics.find(t => t.id === mat.topicId);
+                        if (c && s && t) navigateTo('material', { selectedCourse: c, selectedSubject: s, selectedTopic: t, selectedMaterial: mat });
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.5rem 0.7rem', borderRadius: 10, background: 'rgba(255,255,255,0.025)', cursor: 'pointer', transition: 'background 0.15s' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.025)'; }}
                     >
-                      <div className={`h-24 ${course.thumbnail}`}></div>
-                      <div className="p-5">
-                        <h3 className="font-bold lms-text-primary mb-1">{course.title}</h3>
-                        <p className="text-sm lms-text-secondary mb-4">{course.instructor}</p>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1"><ProgressBar pct={pct} /></div>
-                          <span className="text-xs font-bold lms-text-secondary">{pct}%</span>
-                        </div>
+                      <div style={{ width: 30, height: 30, borderRadius: 8, background: bgMap[item.type] || 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', flexShrink: 0 }}>
+                        {item.icon}
                       </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <p style={{ fontSize: '0.83rem', fontWeight: 500, color: 'var(--text-primary)', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</p>
+                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.sub}</p>
+                      </div>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: colorMap[item.type] || 'var(--text-muted)', flexShrink: 0, textTransform: 'capitalize', padding: '0.15rem 0.5rem', borderRadius: 20, background: bgMap[item.type] || 'transparent' }}>
+                        {item.type}
+                      </span>
                     </div>
                   );
                 })}
               </div>
-            </section>
-
-            {/* Categories */}
-            <section>
-              <h2 className="text-xl font-bold lms-text-primary mb-4">Categories</h2>
-              <div className="flex flex-wrap gap-3">
-                {['Data Science', 'Web Dev', 'Design', 'Business'].map(cat => (
-                  <button key={cat} className="px-5 py-2.5 lms-card rounded-full text-sm font-medium lms-text-secondary hover:border-lms-accent hover:text-lms-accent transition-colors shadow-sm">{cat}</button>
-                ))}
-              </div>
-            </section>
+            )}
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-8">
-            {/* Upcoming Assignments */}
-            <section className="lms-card p-6 rounded-xl">
-              <h2 className="text-lg font-bold lms-text-primary mb-4 flex items-center gap-2"><Bell size={18} className="text-lms-accent"/> Upcoming</h2>
-              <div className="space-y-4">
-                <div className="flex gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[var(--danger)]/15 flex items-center justify-center text-[var(--danger)] shrink-0"><PenTool size={18}/></div>
-                  <div>
-                    <h4 className="text-sm font-bold lms-text-primary">Python Basics Quiz</h4>
-                    <p className="text-xs font-semibold mt-1" style={{ color: 'var(--danger)' }}>Due in 2 days</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[var(--warning)]/15 flex items-center justify-center text-[var(--warning)] shrink-0"><PenTool size={18}/></div>
-                  <div>
-                    <h4 className="text-sm font-bold lms-text-primary">Loops Assignment</h4>
-                    <p className="text-xs font-semibold mt-1" style={{ color: 'var(--warning)' }}>Due in 5 days</p>
-                  </div>
-                </div>
+          {/* Weak Areas */}
+          <div className="lms-card" style={card}>
+            <p style={label}>🧠 Weak Areas</p>
+            {isLoading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[65, 80, 50].map((w, i) => <div key={i} style={skeletonLine(w)} />)}
               </div>
-            </section>
-
-            {/* Announcements */}
-            <section className="p-6 rounded-xl text-white gradient-lms-accent shadow-lg lms-pulse">
-              <h2 className="text-lg font-bold mb-2 flex items-center gap-2"><Star size={18} className="text-yellow-300"/> New Update</h2>
-              <p className="text-sm text-indigo-100 mb-4">Welcome to the new StudyHub LMS! Check out the updated Python course material for this semester.</p>
-              <button className="px-4 py-2 bg-white text-slate-900 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-100 transition-colors w-full border-none">View Details</button>
-            </section>
-
-            {/* Recently Viewed */}
-            <section>
-              <h2 className="text-sm font-bold lms-text-muted uppercase tracking-wider mb-3">Recently Viewed</h2>
-              <div className="flex flex-wrap gap-2">
-                <div className="px-3 py-1.5 lms-input lms-text-secondary text-xs font-semibold rounded hover:bg-[var(--bg-card-hover)] hover:text-lms-text-primary cursor-pointer transition-colors">Functions Video</div>
-                <div className="px-3 py-1.5 lms-input lms-text-secondary text-xs font-semibold rounded hover:bg-[var(--bg-card-hover)] hover:text-lms-text-primary cursor-pointer transition-colors">Matplotlib Intro</div>
-                <div className="px-3 py-1.5 lms-input lms-text-secondary text-xs font-semibold rounded hover:bg-[var(--bg-card-hover)] hover:text-lms-text-primary cursor-pointer transition-colors">HTML & CSS PDF</div>
+            ) : insights?.length > 0 ? (
+              <>
+                {insights.slice(0, 4).map((insight, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 7, lineHeight: 1.4, alignItems: 'flex-start' }}>
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--lms-accent)', flexShrink: 0, marginTop: 7 }} />
+                    {insight}
+                  </div>
+                ))}
+                <RouterLink to="/student/analytics" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.76rem', fontWeight: 700, color: 'var(--lms-accent)', textDecoration: 'none', marginTop: 4 }}>
+                  Full Analysis →
+                </RouterLink>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '1rem 0', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: 22, marginBottom: 6 }}>📈</div>
+                <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', margin: '0 0 3px', fontWeight: 500 }}>No weak areas yet</p>
+                <p style={{ fontSize: '0.73rem', margin: 0 }}>Take a quiz to unlock AI analysis.</p>
               </div>
-            </section>
+            )}
           </div>
         </div>
+
+        {/* ── 6. QUICK ACTIONS + CATEGORIES ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '1.25rem' }}>
+
+          {/* Quick Actions */}
+          <div className="lms-card" style={card}>
+            <p style={label}>⚡ Quick Actions</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '0.6rem' }}>
+              {[
+                { lbl: 'Ask AI Tutor',   icon: '🤖', to: '/student/ai-chat',      accent: true },
+                { lbl: 'Focus Mode',     icon: '🎯', to: '/student/focus' },
+                { lbl: 'Browse Courses', icon: '📚', to: '/student/courses' },
+                { lbl: 'My Tests',       icon: '📝', to: '/student/tests' },
+                { lbl: 'Analytics',      icon: '📈', to: '/student/analytics' },
+                { lbl: 'My Materials',   icon: '📂', to: '/student/my-materials' },
+              ].map(({ lbl, icon, to, accent }) => (
+                <RouterLink
+                  key={to} to={to}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.38rem',
+                    padding: '0.85rem 0.4rem', borderRadius: 12, textDecoration: 'none',
+                    border: `1px solid ${accent ? 'var(--lms-accent)' : 'var(--border-color)'}`,
+                    background: accent ? 'var(--lms-accent-glow)' : 'rgba(255,255,255,0.025)',
+                    color: accent ? 'var(--lms-accent)' : 'var(--text-secondary)',
+                    fontSize: '0.75rem', fontWeight: 600, textAlign: 'center', transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--lms-accent)'; e.currentTarget.style.color = 'var(--lms-accent)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = accent ? 'var(--lms-accent)' : 'var(--border-color)'; e.currentTarget.style.color = accent ? 'var(--lms-accent)' : 'var(--text-secondary)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                >
+                  <span style={{ fontSize: '1.2rem' }}>{icon}</span>
+                  {lbl}
+                </RouterLink>
+              ))}
+            </div>
+          </div>
+
+          {/* Categories — compact browse section */}
+          <div className="lms-card" style={card}>
+            <p style={label}>🗂️ Browse Topics</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', marginBottom: '1rem' }}>
+              {['Data Science', 'Web Dev', 'Design', 'Python', 'JavaScript', 'Business'].map(cat => (
+                <button
+                  key={cat} onClick={() => navigateTo('courses')}
+                  style={{ padding: '0.26rem 0.75rem', borderRadius: 20, border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.025)', color: 'var(--text-secondary)', fontSize: '0.74rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.13s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--lms-accent)'; e.currentTarget.style.color = 'var(--lms-accent)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => navigateTo('courses')} style={{ width: '100%', padding: '0.5rem', borderRadius: 10, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--lms-accent)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', transition: 'background 0.15s' }}>
+              View All Courses →
+            </button>
+          </div>
+        </div>
+
       </div>
     );
   };
@@ -1288,97 +1679,109 @@ export default function LmsPanel() {
 
       {/* SIDEBAR */}
       <aside 
-        className={`fixed inset-y-0 left-0 z-50 w-[260px] flex flex-col transition-transform duration-300 lg:relative lg:translate-x-0 overflow-hidden lms-sidebar
-          ${mobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300 lg:relative overflow-hidden lms-sidebar
+          ${mobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
+          ${isSidebarCollapsed ? 'w-[72px]' : 'w-[260px]'}
         `}
       >
-        <div className="h-16 flex items-center justify-between px-6 border-b lms-border-color shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-lms-accent rounded-lg flex items-center justify-center">
+        <div className={`h-16 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between px-6'} border-b lms-border-color shrink-0`}>
+          <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
+            <div className="w-8 h-8 bg-lms-accent rounded-lg flex items-center justify-center shrink-0">
               <BookOpen size={18} className="text-white" />
             </div>
-            <span className="font-bold text-white tracking-wide">StudyHub LMS</span>
+            {!isSidebarCollapsed && <span className="font-bold text-white tracking-wide">StudyHub LMS</span>}
           </div>
-          <button className="lg:hidden text-slate-400 hover:text-white bg-transparent border-none cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
-            <X size={20} />
-          </button>
+          {!isSidebarCollapsed && (
+            <button className="lg:hidden text-slate-400 hover:text-white bg-transparent border-none cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
+              <X size={20} />
+            </button>
+          )}
         </div>
 
+        {!isSidebarCollapsed && (
+          <div className="p-4 border-b lms-border-color shrink-0">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 lms-text-muted" />
+              <input type="text" placeholder="Search resources..." className="w-full pl-9 pr-3 py-2 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm lms-text-primary focus:outline-none focus:border-lms-accent transition-colors shadow-inner" />
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto py-4 custom-scrollbar">
-          <SidebarNode 
-            id="home" 
-            label="Home Dashboard" 
-            icon={ICONS.Home} 
-            isActive={navState.currentPage === 'home'}
-            onClick={() => navigateTo('home')}
-            onToggle={()=>{}}
-          />
+          <SmartSidebarNode id="home" label="Dashboard" icon={ICONS.Dashboard} isActive={navState.currentPage === 'home'} onClick={() => navigateTo('home')} isCollapsedMode={isSidebarCollapsed} />
+
+          {/* Continue Learning */}
+          {!isSidebarCollapsed && <div className="mt-6 mb-2 px-6 text-[10px] font-bold uppercase tracking-wider lms-text-muted">Continue Learning</div>}
+          <SmartSidebarNode id="resume" label="Resume Learning" icon={ICONS.PlayCircle} onClick={() => navigateTo('home')} isCollapsedMode={isSidebarCollapsed} rightElement={<span className="text-[14px]">🔥</span>} />
           
-          <div className="mt-4 mb-2 px-6 text-xs font-bold uppercase tracking-wider lms-text-muted">Curriculum</div>
-          
-          <SidebarNode 
-            id="courses-root" 
-            label="All Courses" 
-            icon={ICONS.CoursesRoot}
-            isExpanded={expandedNodes.includes('courses-root')}
-            isActive={navState.currentPage === 'courses'}
-            onToggle={toggleNode}
-            onClick={() => navigateTo('courses')}
+          {/* Curriculum */}
+          {!isSidebarCollapsed && <div className="mt-6 mb-2 px-6 text-[10px] font-bold uppercase tracking-wider lms-text-muted">Curriculum</div>}
+          <SmartSidebarNode 
+            id="courses-root" label="All Courses" icon={ICONS.CoursesRoot} 
+            isExpanded={expandedNodes.includes('courses-root')} isActive={navState.currentPage === 'courses'} 
+            onToggle={toggleNode} onClick={() => navigateTo('courses')} isCollapsedMode={isSidebarCollapsed}
           >
             {DATA.courses.map(course => (
-              <SidebarNode 
-                key={`c-${course.id}`}
-                id={`c-${course.id}`}
-                label={course.title}
-                icon={ICONS.Course}
-                level={1}
-                isExpanded={expandedNodes.includes(`c-${course.id}`)}
-                isActive={navState.selectedCourse?.id === course.id && navState.currentPage === 'course'}
-                onToggle={toggleNode}
-                onClick={() => navigateTo('course', { selectedCourse: course })}
+              <SmartSidebarNode 
+                key={`c-${course.id}`} id={`c-${course.id}`} label={course.title} icon={ICONS.Course} level={1}
+                isExpanded={expandedNodes.includes(`c-${course.id}`)} isActive={navState.selectedCourse?.id === course.id && navState.currentPage === 'course'}
+                onToggle={toggleNode} onClick={() => navigateTo('course', { selectedCourse: course })}
+                rightElement={<span className="text-[10px] text-lms-muted font-mono bg-[var(--bg-input)] px-1.5 py-0.5 rounded">{getCourseProgress(course)}%</span>}
               >
                 {course.subjects.map(subject => (
-                  <SidebarNode
-                    key={`s-${subject.id}`}
-                    id={`s-${subject.id}`}
-                    label={subject.title}
-                    icon={ICONS.Subject}
-                    level={2}
-                    isExpanded={expandedNodes.includes(`s-${subject.id}`)}
-                    isActive={navState.selectedSubject?.id === subject.id && navState.currentPage === 'subject'}
-                    onToggle={toggleNode}
-                    onClick={() => navigateTo('subject', { selectedCourse: course, selectedSubject: subject })}
+                  <SmartSidebarNode
+                    key={`s-${subject.id}`} id={`s-${subject.id}`} label={subject.title} icon={ICONS.Subject} level={2}
+                    isExpanded={expandedNodes.includes(`s-${subject.id}`)} isActive={navState.selectedSubject?.id === subject.id && navState.currentPage === 'subject'}
+                    onToggle={toggleNode} onClick={() => navigateTo('subject', { selectedCourse: course, selectedSubject: subject })}
                   >
                     {subject.topics.map(topic => (
-                      <SidebarNode
-                        key={`t-${topic.id}`}
-                        id={`t-${topic.id}`}
-                        label={topic.title}
-                        icon={ICONS.Topic}
-                        level={3}
-                        isExpanded={expandedNodes.includes(`t-${topic.id}`)}
-                        isActive={navState.selectedTopic?.id === topic.id && navState.currentPage === 'topic'}
-                        onToggle={toggleNode}
-                        onClick={() => navigateTo('topic', { selectedCourse: course, selectedSubject: subject, selectedTopic: topic })}
+                      <SmartSidebarNode
+                        key={`t-${topic.id}`} id={`t-${topic.id}`} label={topic.title} icon={ICONS.Topic} level={3}
+                        isExpanded={expandedNodes.includes(`t-${topic.id}`)} isActive={navState.selectedTopic?.id === topic.id && navState.currentPage === 'topic'}
+                        onToggle={toggleNode} onClick={() => navigateTo('topic', { selectedCourse: course, selectedSubject: subject, selectedTopic: topic })}
                       >
                         {topic.materials.map(mat => (
-                          <SidebarNode
-                            key={`m-${mat.id}`}
-                            id={`m-${mat.id}`}
-                            label={mat.title}
-                            icon={ICONS[mat.type] || FileText}
-                            level={4}
+                          <SmartSidebarNode
+                            key={`m-${mat.id}`} id={`m-${mat.id}`} label={mat.title} icon={ICONS[mat.type] || FileText} level={4}
                             isActive={navState.selectedMaterial?.id === mat.id && navState.currentPage === 'material'}
                             onClick={() => navigateTo('material', { selectedCourse: course, selectedSubject: subject, selectedTopic: topic, selectedMaterial: mat })}
+                            rightElement={completedMats.includes(mat.id) ? <CheckCircle size={14} className="text-emerald-500"/> : null}
                           />
                         ))}
-                      </SidebarNode>
+                      </SmartSidebarNode>
                     ))}
-                  </SidebarNode>
+                  </SmartSidebarNode>
                 ))}
-              </SidebarNode>
+              </SmartSidebarNode>
             ))}
-          </SidebarNode>
+          </SmartSidebarNode>
+
+          {/* AI Learning */}
+          {!isSidebarCollapsed && <div className="mt-6 mb-2 px-6 text-[10px] font-bold uppercase tracking-wider lms-text-muted">AI Learning</div>}
+          <SmartSidebarNode id="ai-tutor" label="AI Tutor" icon={ICONS.Bot} onClick={() => {}} isCollapsedMode={isSidebarCollapsed} badgeText="New" badgeColor="bg-purple-600" />
+          <SmartSidebarNode id="ai-practice" label="AI Practice" icon={ICONS.Brain} onClick={() => {}} isCollapsedMode={isSidebarCollapsed} />
+
+          {/* Analytics */}
+          {!isSidebarCollapsed && <div className="mt-6 mb-2 px-6 text-[10px] font-bold uppercase tracking-wider lms-text-muted">Analytics</div>}
+          <SmartSidebarNode id="analytics-prog" label="Progress & Reports" icon={ICONS.Target} onClick={() => {}} isCollapsedMode={isSidebarCollapsed} />
+          <SmartSidebarNode id="analytics-weak" label="Weak Topics" icon={ICONS.TriangleAlert} onClick={() => {}} isCollapsedMode={isSidebarCollapsed} rightElement={<span className="w-2 h-2 rounded-full bg-red-500 mr-2"></span>} />
+
+          {/* Workspace */}
+          {!isSidebarCollapsed && <div className="mt-6 mb-2 px-6 text-[10px] font-bold uppercase tracking-wider lms-text-muted">Workspace</div>}
+          <SmartSidebarNode id="ws-bookmarks" label="Bookmarks" icon={ICONS.Bookmark} onClick={() => {}} isCollapsedMode={isSidebarCollapsed} rightElement={bookmarkedMats.length > 0 ? <span className="text-[10px] font-mono bg-[var(--bg-input)] px-1.5 py-0.5 rounded">{bookmarkedMats.length}</span> : null} />
+          <SmartSidebarNode id="ws-favorites" label="Favorites" icon={ICONS.Star} onClick={() => {}} isCollapsedMode={isSidebarCollapsed} rightElement={favorites.length > 0 ? <span className="text-[10px] font-mono bg-[var(--bg-input)] px-1.5 py-0.5 rounded">{favorites.length}</span> : null} />
+        </div>
+
+        {/* Sidebar Footer Controls */}
+        <div className="p-3 border-t lms-border-color shrink-0 flex flex-col gap-1">
+          <SmartSidebarNode id="settings" label="Settings" icon={ICONS.Settings} onClick={() => {}} isCollapsedMode={isSidebarCollapsed} />
+          <button 
+            onClick={() => setIsSidebarCollapsed(p => !p)}
+            className="w-full p-2 flex items-center justify-center text-slate-500 hover:text-white hover:bg-[var(--bg-card-hover)] rounded-lg transition-colors border-none bg-transparent cursor-pointer hidden lg:flex"
+            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            <ChevronRight size={18} className={`transition-transform duration-300 ${isSidebarCollapsed ? '' : 'rotate-180'}`} />
+          </button>
         </div>
       </aside>
 

@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import serializers
+# pyrefly: ignore [missing-import]
 from django.contrib.auth import get_user_model
 from .models import StudentMaterial, MaterialAccess, MaterialUserNote, MaterialComment
 
@@ -71,6 +73,22 @@ class StudentMaterialSerializer(serializers.ModelSerializer):
             'my_note', 'access_grants', 'my_access', 'is_owner',
         ]
         read_only_fields = ['id', 'student', 'uploaded_at', 'updated_at', 'ai_indexed', 'source', 'deleted_at', 'deleted_by_username']
+
+    def to_internal_value(self, data):
+        # Handle stringified tags in multipart form data
+        if 'tags' in data and isinstance(data['tags'], str):
+            import json
+            try:
+                # Need to use a mutable copy if data is a QueryDict
+                if hasattr(data, 'copy'):
+                    mutable_data = data.copy()
+                    mutable_data['tags'] = json.loads(data['tags'])
+                    data = mutable_data
+                else:
+                    data['tags'] = json.loads(data['tags'])
+            except (ValueError, TypeError):
+                pass
+        return super().to_internal_value(data)
 
     def get_my_note(self, obj):
         notes = getattr(obj, 'my_notes_cache', None)

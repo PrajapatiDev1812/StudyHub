@@ -6,12 +6,21 @@ import { SearchInput, SortDropdown } from '../../components/FilterSystem/FilterC
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 const TYPE_META = {
-  pdf:   { icon: '📄', label: 'PDF',          cls: 'mm-type-pdf'   },
-  doc:   { icon: '📝', label: 'Document',     cls: 'mm-type-doc'   },
-  ppt:   { icon: '📊', label: 'Presentation', cls: 'mm-type-ppt'   },
-  image: { icon: '🖼️', label: 'Image',        cls: 'mm-type-image' },
-  text:  { icon: '✏️', label: 'Text Note',    cls: 'mm-type-text'  },
-  link:  { icon: '🔗', label: 'Link',         cls: 'mm-type-link'  },
+  pdf:   { icon: '📄', label: 'PDF',          cls: 'mm-type-pdf',   fileLabel: 'PDF File' },
+  doc:   { icon: '📝', label: 'Word file',    cls: 'mm-type-doc',   fileLabel: 'Word File' },
+  ppt:   { icon: '📊', label: 'PPT',          cls: 'mm-type-ppt',   fileLabel: 'PPT File' },
+  excel: { icon: '📈', label: 'Excel/CSV (.xls, .xlsx, .csv)', cls: 'mm-type-excel', fileLabel: 'Excel/CSV File' },
+  image: { icon: '🖼️', label: 'Image (.jpg, .jpeg, .png, .gif, .webp)', cls: 'mm-type-image', fileLabel: 'Image File' },
+  text:  { icon: '✏️', label: 'Text Note',    cls: 'mm-type-text',  fileLabel: 'Text Note' },
+  link:  { icon: '🔗', label: 'Link',         cls: 'mm-type-link',  fileLabel: 'Link' },
+};
+
+const ACCEPT_MAP = {
+  pdf: '.pdf',
+  doc: '.doc,.docx,.txt',
+  ppt: '.ppt,.pptx',
+  excel: '.xls,.xlsx,.csv',
+  image: 'image/*',
 };
 
 const TABS = [
@@ -114,8 +123,8 @@ function MaterialModal({ initial, onClose, onSaved, folders }) {
       if (file) fd.append('file', file);
 
       const res = isEdit
-        ? await api.patch(`/materials/${initial.id}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-        : await api.post('/materials/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        ? await api.patch(`/student-materials/${initial.id}/`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+        : await api.post('/student-materials/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
 
       onSaved(res.data);
       onClose();
@@ -133,7 +142,7 @@ function MaterialModal({ initial, onClose, onSaved, folders }) {
     }
   };
 
-  const showFile  = ['pdf','doc','ppt','image'].includes(form.material_type);
+  const showFile  = ['pdf','doc','ppt','excel','image'].includes(form.material_type);
   const showUrl   = form.material_type === 'link';
   const showNote  = form.material_type === 'text';
 
@@ -155,8 +164,8 @@ function MaterialModal({ initial, onClose, onSaved, folders }) {
           />
           {showFile && (
             <div className="form-group">
-              <label>File {!isEdit && '*'}</label>
-              <input type="file" className="form-input" onChange={e => setFile(e.target.files[0])} required={!isEdit} />
+              <label>{TYPE_META[form.material_type]?.fileLabel || 'File'} {!isEdit && '*'}</label>
+              <input type="file" className="form-input" onChange={e => setFile(e.target.files[0])} required={!isEdit} accept={ACCEPT_MAP[form.material_type] || ''} />
             </div>
           )}
           {showUrl && (
@@ -229,7 +238,7 @@ function ShareModal({ material, onClose }) {
 
   const loadGrants = useCallback(async () => {
     try {
-      const res = await api.get(`/materials/${material.id}/sharing/access-list/`);
+      const res = await api.get(`/student-materials/${material.id}/sharing/access-list/`);
       setGrants(res.data);
     } catch { /* ignore */ }
   }, [material.id]);
@@ -240,7 +249,7 @@ function ShareModal({ material, onClose }) {
     e.preventDefault();
     setLoading(true); setError(''); setMsg('');
     try {
-      await api.post(`/materials/${material.id}/sharing/share/`, { email, ...perms });
+      await api.post(`/student-materials/${material.id}/sharing/share/`, { email, ...perms });
       setMsg(`✅ Shared successfully with ${email}`);
       setEmail('');
       loadGrants();
@@ -251,7 +260,7 @@ function ShareModal({ material, onClose }) {
 
   const handleRevoke = async (grantId) => {
     try {
-      await api.delete(`/materials/${material.id}/sharing/${grantId}/revoke/`);
+      await api.delete(`/student-materials/${material.id}/sharing/${grantId}/revoke/`);
       setGrants(g => g.filter(x => x.id !== grantId));
     } catch { /* ignore */ }
   };
@@ -317,14 +326,14 @@ function ViewModal({ material, onClose }) {
   const [postingComment, setPostingComment] = useState(false);
 
   useEffect(() => {
-    api.get(`/materials/${material.id}/note/`).then(r => {
+    api.get(`/student-materials/${material.id}/note/`).then(r => {
       setSavedNote(r.data.note_content || '');
       setNote(r.data.note_content || '');
     }).catch(() => {});
     
     // Load comments
     if (material.visibility === 'shared') {
-      api.get(`/materials/${material.id}/comments/`).then(r => {
+      api.get(`/student-materials/${material.id}/comments/`).then(r => {
         setComments(r.data);
       }).catch(() => {});
     }
@@ -333,7 +342,7 @@ function ViewModal({ material, onClose }) {
   const handleSaveNote = async () => {
     setSaving(true);
     try {
-      await api.post(`/materials/${material.id}/note/`, { note_content: note });
+      await api.post(`/student-materials/${material.id}/note/`, { note_content: note });
       setSavedNote(note);
       setDirty(false);
     } catch { /* ignore */ }
@@ -345,7 +354,7 @@ function ViewModal({ material, onClose }) {
     if (!newComment.trim()) return;
     setPostingComment(true);
     try {
-      const r = await api.post(`/materials/${material.id}/comments/`, { content: newComment });
+      const r = await api.post(`/student-materials/${material.id}/comments/`, { content: newComment });
       setComments(prev => [...prev, r.data]);
       setNewComment('');
     } catch { /* ignore */ }
@@ -355,7 +364,7 @@ function ViewModal({ material, onClose }) {
   const handleDeleteComment = async cid => {
     if (!window.confirm("Delete this comment?")) return;
     try {
-      await api.delete(`/materials/${material.id}/comments/${cid}/`);
+      await api.delete(`/student-materials/${material.id}/comments/${cid}/`);
       setComments(prev => prev.filter(c => c.id !== cid));
     } catch { /* ignore */ }
   };
@@ -387,7 +396,15 @@ function ViewModal({ material, onClose }) {
           <a href={material.external_url} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ marginBottom: 14, display: 'inline-flex' }}>🔗 Open Link</a>
         )}
         {material.file && (
-          <a href={getFullUrl(material.file)} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ marginBottom: 14, display: 'inline-flex' }}>⬇️ Download File</a>
+          <div style={{ marginBottom: 14 }}>
+            {material.material_type === 'image' ? (
+              <img src={getFullUrl(material.file)} alt={material.title} style={{ maxWidth: '100%', borderRadius: 8 }} />
+            ) : material.material_type === 'pdf' ? (
+              <iframe src={getFullUrl(material.file)} width="100%" height="400px" style={{ border: 'none', borderRadius: 8 }} title={material.title}></iframe>
+            ) : (
+              <a href={getFullUrl(material.file)} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ display: 'inline-flex' }}>⬇️ Download File</a>
+            )}
+          </div>
         )}
 
         {material.tags?.length > 0 && (
@@ -539,7 +556,7 @@ function MaterialCard({ item, onAction, selected, onToggleSelect, selectionMode 
       style={{ cursor: 'pointer', position: 'relative' }}
     >
       {/* Checkbox */}
-      <div className="mm-card-checkbox-wrap" onClick={e => { e.stopPropagation(); onToggleSelect(item.id); }}>
+      <div className="mm-card-checkbox-wrap" onClick={e => e.stopPropagation()}>
         <input type="checkbox" className="mm-card-checkbox" checked={selected} onChange={() => onToggleSelect(item.id)} />
       </div>
 
@@ -602,7 +619,7 @@ function FolderModal({ material, folders, onClose, onMoved }) {
   const handleMove = async () => {
     setLoading(true);
     try {
-      await api.post(`/materials/${material.id}/move-to-folder/`, { folder_name: folder });
+      await api.post(`/student-materials/${material.id}/move-to-folder/`, { folder_name: folder });
       onMoved(material.id, folder);
       onClose();
     } catch { /* ignore */ }
@@ -638,6 +655,7 @@ export default function MyMaterials() {
   const [search, setSearch]           = useState('');
   const [typeFilter, setTypeFilter]   = useState('');
   const [visFilter, setVisFilter]     = useState('');
+  const [searchFolder, setSearchFolder] = useState('');
   const [deletedDate, setDeletedDate] = useState('');
   const [sortBy, setSortBy]           = useState('newest');
   const [folders, setFolders]         = useState([]);
@@ -664,17 +682,18 @@ export default function MyMaterials() {
       if (search)      params.append('search', search);
       if (typeFilter)  params.append('type', typeFilter);
       if (visFilter)   params.append('visibility', visFilter);
+      if (searchFolder) params.append('folder', searchFolder);
       if (deletedDate && isTrash) params.append('deleted_date', deletedDate);
       params.append('sort', sortBy);
-      const res = await api.get(`/materials/?${params}`);
+      const res = await api.get(`/student-materials/?${params}`);
       setItems(res.data.results ?? res.data);
     } catch { /* ignore */ }
     finally { setLoading(false); }
-  }, [activeTab, search, typeFilter, visFilter, deletedDate, sortBy]);
+  }, [activeTab, search, typeFilter, visFilter, searchFolder, deletedDate, sortBy]);
 
   const fetchFolders = useCallback(async () => {
     try {
-      const res = await api.get('/materials/folders/');
+      const res = await api.get('/student-materials/folders/');
       setFolders(res.data);
     } catch { /* ignore */ }
   }, []);
@@ -708,7 +727,7 @@ export default function MyMaterials() {
       case 'move':       setModal({ type: 'move', item }); break;
       case 'toggle-fav': {
         try {
-          const res = await api.post(`/materials/${item.id}/toggle-favorite/`);
+          const res = await api.post(`/student-materials/${item.id}/toggle-favorite/`);
           setItems(prev => prev.map(x => x.id === item.id ? { ...x, favorite: res.data.favorite } : x));
         } catch { /* ignore */ }
         break;
@@ -721,7 +740,7 @@ export default function MyMaterials() {
           danger: false,
           onConfirm: async () => {
             try {
-              await api.delete(`/materials/${item.id}/`);
+              await api.delete(`/student-materials/${item.id}/`);
               setItems(prev => prev.filter(x => x.id !== item.id));
             } catch { /* ignore */ }
           },
@@ -730,7 +749,7 @@ export default function MyMaterials() {
       }
       case 'restore': {
         try {
-          await api.post(`/materials/${item.id}/restore/`);
+          await api.post(`/student-materials/${item.id}/restore/`);
           setItems(prev => prev.filter(x => x.id !== item.id));
         } catch { /* ignore */ }
         break;
@@ -743,7 +762,7 @@ export default function MyMaterials() {
           danger: true,
           onConfirm: async () => {
             try {
-              await api.delete(`/materials/${item.id}/permanent-delete/`);
+              await api.delete(`/student-materials/${item.id}/permanent-delete/`);
               setItems(prev => prev.filter(x => x.id !== item.id));
             } catch { /* ignore */ }
           },
@@ -765,7 +784,7 @@ export default function MyMaterials() {
       danger: false,
       onConfirm: async () => {
         try {
-          await api.post('/materials/bulk-trash/', { ids: selectedList });
+          await api.post('/student-materials/bulk-trash/', { ids: selectedList });
           setItems(prev => prev.filter(x => !selectedIds.has(x.id)));
           setSelectedIds(new Set());
         } catch { /* ignore */ }
@@ -781,7 +800,7 @@ export default function MyMaterials() {
       danger: false,
       onConfirm: async () => {
         try {
-          await api.post('/materials/bulk-restore/', { ids: selectedList });
+          await api.post('/student-materials/bulk-restore/', { ids: selectedList });
           setItems(prev => prev.filter(x => !selectedIds.has(x.id)));
           setSelectedIds(new Set());
         } catch { /* ignore */ }
@@ -797,7 +816,7 @@ export default function MyMaterials() {
       danger: true,
       onConfirm: async () => {
         try {
-          await api.delete('/materials/bulk-permanent-delete/', { data: { ids: selectedList } });
+          await api.delete('/student-materials/bulk-permanent-delete/', { data: { ids: selectedList } });
           setItems(prev => prev.filter(x => !selectedIds.has(x.id)));
           setSelectedIds(new Set());
         } catch { /* ignore */ }
@@ -813,7 +832,7 @@ export default function MyMaterials() {
       danger: true,
       onConfirm: async () => {
         try {
-          await api.delete('/materials/empty-trash/');
+          await api.delete('/student-materials/empty-trash/');
           setItems([]);
           setSelectedIds(new Set());
         } catch { /* ignore */ }
@@ -822,15 +841,12 @@ export default function MyMaterials() {
   };
 
   const handleSaved = (savedItem) => {
-    setItems(prev => {
-      const exists = prev.find(x => x.id === savedItem.id);
-      return exists ? prev.map(x => x.id === savedItem.id ? savedItem : x) : [savedItem, ...prev];
-    });
+    fetchMaterials();
     fetchFolders();
   };
 
   const handleMoved = (id, folder) => {
-    setItems(prev => prev.map(x => x.id === id ? { ...x, folder_name: folder } : x));
+    fetchMaterials();
     fetchFolders();
   };
 
@@ -906,6 +922,11 @@ export default function MyMaterials() {
             <option value="">All Visibility</option>
             <option value="private">🔒 Private</option>
             <option value="shared">🤝 Shared</option>
+          </select>
+
+          <select className="mm-filter-select" value={searchFolder || ''} onChange={e => setSearchFolder(e.target.value)}>
+            <option value="">All Folders</option>
+            {folders.map(f => <option key={f} value={f}>📁 {f}</option>)}
           </select>
 
           {isTrash && (

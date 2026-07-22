@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 from django.db import models
+# pyrefly: ignore [missing-import]
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -12,8 +14,9 @@ class StudentMaterial(models.Model):
 
     MATERIAL_TYPE_CHOICES = [
         ('pdf', 'PDF'),
-        ('doc', 'Document'),
-        ('ppt', 'Presentation'),
+        ('doc', 'Word file'),
+        ('ppt', 'PPT'),
+        ('excel', 'Excel/CSV'),
         ('image', 'Image'),
         ('text', 'Text Note'),
         ('link', 'External Link'),
