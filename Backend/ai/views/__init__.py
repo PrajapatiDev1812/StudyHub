@@ -33,6 +33,38 @@ DebugRetrievalView         = _mod.DebugRetrievalView
 
 # ── New modular views ──
 from .ai_usage_view import AIUsageView  # noqa
+from .teacher_views import (
+    AIConfigurationView,
+    KnowledgeDocumentView,
+    KnowledgeDocumentDetailView,
+    KnowledgeDocumentStatusView,
+    KnowledgeHealthView,
+    QuestionGeneratorView,
+)
+from .session_action_views import (
+    TeacherChatSessionListView,
+    ChatSessionPinView,
+    ChatSessionArchiveView,
+    ChatSessionDuplicateView,
+    ChatSessionShareView,
+    ChatSessionExportView,
+    ChatSessionSearchView,
+)
+from .educational_action_views import (
+    SaveAsNotesView,
+    GenerateQuizView,
+    GenerateFlashcardsView,
+    ConvertToMaterialView,
+    GenerateAssignmentView,
+    BloomsTaxonomyView,
+    StudentInsightView,
+    GeneratedContentListView,
+    GeneratedContentDetailView,
+    PromptTemplateListView,
+    PromptTemplateDetailView,
+    ConversationTagListView,
+    ConversationTagDetailView,
+)
 
 __all__ = [
     'ChatbotView',
@@ -47,4 +79,11 @@ __all__ = [
     'ChatFileUploadView',
     'DebugRetrievalView',
     'AIUsageView',
+    'AIConfigurationView',
+    'KnowledgeDocumentView',
+    'KnowledgeDocumentDetailView',
+    'KnowledgeDocumentStatusView',
+    'KnowledgeHealthView',
+    'QuestionGeneratorView',
 ]
+

@@ -389,3 +389,21 @@ class Progress(SoftDeleteModel):
 
     def __str__(self):
         return f"{self.student.username} ✓ {self.content.title}"
+
+
+# ── Academic Workspace Models ──────────────────────────────────────────────────
+from .academic_models import (
+    AcademicSession,
+    AcademicProgram,
+    AcademicYear,
+    AcademicSemester,
+    TeacherSubjectAssignment,
+    StudentAcademicEnrollment,
+    AttendanceRecord,
+    AcademicAssignment,
+    AssignmentSubmission,
+    StudentAcademicMetrics,
+    RiskConfiguration,
+    AcademicNotification,
+    AuditLog,
+)

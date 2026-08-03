@@ -167,7 +167,7 @@ const safeGet = (key, defaultVal) => {
   } catch { return defaultVal; }
 };
 const safeSet = (key, val) => {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { console.warn(e); }
 };
 
 // --- Icons Mapping ---
@@ -314,7 +314,6 @@ export default function LmsPanel() {
   const [completedMats, setCompletedMats] = useState(() => safeGet('lms_completed', []));
   const [bookmarkedMats, setBookmarkedMats] = useState(() => safeGet('lms_bookmarks', []));
   const [lastMaterialId, setLastMaterialId] = useState(() => safeGet('lms_last_material', null));
-  const [favorites, setFavorites] = useState(() => safeGet('lms_favorites', []));
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => safeGet('lms_sidebar_collapsed', false));
@@ -325,7 +324,6 @@ export default function LmsPanel() {
   useEffect(() => { safeSet('lms_completed', completedMats); }, [completedMats]);
   useEffect(() => { safeSet('lms_bookmarks', bookmarkedMats); }, [bookmarkedMats]);
   useEffect(() => { if (lastMaterialId) safeSet('lms_last_material', lastMaterialId); }, [lastMaterialId]);
-  useEffect(() => { safeSet('lms_favorites', favorites); }, [favorites]);
   useEffect(() => { safeSet('lms_sidebar_collapsed', isSidebarCollapsed); }, [isSidebarCollapsed]);
 
   // Navigation action
@@ -435,7 +433,7 @@ export default function LmsPanel() {
   // --- Sub-components ---
 
   const SmartSidebarNode = ({ 
-    id, label, icon: Icon, isExpanded, onToggle, onClick, isActive, children, level = 0,
+    id, label, icon: Icon, isExpanded, onToggle, onClick, isActive, children, level = 0, // eslint-disable-line no-unused-vars
     badgeText, badgeColor = 'bg-lms-accent', rightElement, isCollapsedMode
   }) => (
     <div className="w-full">
@@ -1769,7 +1767,6 @@ export default function LmsPanel() {
           {/* Workspace */}
           {!isSidebarCollapsed && <div className="mt-6 mb-2 px-6 text-[10px] font-bold uppercase tracking-wider lms-text-muted">Workspace</div>}
           <SmartSidebarNode id="ws-bookmarks" label="Bookmarks" icon={ICONS.Bookmark} onClick={() => {}} isCollapsedMode={isSidebarCollapsed} rightElement={bookmarkedMats.length > 0 ? <span className="text-[10px] font-mono bg-[var(--bg-input)] px-1.5 py-0.5 rounded">{bookmarkedMats.length}</span> : null} />
-          <SmartSidebarNode id="ws-favorites" label="Favorites" icon={ICONS.Star} onClick={() => {}} isCollapsedMode={isSidebarCollapsed} rightElement={favorites.length > 0 ? <span className="text-[10px] font-mono bg-[var(--bg-input)] px-1.5 py-0.5 rounded">{favorites.length}</span> : null} />
         </div>
 
         {/* Sidebar Footer Controls */}

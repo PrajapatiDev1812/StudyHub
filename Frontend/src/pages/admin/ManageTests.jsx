@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 
@@ -10,18 +10,18 @@ export default function ManageTests() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ title: '', description: '', topic: '', time_limit_minutes: '', passing_score: 50 });
 
-  const fetchData = () => {
-    setLoading(true);
+  const fetchData = useCallback(() => {
+    setTimeout(() => setLoading(true), 0);
     Promise.all([
       api.get('/tests/'),
       api.get('/topics/'),
     ]).then(([testRes, topRes]) => {
       setTests(testRes.data.results || testRes.data);
       setTopics(topRes.data.results || topRes.data);
-    }).catch(() => {}).finally(() => setLoading(false));
-  };
+    }).catch((e) => { console.error(e); }).finally(() => setLoading(false));
+  }, []);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 

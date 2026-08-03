@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import api from '../../services/api';
 
 import WelcomeSection from '../../components/widgets/dashboard/WelcomeSection';
@@ -39,9 +39,11 @@ export default function StudentDashboard() {
   const setError = (key) =>
     setErrorMap(prev => ({ ...prev, [key]: true }));
 
-  const fetchAll = () => {
-    setLoadingMap({ summary: true, weekly: true, recent: true, continueLearning: true, insights: true, aiSummary: true });
-    setErrorMap({});
+  const fetchAll = useCallback(() => {
+    setTimeout(() => {
+      setLoadingMap({ summary: true, weekly: true, recent: true, continueLearning: true, insights: true, aiSummary: true });
+      setErrorMap({});
+    }, 0);
 
     api.get('/dashboard/summary/')
       .then(r => setSummary(r.data))
@@ -72,9 +74,9 @@ export default function StudentDashboard() {
       .then(r => setAiSummary(r.data))
       .catch(() => setError('aiSummary'))
       .finally(() => setLoaded('aiSummary'));
-  };
+  }, []);
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   // Study time today derived from weekly data (last entry = today if labels include today)
   const studyHoursToday = weekly?.study_hours?.[weekly.study_hours.length - 1] ?? 0;

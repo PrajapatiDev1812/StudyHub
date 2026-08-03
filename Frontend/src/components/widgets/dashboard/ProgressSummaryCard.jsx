@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Clock, CheckSquare, TrendingUp } from 'lucide-react';
 
-function StatItem({ icon: Icon, label, value, color }) {
+function StatItem({ icon: Icon, label, value, color }) { // eslint-disable-line no-unused-vars
   return (
     <div className="progress-stat">
       <div className="progress-stat-icon" style={{ color }}>

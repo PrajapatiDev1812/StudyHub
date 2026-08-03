@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import './AiChat.css';
@@ -165,7 +165,7 @@ export default function AiChat() {
   // ── API calls ──
   const loadSessions = async () => {
     try {
-      const res = await api.get('/ai/sessions/');
+      const res = await api.get('/ai/chats/');
       setSessions(res.data);
     } catch (err) {
       console.error('Failed to load sessions:', err);
@@ -176,7 +176,7 @@ export default function AiChat() {
 
   const loadSessionMessages = async (sessionId) => {
     try {
-      const res = await api.get(`/ai/sessions/${sessionId}/messages/`);
+      const res = await api.get(`/ai/chats/${sessionId}/messages/`);
       const msgs = res.data.map(m => ({
         id: m.id,
         role: m.role,
@@ -230,12 +230,21 @@ export default function AiChat() {
     abortControllerRef.current = new AbortController();
 
     try {
-      const res = await api.post('/ai/chat/', {
+      let activeSessionId = currentSessionId;
+      if (!activeSessionId) {
+        const sessionRes = await api.post('/ai/chats/', {
+          mode: selectedMode,
+          level: 'beginner',
+        });
+        activeSessionId = sessionRes.data.id;
+        setCurrentSessionId(activeSessionId);
+      }
+
+      const res = await api.post(`/ai/chats/${activeSessionId}/messages/`, {
         message: text,
         mode: selectedMode,
         level: 'beginner',
         debug: false,
-        session_id: currentSessionId,
       }, {
         signal: abortControllerRef.current.signal,
       });
@@ -298,7 +307,7 @@ export default function AiChat() {
   // ── Session actions ──
   const deleteSession = async (sessionId) => {
     try {
-      await api.delete(`/ai/sessions/${sessionId}/`);
+      await api.delete(`/ai/chats/${sessionId}/`);
       setSessions(prev => prev.filter(s => s.id !== sessionId));
       if (currentSessionId === sessionId) {
         startNewChat();
@@ -352,7 +361,6 @@ export default function AiChat() {
 
   const retryMessage = async (messageIdx) => {
     // Find the user message before this AI message
-    const aiMsg = messages[messageIdx];
     let userMsg = null;
     for (let i = messageIdx - 1; i >= 0; i--) {
       if (messages[i].role === 'user') {

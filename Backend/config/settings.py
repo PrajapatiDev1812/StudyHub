@@ -283,6 +283,44 @@ CORS_ALLOW_ALL_ORIGINS = False
 # ---------- RAG Debug Mode ----------
 DEBUG_RAG = os.getenv('DEBUG_RAG', 'False').lower() in ('true', '1', 'yes')
 
+# ---------- AI Quota Management ----------
+# Master encryption key for AI provider API keys stored in the database.
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+AI_SECRET_KEY = os.getenv('AI_SECRET_KEY', SECRET_KEY)
+
+# Default quota values — used ONLY as fallbacks when no database quota policy exists.
+# Admins configure actual quotas from the AI Management panel.
+AI_QUOTA_DEFAULTS = {
+    'admin': {
+        'max_requests': None,      # Unlimited
+        'max_tokens': None,        # Unlimited
+        'time_window_hours': 24,
+        'window_type': 'rolling',
+        'burst_limit': 30,
+        'burst_window_seconds': 60,
+        'concurrent_requests': 10,
+        'warning_threshold_pct': 80,
+        'grace_requests': 0,
+        'auto_block': False,
+    },
+    'student': {
+        'max_requests': 50,
+        'max_tokens': 250000,
+        'time_window_hours': 24,
+        'window_type': 'rolling',
+        'burst_limit': 5,
+        'burst_window_seconds': 60,
+        'concurrent_requests': 2,
+        'warning_threshold_pct': 80,
+        'grace_requests': 0,
+        'auto_block': True,
+    },
+}
+
+# Cache prefix for AI governance data
+AI_GOVERNANCE_CACHE_PREFIX = 'studyhub:ai_gov'
+AI_GOVERNANCE_CACHE_TTL = 300  # 5 minutes
+
 # ---------- Logging ----------
 LOGGING = {
     'version': 1,

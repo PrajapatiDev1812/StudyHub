@@ -67,7 +67,7 @@ const ThemePreviewCard = ({ theme, isActive, onClick }) => {
 };
 
 export default function Appearance() {
-  const { activeTheme, previewTheme, saveTheme, resetToSaved, isSaving } = useTheme();
+  const { activeTheme, previewTheme, saveTheme, resetToSaved } = useTheme();
   
   const [themes, setThemes] = useState([]);
   const [selectedForPreview, setSelectedForPreview] = useState(null);

@@ -62,7 +62,7 @@ MODE_PROMPTS = {
 # 3. PROMPT BUILDER
 # ─────────────────────────────────────────────
 
-def build_prompt(user_message, mode='student_mode', level='beginner', subject='', topic='', admin_chunks=[], student_chunks=[]):
+def build_prompt(user_message, mode='student_mode', level='beginner', subject='', topic='', admin_chunks=[], student_chunks=[], knowledge_priority='material_first', previous_messages=[]):
     """
     Assembles the final prompt by combining BASE_PROMPT, MODE_PROMPT, 
     RAG Context (Study Material), and the User Message.
@@ -87,10 +87,29 @@ def build_prompt(user_message, mode='student_mode', level='beginner', subject=''
     else:
         student_context = "(No personal student notes found for this query.)"
 
+    # Assemble History Context
+    history_context = ""
+    if previous_messages:
+        history_context += "--------------------------------------------------\n"
+        history_context += "PREVIOUS CONVERSATION HISTORY\n"
+        history_context += "--------------------------------------------------\n"
+        for msg in previous_messages:
+            role = "User" if msg['role'] == 'user' else "Assistant"
+            history_context += f"{role}: {msg['content']}\n\n"
+
     # Assemble Final Prompt
     final_prompt = f"""{BASE_PROMPT}
 
 {selected_mode_prompt}
+
+HYBRID KNOWLEDGE & SOURCING RULES:
+You MUST follow the rules for the current Knowledge Priority setting: "{knowledge_priority}"
+1. If "material_only": You MUST NOT answer using general knowledge. If the answer is not in the retrieved context, you MUST start your response exactly with "[SOURCE: NOT_FOUND]" and say you don't know. If the answer IS in the context, start exactly with "[SOURCE: MATERIAL]".
+2. If "material_first": Prioritize the retrieved context. If the answer is found in the context, start your response exactly with "[SOURCE: MATERIAL]". If the context is missing or irrelevant, you may use general knowledge, but you MUST start your response exactly with "[SOURCE: GLOBAL]".
+3. If "global_first": Use your general academic knowledge freely, supplemented by the context. You MUST start your response exactly with "[SOURCE: GLOBAL]".
+
+CRITICAL OUTPUT FORMATTING RULES:
+- ALWAYS start your response with the [SOURCE: ...] tag as defined above.
 
 --------------------------------------------------
 RETRIEVED STUDY MATERIAL (PRIMARY SOURCES)
@@ -107,6 +126,9 @@ USER CONTEXT (Internal only, do not repeat):
 - Subject: {subject}
 - Topic: {topic}
 
+{history_context}
+
+CURRENT USER MESSAGE:
 User: {user_message}"""
 
     return final_prompt

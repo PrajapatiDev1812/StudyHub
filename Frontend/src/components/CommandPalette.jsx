@@ -10,14 +10,13 @@ export default function CommandPalette() {
   
   const debouncedQuery = useDebounce(inputValue, 300);
   const { data: searchResults, isLoading } = useSmartSearch(debouncedQuery);
-  const [recentSearches, setRecentSearches] = useState([]);
-
-  useEffect(() => {
+  const [recentSearches, setRecentSearches] = useState(() => {
     const stored = localStorage.getItem('studyhub_recent_searches');
     if (stored) {
-      try { setRecentSearches(JSON.parse(stored)); } catch(e) {}
+      try { return JSON.parse(stored); } catch { return []; }
     }
-  }, []);
+    return [];
+  });
 
   const saveRecentSearch = (term) => {
     if (!term) return;

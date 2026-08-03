@@ -3,25 +3,30 @@ ai/services/ai_usage.py
 -----------------------
 Modular service layer for AI usage tracking.
 
-Tracks how many AI requests each authenticated user has made today
-using Django's cache (works with both LocMemCache and Redis).
+UPDATED: Now delegates to QuotaService for database-driven quotas.
+Maintains full backward compatibility with existing API surface.
+
+All public functions (get_usage_summary, get_remaining, etc.) continue
+to work identically — they now read from the governance system instead
+of hardcoded constants.
 
 Cache Key Format:
-    ai_usage:{user_id}:{YYYY-MM-DD}
-
-Example:
-    ai_usage:7:2026-04-01
+    Managed by QuotaService (ai_gov:req_count:USER_ID etc.)
 """
 
+import logging
+# pyrefly: ignore [missing-import]
 from django.core.cache import cache
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
 from datetime import timedelta
 
+logger = logging.getLogger(__name__)
 
-# ── Constants ──────────────────────────────────────────────────────────────────
-
+# ── Legacy Constants (kept for backward compatibility) ─────────────────────────
+# These are now FALLBACK VALUES ONLY. Actual limits come from the database.
 STUDENT_DAILY_LIMIT = 50
-ADMIN_DAILY_LIMIT   = 100
+ADMIN_DAILY_LIMIT = 100
 
 
 # ── Internal Helpers ───────────────────────────────────────────────────────────
@@ -31,24 +36,10 @@ def get_today_date() -> str:
     return timezone.localdate().isoformat()
 
 
-def get_cache_key(user) -> str:
-    """
-    Build a unique per-user-per-day cache key.
-
-    Format: ai_usage:{user_id}:{YYYY-MM-DD}
-    Example: ai_usage:7:2026-04-01
-    """
-    return f"ai_usage:{user.pk}:{get_today_date()}"
-
-
 def get_next_midnight() -> timezone.datetime:
-    """
-    Return the next calendar midnight as a timezone-aware datetime.
-    Uses Django's configured TIME_ZONE setting.
-    """
-    now_local   = timezone.localtime(timezone.now())
-    tomorrow    = now_local.date() + timedelta(days=1)
-    # Build naive midnight for tomorrow, then make it timezone-aware
+    """Return the next calendar midnight as a timezone-aware datetime."""
+    now_local = timezone.localtime(timezone.now())
+    tomorrow = now_local.date() + timedelta(days=1)
     midnight_naive = timezone.datetime(
         year=tomorrow.year,
         month=tomorrow.month,
@@ -62,70 +53,83 @@ def get_next_midnight() -> timezone.datetime:
 
 def get_seconds_until_midnight() -> int:
     """Return integer seconds remaining until next calendar midnight."""
-    now       = timezone.now()
-    midnight  = get_next_midnight()
-    delta     = midnight - now
+    now = timezone.now()
+    midnight = get_next_midnight()
+    delta = midnight - now
     return max(0, int(delta.total_seconds()))
 
 
-def _ttl_until_midnight() -> int:
-    """
-    Cache TTL to use when storing today's usage count.
-    Ensures the key expires automatically at midnight.
-    Adds a 60-second buffer to avoid edge-case race conditions.
-    """
-    return get_seconds_until_midnight() + 60
-
-
-# ── Public API ─────────────────────────────────────────────────────────────────
+# ── Public API (backward compatible) ──────────────────────────────────────────
 
 def get_daily_limit(user) -> int:
     """
     Return the daily AI message limit for this user.
 
-    - Superusers and staff/admin role: ADMIN_DAILY_LIMIT (100)
-    - All other authenticated users  : STUDENT_DAILY_LIMIT (50)
+    Now reads from QuotaService (database-driven).
+    Falls back to legacy constants if QuotaService is unavailable.
     """
-    if user.is_superuser or user.is_staff or getattr(user, 'role', '') == 'admin':
-        return ADMIN_DAILY_LIMIT
-    return STUDENT_DAILY_LIMIT
+    try:
+        from ai.services.quota_service import QuotaService
+        policy = QuotaService.get_effective_policy(user)
+        limit = policy.get('max_requests')
+        if limit is None:
+            return 999999  # Unlimited
+        return limit
+    except Exception:
+        # Legacy fallback
+        if user.is_superuser or user.is_staff or getattr(user, 'role', '') == 'admin':
+            return ADMIN_DAILY_LIMIT
+        return STUDENT_DAILY_LIMIT
 
 
 def get_used_today(user) -> int:
-    """Return how many AI requests this user has made today."""
-    count = cache.get(get_cache_key(user))
-    return count if count is not None else 0
+    """Return how many AI requests this user has made in the current window."""
+    try:
+        from ai.services.quota_service import QuotaService
+        policy = QuotaService.get_effective_policy(user)
+        window_hours = policy.get('time_window_hours', 24)
+        window_type = policy.get('window_type', 'rolling')
+        return QuotaService._get_request_count(user, window_hours, window_type)
+    except Exception:
+        # Legacy fallback
+        key = f"ai_usage:{user.pk}:{get_today_date()}"
+        count = cache.get(key)
+        return count if count is not None else 0
 
 
 def increment_usage(user) -> int:
     """
     Increment the user's daily AI request counter by 1.
 
-    Uses atomic cache increment when available (Redis supports this).
-    Falls back to a get-set cycle for LocMemCache.
-
+    Now delegates to QuotaService.consume_quota().
     Returns the NEW count after incrementing.
     """
-    key = get_cache_key(user)
-    ttl = _ttl_until_midnight()
-
     try:
-        # Atomic increment — works natively with Redis.
-        # If the key doesn't exist yet, cache.incr raises ValueError.
-        new_count = cache.incr(key)
-        # Refresh TTL so it doesn't expire mid-day
-        cache.expire(key, ttl)
-    except ValueError:
-        # Key doesn't exist — initialize it to 1
-        cache.set(key, 1, timeout=ttl)
-        new_count = 1
-
-    return new_count
+        from ai.services.quota_service import QuotaService
+        QuotaService.consume_quota(user, tokens_used=0)
+        policy = QuotaService.get_effective_policy(user)
+        window_hours = policy.get('time_window_hours', 24)
+        window_type = policy.get('window_type', 'rolling')
+        return QuotaService._get_request_count(user, window_hours, window_type)
+    except Exception:
+        # Legacy fallback
+        key = f"ai_usage:{user.pk}:{get_today_date()}"
+        ttl = get_seconds_until_midnight() + 60
+        try:
+            new_count = cache.incr(key)
+            try:
+                cache.expire(key, ttl)
+            except AttributeError:
+                pass
+        except ValueError:
+            cache.set(key, 1, timeout=ttl)
+            new_count = 1
+        return new_count
 
 
 def get_remaining(user) -> int:
-    """Return how many AI requests the user can still make today (never < 0)."""
-    used  = get_used_today(user)
+    """Return how many AI requests the user can still make (never < 0)."""
+    used = get_used_today(user)
     limit = get_daily_limit(user)
     return max(0, limit - used)
 
@@ -134,25 +138,24 @@ def get_usage_summary(user) -> dict:
     """
     Return a complete usage summary dict for the given user.
 
-    Response shape:
-    {
-        "daily_limit"      : 50,
-        "used_today"       : 12,
-        "remaining_today"  : 38,
-        "reset_at"         : "2026-04-02T00:00:00+05:30",   # ISO, tz-aware
-        "resets_in_seconds": 20000
-    }
+    Now delegates to QuotaService.get_usage_summary() for database-driven quotas.
+    Falls back to legacy behavior if QuotaService is unavailable.
     """
-    used      = get_used_today(user)
-    limit     = get_daily_limit(user)
-    remaining = max(0, limit - used)
-    midnight  = get_next_midnight()
-    seconds   = get_seconds_until_midnight()
-
-    return {
-        "daily_limit"      : limit,
-        "used_today"       : used,
-        "remaining_today"  : remaining,
-        "reset_at"         : midnight.isoformat(),
-        "resets_in_seconds": seconds,
-    }
+    try:
+        from ai.services.quota_service import QuotaService
+        role = getattr(user, 'role', 'student')
+        return QuotaService.get_usage_summary(user, role_view=role)
+    except Exception:
+        # Legacy fallback
+        used = get_used_today(user)
+        limit = get_daily_limit(user)
+        remaining = max(0, limit - used)
+        midnight = get_next_midnight()
+        seconds = get_seconds_until_midnight()
+        return {
+            "daily_limit": limit,
+            "used_today": used,
+            "remaining_today": remaining,
+            "reset_at": midnight.isoformat(),
+            "resets_in_seconds": seconds,
+        }

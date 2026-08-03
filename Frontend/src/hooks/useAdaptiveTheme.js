@@ -9,18 +9,7 @@ export const useAdaptiveTheme = () => {
   const workerRef = useRef(null);
   const debounceRef = useRef(null);
 
-  useEffect(() => {
-    const cached = localStorage.getItem('studyhub_theme');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        setCurrentTheme(parsed);
-        applyTokens(parsed);
-      } catch(e) {}
-    }
-  }, []);
-
-  const applyTokens = (palette) => {
+  const applyTokens = useCallback((palette) => {
     const root = document.documentElement;
     const text = getAccessibleTextColor(palette.surface);
     const updatedPalette = { ...palette, text };
@@ -31,7 +20,19 @@ export const useAdaptiveTheme = () => {
     
     localStorage.setItem('studyhub_theme', JSON.stringify(updatedPalette));
     setCurrentTheme(updatedPalette);
-  };
+  }, []);
+
+  useEffect(() => {
+    const cached = localStorage.getItem('studyhub_theme');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        // eslint-disable-next-line
+        applyTokens(parsed);
+      } catch { console.warn("Failed to parse cached theme"); }
+    }
+  }, [applyTokens]);
+
 
   const processImage = useCallback(async (fileOrUrl) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -102,7 +103,7 @@ export const useAdaptiveTheme = () => {
       applyTokens(previewPalette);
       setPreviewPalette(null);
     }
-  }, [previewPalette]);
+  }, [previewPalette, applyTokens]);
 
   const cancelTheme = useCallback(() => {
     setPreviewPalette(null);
@@ -118,7 +119,7 @@ export const useAdaptiveTheme = () => {
       text: '#ffffff'
     };
     applyTokens(defaultPalette);
-  }, []);
+  }, [applyTokens]);
 
   useEffect(() => {
     return () => {

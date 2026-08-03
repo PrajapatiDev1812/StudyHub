@@ -4,8 +4,7 @@
  * Full-page Focus Mode workstation. Manages timer state, break flow,
  * tab navigation (Content/Topics/Notes), AI panel, and exit guard.
  */
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../../../services/api';
 import focusApi from '../../../services/focusApi';
 import FocusTimer from './FocusTimer';
@@ -16,7 +15,6 @@ import './FocusActiveSession.css';
 const SYNC_INTERVAL = 30; // sync to backend every 30 seconds
 
 export default function FocusActiveSession({ session: initialSession, onExit }) {
-  const navigate = useNavigate();
   const [session, setSession] = useState(initialSession);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -49,7 +47,6 @@ export default function FocusActiveSession({ session: initialSession, onExit }) 
   const [exitMessage, setExitMessage] = useState('');
 
   // ── Data ──
-  const [subjects, setSubjects] = useState([]);
   const [topics, setTopics] = useState([]);
   const [contents, setContents] = useState([]);
   const [notes, setNotes] = useState('');
@@ -74,6 +71,7 @@ export default function FocusActiveSession({ session: initialSession, onExit }) 
     }).finally(() => setLoading(false));
   }, [session?.subject]);
 
+  // eslint-disable-next-line react-hooks/purity
   const lastTickRef = useRef(Date.now());
 
   // ── Focus timer countdown (Delta-based for background stability) ──
@@ -155,7 +153,9 @@ export default function FocusActiveSession({ session: initialSession, onExit }) 
           subject: session.subject,
           topic: session.topic || null,
         });
-      } catch {}
+      } catch (e) {
+        console.error("Error saving notes:", e);
+      }
       setNotesSaving(false);
     }, 2000);
   };
@@ -166,7 +166,9 @@ export default function FocusActiveSession({ session: initialSession, onExit }) 
       const res = await focusApi.takeBreak(session.id);
       setSession(res.data);
       setTimerRunning(false);
-    } catch {}
+    } catch (e) {
+      console.error("Error taking break:", e);
+    }
   };
 
   const handleResumeFromBreak = async () => {
@@ -175,7 +177,9 @@ export default function FocusActiveSession({ session: initialSession, onExit }) 
       setSession(res.data);
       setTimerRunning(true);
       setBreakRemaining((res.data.selected_break_minutes || 5) * 60);
-    } catch {}
+    } catch (e) {
+      console.error("Error resuming from break:", e);
+    }
   };
 
   const handleExtendBreak = () => {

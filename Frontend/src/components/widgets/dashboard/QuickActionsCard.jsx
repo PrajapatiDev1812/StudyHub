@@ -19,7 +19,7 @@ export default function QuickActionsCard() {
         <span className="widget-label">⚡ Quick Actions</span>
       </div>
       <div className="qa-grid">
-        {ACTIONS.map(({ icon: Icon, label, path, accent }) => (
+        {ACTIONS.map(({ icon: Icon, label, path, accent }) => ( // eslint-disable-line no-unused-vars
           <button
             key={path}
             className={`qa-btn ${accent ? 'qa-btn-accent' : ''}`}

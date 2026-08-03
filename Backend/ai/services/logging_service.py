@@ -24,6 +24,7 @@ Usage:
 
 import logging
 import re
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -104,6 +105,10 @@ def log_ai_request(
     output_tokens: int = None,
     total_tokens: int = None,
     model_name: str = '',
+    # Enhancement 7: new optional kwargs
+    provider: str = 'google',
+    retrieval_score: float = None,
+    endpoint: str = '',
     extra_metadata: dict = None,
 ) -> None:
     """
@@ -158,7 +163,7 @@ def log_ai_request(
         if extra_metadata and isinstance(extra_metadata, dict):
             metadata.update(extra_metadata)
 
-        # ── Create the log entry ──────────────────────────────────────────────
+        # ── Create the log entry ──────────────────────────────────────────────────
         AIRequestLog.objects.create(
             user=user,
             role_snapshot=role_snapshot,
@@ -175,6 +180,10 @@ def log_ai_request(
             output_tokens=output_tokens,
             total_tokens=total_tokens,
             model_name=model_name,
+            # Enhancement 7: new fields
+            provider=provider,
+            retrieval_score=retrieval_score,
+            endpoint=endpoint,
             metadata=metadata,
         )
 

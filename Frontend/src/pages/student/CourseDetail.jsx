@@ -25,8 +25,11 @@ export default function CourseDetail() {
 
   // When a topic is selected, fetch its materials from /materials/?topic=<id>
   useEffect(() => {
-    if (!selectedTopic) { setMaterials([]); return; }
-    setMatLoading(true);
+    if (!selectedTopic) { 
+      setTimeout(() => setMaterials([]), 0); 
+      return; 
+    }
+    setTimeout(() => setMatLoading(true), 0);
     api.get(`/materials/?topic=${selectedTopic.id}`)
       .then(res => setMaterials(res.data.results || res.data))
       .catch(() => setMaterials(selectedTopic.materials || selectedTopic.contents || []))

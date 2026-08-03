@@ -322,7 +322,7 @@ select.form-input {
 }
 
 select.form-input option {
-  background: var(--bg-input, var(--bg-secondary));
+  background: var(--bg-secondary);
   color: var(--text-primary);
   padding: 8px;
 }

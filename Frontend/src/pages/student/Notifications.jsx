@@ -16,7 +16,9 @@ export default function Notifications() {
     try {
       await api.post(`/notifications/${id}/mark_read/`);
       setNotifications(notifications.map(n => n.id === id ? { ...n, is_read: true } : n));
-    } catch {}
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   if (loading) return <div className="spinner" />;

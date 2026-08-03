@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { http, HttpResponse } from 'msw';
 
 export const handlers = [

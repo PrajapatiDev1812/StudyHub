@@ -127,7 +127,7 @@ export default function CurriculumManager() {
   }, [fetchData]);
 
   // Initial load
-  useEffect(() => { fetchData('courses', [], ''); }, []);
+  useEffect(() => { fetchData('courses', [], ''); }, [fetchData]);
 
   // ── Search with debounce ────────────────────────────────────────────────────
 

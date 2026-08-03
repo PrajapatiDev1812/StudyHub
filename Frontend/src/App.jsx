@@ -47,6 +47,11 @@ import ManageTests from './pages/admin/ManageTests';
 import ManageQuestions from './pages/admin/ManageQuestions';
 import TestAnalytics from './pages/admin/TestAnalytics';
 import StudentList from './pages/admin/StudentList';
+import AdminStudents from './pages/admin/AdminStudents';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminAI from './pages/admin/AdminAI';
+import AdminAnnouncements from './pages/admin/AdminAnnouncements';
+import TeacherAiWorkspace from './pages/admin/ai/TeacherAiWorkspace';
 
 // Shared CSS
 import './pages/student/Student.css';
@@ -63,6 +68,15 @@ function AdminRoute({ children }) {
   return (
     <ProtectedRoute role="admin">
       <DashboardLayout>{children}</DashboardLayout>
+    </ProtectedRoute>
+  );
+}
+
+/** Full-screen admin route — no DashboardLayout (page provides its own layout) */
+function AdminFullscreen({ children }) {
+  return (
+    <ProtectedRoute role="admin">
+      {children}
     </ProtectedRoute>
   );
 }
@@ -127,12 +141,19 @@ function App() {
 
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/curriculum" element={<AdminRoute><CurriculumManager /></AdminRoute>} />
             <Route path="/admin/courses" element={<AdminRoute><CurriculumManager /></AdminRoute>} />
             <Route path="/admin/tests" element={<AdminRoute><ManageTests /></AdminRoute>} />
             <Route path="/admin/tests/:testId/questions" element={<AdminRoute><ManageQuestions /></AdminRoute>} />
             <Route path="/admin/tests/:id/analytics" element={<AdminRoute><TestAnalytics /></AdminRoute>} />
             <Route path="/admin/courses/:id/students" element={<AdminRoute><StudentList /></AdminRoute>} />
             <Route path="/admin/profile" element={<AdminRoute><Profile /></AdminRoute>} />
+            <Route path="/admin/students" element={<AdminRoute><AdminStudents /></AdminRoute>} />
+            <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
+            <Route path="/admin/ai" element={<AdminRoute><AdminAI /></AdminRoute>} />
+            {/* Teacher AI Workspace — fullscreen, no DashboardLayout */}
+            <Route path="/admin/ai-chat" element={<AdminFullscreen><TeacherAiWorkspace /></AdminFullscreen>} />
+            <Route path="/admin/announcements" element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>

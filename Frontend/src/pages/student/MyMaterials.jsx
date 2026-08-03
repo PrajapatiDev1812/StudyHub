@@ -689,7 +689,7 @@ export default function MyMaterials() {
       setItems(res.data.results ?? res.data);
     } catch { /* ignore */ }
     finally { setLoading(false); }
-  }, [activeTab, search, typeFilter, visFilter, searchFolder, deletedDate, sortBy]);
+  }, [activeTab, search, typeFilter, visFilter, searchFolder, deletedDate, sortBy, isTrash]);
 
   const fetchFolders = useCallback(async () => {
     try {
@@ -840,12 +840,12 @@ export default function MyMaterials() {
     });
   };
 
-  const handleSaved = (savedItem) => {
+  const handleSaved = () => {
     fetchMaterials();
     fetchFolders();
   };
 
-  const handleMoved = (id, folder) => {
+  const handleMoved = () => {
     fetchMaterials();
     fetchFolders();
   };

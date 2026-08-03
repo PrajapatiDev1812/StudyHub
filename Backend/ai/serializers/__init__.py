@@ -26,6 +26,21 @@ MessageFeedbackSerializer     = _mod.MessageFeedbackSerializer
 
 # New usage serializer
 from .ai_usage_serializer import AIUsageSerializer  # noqa
+from .teacher_serializers import (
+    AIConfigurationSerializer,
+    KnowledgeDocumentSerializer,
+    KnowledgeDocumentStatusSerializer,
+    QuestionGeneratorSerializer,
+)
+
+# New workspace serializers
+from .workspace_serializers import (
+    TeacherChatSessionSerializer,
+    TeacherChatSessionUpdateSerializer,
+    AIGeneratedContentSerializer,
+    PromptTemplateSerializer,
+    ConversationTagSerializer,
+)
 
 __all__ = [
     'ChatRequestSerializer',
@@ -36,4 +51,13 @@ __all__ = [
     'ChatMessageSerializer',
     'MessageFeedbackSerializer',
     'AIUsageSerializer',
+    'AIConfigurationSerializer',
+    'KnowledgeDocumentSerializer',
+    'KnowledgeDocumentStatusSerializer',
+    'QuestionGeneratorSerializer',
+    'TeacherChatSessionSerializer',
+    'TeacherChatSessionUpdateSerializer',
+    'AIGeneratedContentSerializer',
+    'PromptTemplateSerializer',
+    'ConversationTagSerializer',
 ]

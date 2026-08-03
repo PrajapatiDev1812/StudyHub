@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../../services/api';
 
@@ -10,15 +10,15 @@ export default function ManageQuestions() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ text: '', marks: 1, options: [{ text: '', is_correct: false }, { text: '', is_correct: false }] });
 
-  const fetchQuestions = () => {
-    setLoading(true);
+  const fetchQuestions = useCallback(() => {
+    setTimeout(() => setLoading(true), 0);
     api.get(`/questions/?test=${testId}`)
       .then(res => setQuestions(res.data.results || res.data))
-      .catch(() => {})
+      .catch((e) => { console.error(e); })
       .finally(() => setLoading(false));
-  };
+  }, [testId]);
 
-  useEffect(() => { fetchQuestions(); }, [testId]);
+  useEffect(() => { fetchQuestions(); }, [fetchQuestions]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

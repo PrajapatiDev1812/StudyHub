@@ -35,6 +35,10 @@ from .services.ai_usage import increment_usage, get_usage_summary
 from .services.ai_prompt_builder import build_prompt
 from .services.moderation import classify_content, moderate_response, is_academic
 from .services.logging_service import log_ai_request, log_blocked_request
+from .services.injection_guard import is_injection_attempt, INJECTION_REFUSAL
+from .services.cache_service import make_cache_key, get_cached_response, set_cached_response
+from .models import AIConfiguration
+from .providers.registry import get_provider
 import time
 
 logger = logging.getLogger(__name__)
@@ -87,13 +91,13 @@ class ChatbotView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         data = serializer.validated_data
-        message = data['message'].strip()
+        message = data.get('message', '').strip()
         mode = data['mode']
         level = data['level']
         subject = data.get('subject', '')
         topic = data.get('topic', '')
         show_debug = data.get('debug', False) or DEBUG_RAG
-        session_id = data.get('session_id')
+        session_id = self.kwargs.get('chat_id') or data.get('session_id')
         focus_session_id = data.get('focus_session_id')  # NEW: Focus Mode
 
         # ── Focus Mode Context Injection ──
@@ -134,7 +138,7 @@ class ChatbotView(APIView):
         if session_id:
             # Continue existing session
             try:
-                session = ChatSession.objects.get(id=session_id, user=request.user)
+                session = ChatSession.objects.get(id=session_id, user=request.user, is_deleted=False)
             except ChatSession.DoesNotExist:
                 return Response(
                     {'error': 'Chat session not found.'},
@@ -157,7 +161,60 @@ class ChatbotView(APIView):
             content=message,
         )
 
-        # ── Step 0: Input Moderation & Classification ──
+        # ── Step 0a: Prompt Injection Guard (Enhancement 11) ──
+        injected, threat_pattern = is_injection_attempt(message)
+        if injected:
+            ai_msg = ChatMessage.objects.create(
+                session=session,
+                role='ai',
+                content=INJECTION_REFUSAL,
+            )
+            log_blocked_request(
+                request, reason=f"injection_{threat_pattern}", query_text=message,
+                request_type='chat',
+            )
+            return Response({
+                'reply': INJECTION_REFUSAL,
+                'sources': [],
+                'confidence': 0.0,
+                'session_id': str(session.id),
+                'message_id': ai_msg.id,
+                'debug': {'moderation_status': 'blocked_injection', 'threat': threat_pattern}
+            })
+
+        # ── Step 0b: Check Teacher/Admin Configuration (Enhancement 12 & 1) ──
+        config = AIConfiguration.objects.first()
+        if request.user.is_superuser or getattr(request.user, 'role', '') == 'admin':
+            teacher_config = AIConfiguration.objects.filter(teacher=request.user).first()
+            if teacher_config:
+                config = teacher_config
+                if not config.enable_chat:
+                    return Response({'error': 'AI Chat interface is currently disabled in configuration.'}, status=status.HTTP_403_FORBIDDEN)
+
+        # ── Step 0c: Redis Response Cache Check (Enhancement 10) ──
+        config_id = config.id if config else 0
+        cache_key = make_cache_key(message, subject, topic, mode, config_id)
+        cached_res = get_cached_response(cache_key)
+        if cached_res and not show_debug:
+            ai_msg = ChatMessage.objects.create(
+                session=session,
+                role='ai',
+                content=cached_res['reply'],
+                retrieval_confidence=cached_res.get('confidence')
+            )
+            increment_usage(request.user)
+            usage_summary = get_usage_summary(request.user)
+            return Response({
+                **cached_res,
+                'session_id': str(session.id),
+                'session_title': session.title,
+                'message_id': ai_msg.id,
+                'is_new_session': is_new_session,
+                'usage': usage_summary,
+                'cache_hit': True
+            })
+
+        # ── Step 0d: Input Moderation & Classification ──
         classification = classify_content(message)
         
         if classification == 'unsafe_adult':
@@ -213,17 +270,42 @@ class ChatbotView(APIView):
             user=request.user,
             top_k_admin=5,
             top_k_student=3,
+            top_k_knowledge=3,
         )
 
         admin_chunks = retrieval['admin_chunks']
         student_chunks = retrieval['student_chunks']
-        fallback_used = len(admin_chunks) == 0 and len(student_chunks) == 0
+        knowledge_chunks = retrieval.get('knowledge_chunks', [])
+        confidence = retrieval.get('confidence', 0.0)
+        low_confidence = retrieval.get('low_confidence', True)
+        fallback_used = len(admin_chunks) == 0 and len(student_chunks) == 0 and len(knowledge_chunks) == 0
+
+        # Enhancement 5: Prepare source citations list
+        sources = []
+        for c in retrieval.get('all_chunks', []):
+            if c['source'] == 'admin':
+                sources.append({
+                    "document": c.get("source_title", "Course Material"),
+                    "course": c.get("course", ""),
+                    "subject": c.get("subject", ""),
+                    "topic": c.get("topic", ""),
+                    "chunk_index": c.get("chunk_index", 0)
+                })
+            elif c['source'] == 'knowledge':
+                sources.append({
+                    "document": c.get("document", "Teacher Knowledge Document"),
+                    "course": "Custom Knowledge",
+                    "subject": c.get("subject", ""),
+                    "topic": c.get("topic", ""),
+                    "chunk_index": c.get("chunk_index", 0)
+                })
 
         # Debug logging
         if show_debug:
             logger.info(f"-- RAG Debug --")
             logger.info(f"Query: {message[:80]}")
             logger.info(f"Mode: {mode} | Level: {level}")
+            logger.info(f"Confidence: {confidence:.4f}")
             logger.info(f"Admin chunks: {len(admin_chunks)}")
             for c in admin_chunks:
                 logger.info(f"  [{c['score']}] {c['source']}: {c['text'][:80]}...")
@@ -232,41 +314,86 @@ class ChatbotView(APIView):
                 logger.info(f"  [{c['score']}] {c['source']}: {c['text'][:80]}...")
             logger.info(f"Fallback: {fallback_used}")
 
-        # ── Step 2: Build prompt ──
+        # ── Step 2: Build Context & Prompt ──
+        # Fetch previous messages for conversation memory
+        previous_messages = []
+        if session:
+            # Get last 10 messages
+            recent_msgs = ChatMessage.objects.filter(session=session).order_by('-created_at')[:10]
+            for msg in reversed(recent_msgs):
+                previous_messages.append({'role': msg.role, 'content': msg.content})
+
         prompt = build_prompt(
             user_message=message,
             mode=mode,
             level=level,
             subject=subject,
             topic=topic,
-            admin_chunks=admin_chunks,
+            admin_chunks=admin_chunks + knowledge_chunks,
             student_chunks=student_chunks,
+            knowledge_priority=config.knowledge_priority if config else 'material_first',
+            previous_messages=previous_messages
         )
 
-        # ── Step 3: Call Gemini ──
-        # Prepend focus mode instruction to system context if in a focus session
+        # ── Step 3: Call Provider/Gemini ──
+        low_conf_instr = ""
+        if low_confidence and not (config and config.enable_external_knowledge):
+            low_conf_instr = "\n\nIMPORTANT: If the retrieved context does not clearly answer the question, say ONLY: 'I could not confidently find this information within the uploaded StudyHub materials.' Do not guess or hallucinate."
+
         effective_system = (
             focus_extra_instruction + '\n\n' + BASE_SYSTEM_INSTRUCTION
             if focus_extra_instruction
             else BASE_SYSTEM_INSTRUCTION
-        )
-        ai_response = generate_response(
-            prompt=prompt,
-            system_instruction=effective_system,
-        )
+        ) + low_conf_instr
 
-        # ── Step 4: Output Moderation Check ──
+        if config and config.custom_system_prompt:
+            effective_system = f"{config.custom_system_prompt}\n\n{effective_system}"
+
+        if config:
+            provider = get_provider(config.provider, model_name=config.model_name)
+            ai_response = provider.generate_response(
+                prompt=prompt,
+                system_instruction=effective_system,
+                temperature=config.temperature,
+            )
+        else:
+            ai_response = generate_response(
+                prompt=prompt,
+                system_instruction=effective_system,
+            )
+
+        # ── Step 4: Extract and Process Knowledge Source ──
+        knowledge_source = 'MIXED_SOURCE'
+        source_prefix = ''
+        
+        if ai_response.startswith('[SOURCE: MATERIAL]'):
+            knowledge_source = 'STUDYHUB_MATERIAL'
+            source_prefix = "📚 **Based on your StudyHub Materials:**\n\n"
+            ai_response = ai_response.replace('[SOURCE: MATERIAL]', '', 1).strip()
+        elif ai_response.startswith('[SOURCE: GLOBAL]'):
+            knowledge_source = 'GLOBAL_KNOWLEDGE'
+            source_prefix = "🌐 **General Knowledge (Not in StudyHub):**\n\n"
+            ai_response = ai_response.replace('[SOURCE: GLOBAL]', '', 1).strip()
+        elif ai_response.startswith('[SOURCE: NOT_FOUND]'):
+            knowledge_source = 'STUDYHUB_MATERIAL'
+            ai_response = "I could not confidently find this information within the uploaded StudyHub materials."
+        
+        if source_prefix and not ai_response.startswith(source_prefix):
+            ai_response = source_prefix + ai_response
+
+        # ── Step 4b: Output Moderation Check ──
         # Double-check sensitive academic responses for safety
         if classification == 'sensitive_academic':
             if not moderate_response(ai_response):
                 ai_response = "The generated response was blocked for safety reasons. Please try rephrasing your academic question."
                 logger.warning(f"Output moderation BLOCKED response for user {request.user.id}")
 
-        # Save AI response
+        # Save AI response with retrieval confidence
         ai_msg = ChatMessage.objects.create(
             session=session,
             role='ai',
             content=ai_response,
+            retrieval_confidence=round(confidence, 4)
         )
 
         # Auto-generate title for new sessions
@@ -282,7 +409,7 @@ class ChatbotView(APIView):
         increment_usage(request.user)
         usage_summary = get_usage_summary(request.user)
 
-        # ── Log successful AI request ──
+        # ── Log successful AI request (with Provider & Score) ──
         _elapsed_ms = int((time.time() - _start_time) * 1000)
         log_ai_request(
             request,
@@ -292,11 +419,16 @@ class ChatbotView(APIView):
             query_text=message,
             subject=subject,
             topic=topic,
+            model_name=config.model_name if config else '',
+            provider=config.provider if config else 'google',
+            retrieval_score=round(confidence, 4),
+            endpoint='ChatbotView',
             extra_metadata={
                 'mode': mode,
                 'level': level,
                 'session_id': str(session.id),
                 'fallback_used': fallback_used,
+                'knowledge_source': knowledge_source,
             },
         )
 
@@ -304,9 +436,15 @@ class ChatbotView(APIView):
         from gamification.services import track_event
         unlocked_badges = track_event(request.user, 'ai_used')
 
+        # Cache response for future identical queries
+        cache_data = {'reply': ai_response, 'sources': sources, 'confidence': round(confidence, 4)}
+        set_cached_response(cache_key, cache_data)
+
         # ── Step 6: Build response ──
         response_data = {
             'reply': ai_response,
+            'sources': sources,
+            'confidence': round(confidence, 4),
             'session_id': str(session.id),
             'session_title': session.title,
             'message_id': ai_msg.id,
@@ -367,7 +505,7 @@ class ChatSessionListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        sessions = ChatSession.objects.filter(user=request.user)
+        sessions = ChatSession.objects.filter(user=request.user, is_deleted=False)
         serializer = ChatSessionSerializer(sessions, many=True)
         return Response(serializer.data)
 
@@ -381,12 +519,12 @@ class ChatSessionDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, session_id):
-        session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+        session = get_object_or_404(ChatSession, id=session_id, user=request.user, is_deleted=False)
         serializer = ChatSessionSerializer(session)
         return Response(serializer.data)
 
     def patch(self, request, session_id):
-        session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+        session = get_object_or_404(ChatSession, id=session_id, user=request.user, is_deleted=False)
         serializer = ChatSessionUpdateSerializer(session, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -394,8 +532,9 @@ class ChatSessionDetailView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, session_id):
-        session = get_object_or_404(ChatSession, id=session_id, user=request.user)
-        session.delete()
+        session = get_object_or_404(ChatSession, id=session_id, user=request.user, is_deleted=False)
+        session.is_deleted = True
+        session.save(update_fields=['is_deleted'])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -407,7 +546,7 @@ class ChatSessionMessagesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, session_id):
-        session = get_object_or_404(ChatSession, id=session_id, user=request.user)
+        session = get_object_or_404(ChatSession, id=session_id, user=request.user, is_deleted=False)
         messages = ChatMessage.objects.filter(session=session).order_by('created_at')
         serializer = ChatMessageSerializer(messages, many=True)
         return Response(serializer.data)

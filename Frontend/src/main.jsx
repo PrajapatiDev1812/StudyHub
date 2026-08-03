@@ -32,7 +32,7 @@ try {
       });
     }
   }
-} catch (e) {
+} catch {
   // Ignore parse errors on boot
 }
 
