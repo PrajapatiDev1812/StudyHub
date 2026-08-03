@@ -320,7 +320,7 @@ class ChatbotView(APIView):
         if session:
             # Get last 10 messages
             recent_msgs = ChatMessage.objects.filter(session=session).order_by('-created_at')[:10]
-            for msg in reversed(recent_msgs):
+            for msg in reversed(list(recent_msgs)):
                 previous_messages.append({'role': msg.role, 'content': msg.content})
 
         prompt = build_prompt(

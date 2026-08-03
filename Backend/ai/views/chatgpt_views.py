@@ -31,21 +31,22 @@ class ChatGPTChatListView(APIView):
         )
         return Response(ChatSessionSerializer(session).data, status=status.HTTP_201_CREATED)
 
-class ChatGPTMessagesView(APIView):
+from ai.views import ChatbotView
+
+class ChatGPTMessagesView(ChatbotView):
     """
     GET /api/chats/<uuid>/messages/ - Get message history
     POST /api/chats/<uuid>/messages/ - Send a message
     """
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, chat_id):
-        from ai.views import ChatSessionMessagesView
-        view = ChatSessionMessagesView.as_view()
-        # Django passes the original WSGIRequest in request._request
-        return view(request._request, session_id=chat_id)
+    def get(self, request, chat_id, *args, **kwargs):
+        from ai.serializers import ChatMessageSerializer
+        session = get_object_or_404(ChatSession, id=chat_id, user=request.user, is_deleted=False)
+        messages = ChatMessage.objects.filter(session=session).order_by('created_at')
+        return Response(ChatMessageSerializer(messages, many=True).data)
 
-    def post(self, request, chat_id):
-        from ai.views import ChatbotView
-        view = ChatbotView.as_view()
-        return view(request._request, chat_id=chat_id)
+    def post(self, request, chat_id, *args, **kwargs):
+        self.kwargs['chat_id'] = chat_id
+        return super().post(request, *args, **kwargs)
 
