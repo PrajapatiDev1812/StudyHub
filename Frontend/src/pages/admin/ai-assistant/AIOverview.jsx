@@ -30,7 +30,7 @@ export default function AIOverview({ onNavigateTab }) {
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Top Banner */}
-      <div className="ai-glass-card" style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.9) 0%, rgba(15,23,42,0.95) 100%)', borderLeft: '4px solid #6366f1' }}>
+      <div className="ai-glass-card" style={{ borderLeft: '4px solid #6366f1' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>

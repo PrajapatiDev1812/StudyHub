@@ -113,7 +113,7 @@ export default function KnowledgeBase() {
       )}
 
       {/* Upload Box */}
-      <div className="ai-glass-card" style={{ background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+      <div className="ai-glass-card" style={{ border: '1px solid var(--border-color, rgba(99, 102, 241, 0.2))' }}>
         <h3 className="ai-card-title"><Upload size={20} color="#818cf8" /> Upload Course Material for AI RAG Engine</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '-8px 0 20px', lineHeight: 1.5 }}>
           Upload study guides, lecture notes, or textbooks. The AI engine automatically extracts text, chunks content into optimal context segments, and computes vector embeddings for precise citations.
@@ -146,7 +146,7 @@ export default function KnowledgeBase() {
             />
           </div>
 
-          <button type="submit" className="ai-btn" disabled={!selectedFile || uploading} style={{ minWidth: '180px', height: '46px', alignSelf: 'flex-end' }}>
+          <button type="submit" className="ai-btn" disabled={!selectedFile || uploading} style={{ minWidth: '180px', alignSelf: 'flex-end' }}>
             {uploading ? <Clock size={18} className="spinning" /> : <Upload size={18} />}
             {uploading ? `Processing (${progress}%)...` : 'Embed Material'}
           </button>

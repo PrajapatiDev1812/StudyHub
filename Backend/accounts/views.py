@@ -52,10 +52,12 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class ThemeListView(generics.ListAPIView):
     """
     GET /api/auth/themes/
-    Returns a list of all built-in themes and user's custom themes.
+    Returns ALL built-in themes and the authenticated user's own custom themes.
+    Pagination is disabled so the frontend always receives a plain array.
     """
     serializer_class = ThemeSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None  # Return all themes as a plain JSON array
 
     def get_queryset(self):
         user = self.request.user
@@ -82,8 +84,8 @@ class CreateCustomThemeView(generics.CreateAPIView):
         app.selected_theme = theme
         app.save()
 
-        # Return updated appearance config
-        app_serializer = UserAppearanceSerializer(app)
+        # Return updated appearance config with request context so background_image_url is absolute
+        app_serializer = UserAppearanceSerializer(app, context={'request': request})
         return Response(app_serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -117,35 +119,46 @@ class UpdateAppearanceView(generics.UpdateAPIView):
     """
     PATCH /api/auth/appearance/
     Updates the appearance preference of the currently logged-in user.
+    Accepts:
+      - selected_theme (int id)
+      - mode_preference ('system' | 'light' | 'dark')
+    Both fields are optional; at least one must be present.
     """
     serializer_class = UserAppearanceSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        # Return the appearance object for the current user
         obj, created = UserAppearance.objects.get_or_create(user=self.request.user)
         return obj
 
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
         instance = self.get_object()
-        
-        # Only allow updating selected_theme ID
+        updated = False
+
+        # ── Optional: update mode preference ──
+        mode_preference = request.data.get('mode_preference')
+        if mode_preference:
+            instance.mode_preference = mode_preference
+            updated = True
+
+        # ── Optional: update selected theme ──
         theme_id = request.data.get('selected_theme')
-        if not theme_id:
-            return Response({"error": "selected_theme is required."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            theme = Theme.objects.filter(
-                Q(theme_type='builtin') | Q(created_by=request.user) | Q(is_public=True)
-            ).get(id=theme_id)
-            instance.selected_theme = theme
-            instance.save()
-            
-            serializer = self.get_serializer(instance)
-            return Response(serializer.data)
-        except Theme.DoesNotExist:
-            return Response({"error": "Theme not found."}, status=status.HTTP_404_NOT_FOUND)
+        if theme_id:
+            try:
+                theme = Theme.objects.filter(
+                    Q(theme_type='builtin') | Q(created_by=request.user) | Q(is_public=True)
+                ).get(id=theme_id)
+                instance.selected_theme = theme
+                updated = True
+            except (Theme.DoesNotExist, ValueError):
+                return Response({"error": "Theme not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if not updated:
+            return Response({"error": "No valid fields provided. Supply 'selected_theme' or 'mode_preference'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        instance.save()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 # pyrefly: ignore [missing-import]

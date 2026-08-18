@@ -138,7 +138,7 @@ class SubjectListSerializer(serializers.ModelSerializer):
 # ── Course ─────────────────────────────────────────────────────────────────────
 
 class CourseSerializer(serializers.ModelSerializer):
-    subjects = SubjectListSerializer(many=True, read_only=True)
+    subjects = SubjectSerializer(many=True, read_only=True)
     created_by_username = serializers.CharField(source='created_by.username', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
     category_icon = serializers.CharField(source='category.icon', read_only=True)

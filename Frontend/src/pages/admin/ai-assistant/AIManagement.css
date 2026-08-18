@@ -1,6 +1,6 @@
 .ai-management-container {
   padding: 20px;
-  background: var(--surface);
+  background: transparent;
   border-radius: 12px;
   color: var(--text-primary);
 }
@@ -9,7 +9,7 @@
   display: flex;
   gap: 8px;
   margin-bottom: 24px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   padding-bottom: 12px;
   overflow-x: auto;
 }
@@ -27,7 +27,7 @@
 }
 
 .ai-management-nav button:hover {
-  background: var(--surface-hover);
+  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
   color: var(--text-primary);
 }
 
@@ -38,9 +38,11 @@
 }
 
 .gov-panel {
-  background: var(--surface-light, #1e1e1e);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: var(--bg-card, rgba(15, 23, 42, 0.7));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 12px;
   padding: 20px;
   margin-bottom: 20px;
 }
@@ -92,7 +94,7 @@
 .gov-table th, .gov-table td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
 }
 
 .gov-table th {
@@ -102,7 +104,7 @@
 }
 
 .gov-table tr:hover {
-  background: var(--surface-hover);
+  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
 }
 
 .gov-badge {
@@ -143,7 +145,7 @@
 
 .gov-actions button:hover {
   color: var(--text-primary);
-  background: var(--surface-hover);
+  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
 }
 
 /* Form Styles */
@@ -162,8 +164,8 @@
 .gov-form-group select {
   width: 100%;
   padding: 10px;
-  background: var(--background);
-  border: 1px solid var(--border);
+  background: var(--bg-input, rgba(0, 0, 0, 0.25));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
   color: var(--text-primary);
   border-radius: 6px;
 }
@@ -194,14 +196,16 @@
 }
 
 .gov-modal {
-  background: var(--surface);
+  background: var(--bg-card, #1e1e1e);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 24px;
   border-radius: 12px;
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 
@@ -226,10 +230,12 @@
 }
 
 .gov-stat-card {
-  background: var(--surface-light);
+  background: var(--bg-panel, rgba(0, 0, 0, 0.2));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 20px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
+  border-radius: 12px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
 }
 
 .gov-stat-title {

@@ -28,8 +28,12 @@ export default function Sidebar() {
 
   const adminLinks = [
     { to: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
-    { to: '/admin/courses',   icon: '📚', label: 'Curriculum' },
+    { to: '/admin/curriculum', icon: '📚', label: 'Curriculum' },
+    { to: '/admin/students',   icon: '👥', label: 'Students' },
     { to: '/admin/tests',     icon: '📝', label: 'Tests' },
+    { to: '/admin/analytics',  icon: '📈', label: 'Analytics' },
+    { to: '/admin/ai',         icon: '🤖', label: 'AI Tools' },
+    { to: '/admin/announcements', icon: '📢', label: 'Announcements' },
   ];
 
   const links = user?.role === 'admin' ? adminLinks : studentLinks;

@@ -51,7 +51,7 @@ export default function AIRequestLogViewer() {
       </div>
 
       <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
-        <select name="status" value={filters.status} onChange={handleFilterChange} className="gov-btn" style={{ background: 'var(--background)' }}>
+        <select name="status" value={filters.status} onChange={handleFilterChange} className="gov-btn" style={{ background: 'var(--bg-input, rgba(0,0,0,0.2))' }}>
           <option value="">All Statuses</option>
           <option value="success">Success</option>
           <option value="failed">Failed</option>
@@ -59,7 +59,7 @@ export default function AIRequestLogViewer() {
           <option value="blocked">Blocked</option>
         </select>
         
-        <select name="provider" value={filters.provider} onChange={handleFilterChange} className="gov-btn" style={{ background: 'var(--background)' }}>
+        <select name="provider" value={filters.provider} onChange={handleFilterChange} className="gov-btn" style={{ background: 'var(--bg-input, rgba(0,0,0,0.2))' }}>
           <option value="">All Providers</option>
           <option value="google">Google Gemini</option>
           <option value="openai">OpenAI</option>
@@ -72,7 +72,7 @@ export default function AIRequestLogViewer() {
           value={filters.user_id}
           onChange={handleFilterChange}
           className="gov-btn"
-          style={{ background: 'var(--background)', border: '1px solid var(--border)' }}
+          style={{ background: 'var(--bg-input, rgba(0,0,0,0.2))', border: '1px solid var(--border-color)' }}
         />
       </div>
 

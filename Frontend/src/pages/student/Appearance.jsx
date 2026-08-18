@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../theme/useTheme';
 import api from '../../services/api';
 import { generateThemeFromImage } from '../../utils/themeGenerator';
 
@@ -67,7 +67,7 @@ const ThemePreviewCard = ({ theme, isActive, onClick }) => {
 };
 
 export default function Appearance() {
-  const { activeTheme, previewTheme, saveTheme, resetToSaved } = useTheme();
+  const { activeTheme, previewTheme, saveTheme, resetToSaved, themeMode, setThemeMode, resolutionSource } = useTheme();
   
   const [themes, setThemes] = useState([]);
   const [selectedForPreview, setSelectedForPreview] = useState(null);
@@ -222,14 +222,49 @@ export default function Appearance() {
         <p>Personalize your StudyHub workspace with custom themes and accent colors.</p>
       </div>
 
+      <div className="appearance-mode-box glass-card" style={{ marginBottom: '20px', padding: '16px 20px', borderRadius: '16px', background: 'var(--bg-card, rgba(30,41,59,0.5))', border: '1px solid var(--border-color, rgba(255,255,255,0.1))', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: 'var(--text-primary)' }}>🌓 Base Color Scheme Preference</h4>
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+            Choose automatic OS detection or enforce continuous Light/Dark mode across all courses.
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {['system', 'dark', 'light'].map(m => (
+            <button
+              key={m}
+              onClick={() => setThemeMode && setThemeMode(m)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '10px',
+                border: '1px solid var(--border-color, rgba(255,255,255,0.15))',
+                background: themeMode === m ? 'linear-gradient(135deg, var(--primary-color, #8b5cf6) 0%, #3b82f6 100%)' : 'transparent',
+                color: themeMode === m ? '#fff' : 'var(--text-secondary, #94a3b8)',
+                fontWeight: themeMode === m ? '700' : '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                textTransform: 'capitalize'
+              }}
+            >
+              {m === 'system' ? '💻 System Auto' : m === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="current-selection-banner glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="current-info">
           <label>Active Theme</label>
-          <div className="active-theme-name">
+          <div className="active-theme-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {activeTheme?.name || 'Default Light'} 
             <span className="theme-type-tag">
               {activeTheme?.theme_type === 'custom' ? 'Custom' : 'Built-in'}
             </span>
+            {resolutionSource && (
+              <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                Source: {resolutionSource.replace('_', ' ')}
+              </span>
+            )}
           </div>
         </div>
         <div className="selection-actions">

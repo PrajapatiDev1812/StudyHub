@@ -49,7 +49,7 @@ export default function AIAuditLogViewer() {
       </div>
 
       <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
-        <select name="action" value={filters.action} onChange={handleFilterChange} className="gov-btn" style={{ background: 'var(--background)' }}>
+        <select name="action" value={filters.action} onChange={handleFilterChange} className="gov-btn" style={{ background: 'var(--bg-input, rgba(0,0,0,0.2))' }}>
           <option value="">All Actions</option>
           <option value="quota_policy_created">Quota Created</option>
           <option value="quota_policy_updated">Quota Updated</option>
@@ -58,7 +58,7 @@ export default function AIAuditLogViewer() {
           <option value="user_quota_reset">User Quota Reset</option>
         </select>
         
-        <select name="entity_type" value={filters.entity_type} onChange={handleFilterChange} className="gov-btn" style={{ background: 'var(--background)' }}>
+        <select name="entity_type" value={filters.entity_type} onChange={handleFilterChange} className="gov-btn" style={{ background: 'var(--bg-input, rgba(0,0,0,0.2))' }}>
           <option value="">All Entities</option>
           <option value="quota_policy">Quota Policy</option>
           <option value="provider">AI Provider</option>

@@ -70,11 +70,8 @@ function markFirstLoginDone() {
 }
 
 export default function DashboardHeader({ teacherProfile }) {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
+  const { user } = useAuth();
+  
   const name        = resolveTeacherName(user, teacherProfile);
   const initials    = getInitials(name);
   const isFirst     = resolveFirstLogin(teacherProfile);
@@ -91,22 +88,6 @@ export default function DashboardHeader({ teacherProfile }) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleOutsideClick(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, []);
-
-  function handleLogout() {
-    logout();
-    navigate('/login');
-  }
 
   return (
     <header className="admin-header">
@@ -136,76 +117,6 @@ export default function DashboardHeader({ teacherProfile }) {
           <p className="admin-subtitle">
             Manage your courses, track student progress, and create engaging learning content.
           </p>
-        </div>
-      </div>
-
-      {/* ── Right: action icons + profile dropdown ── */}
-      <div className="admin-header-actions">
-        {/* Notifications */}
-        <button
-          className="admin-icon-btn"
-          title="Notifications"
-          aria-label="Notifications"
-          id="admin-header-notifications-btn"
-        >
-          <Bell size={18} />
-          <span className="admin-notif-dot" />
-        </button>
-
-        {/* Settings */}
-        <button
-          className="admin-icon-btn"
-          title="Settings"
-          aria-label="Settings"
-          id="admin-header-settings-btn"
-          onClick={() => navigate('/admin/profile')}
-        >
-          <Settings size={18} />
-        </button>
-
-        {/* Profile Dropdown */}
-        <div className="admin-profile-menu" ref={dropdownRef}>
-          <button
-            className="admin-profile-trigger"
-            onClick={() => setDropdownOpen(o => !o)}
-            aria-expanded={dropdownOpen}
-            aria-haspopup="menu"
-            id="admin-header-profile-btn"
-          >
-            <div className="admin-profile-mini-avatar">{initials}</div>
-            <span>{name.split(' ').slice(-1)[0]}</span>
-            <ChevronDown size={14} style={{ transition: 'transform 0.2s', transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
-          </button>
-
-          {dropdownOpen && (
-            <div className="admin-dropdown" role="menu">
-              <button
-                className="admin-dropdown-item"
-                role="menuitem"
-                onClick={() => { navigate('/admin/profile'); setDropdownOpen(false); }}
-                id="admin-dropdown-profile"
-              >
-                <User size={15} /> My Profile
-              </button>
-              <button
-                className="admin-dropdown-item"
-                role="menuitem"
-                onClick={() => { navigate('/admin/profile'); setDropdownOpen(false); }}
-                id="admin-dropdown-settings"
-              >
-                <Settings size={15} /> Settings
-              </button>
-              <div className="admin-dropdown-divider" />
-              <button
-                className="admin-dropdown-item danger"
-                role="menuitem"
-                onClick={handleLogout}
-                id="admin-dropdown-logout"
-              >
-                <LogOut size={15} /> Sign Out
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </header>

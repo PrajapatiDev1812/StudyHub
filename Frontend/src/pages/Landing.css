@@ -1,7 +1,27 @@
+/* ── Force dark theme for landing page — uses !important to beat ThemeProvider :root overrides ── */
 .landing-page {
+  --bg-primary:       #0a0a1a !important;
+  --bg-secondary:     #111128 !important;
+  --bg-card:          rgba(25, 25, 60, 0.6) !important;
+  --bg-card-hover:    rgba(35, 35, 80, 0.8) !important;
+  --bg-glass:         rgba(255, 255, 255, 0.04) !important;
+  --glassTint:        rgba(108, 99, 255, 0.05) !important;
+  --glassBorder:      rgba(255, 255, 255, 0.1) !important;
+  --border-color:     rgba(255, 255, 255, 0.08) !important;
+  --border-glow:      rgba(108, 99, 255, 0.3) !important;
+  --text-primary:     #f0f0ff !important;
+  --text-secondary:   #a0a0c0 !important;
+  --text-muted:       #606080 !important;
+  --accent-primary:   #6c63ff !important;
+  --accent-secondary: #3b82f6 !important;
+  --accent-gradient:  linear-gradient(135deg, #6c63ff 0%, #3b82f6 100%) !important;
+  --accent-glow:      0 0 20px rgba(108, 99, 255, 0.3) !important;
+  --shadow:           0 8px 32px rgba(0, 0, 0, 0.3);
+  --transition:       all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
   min-height: 100vh;
-  background-color: var(--bg-primary); 
-  color: var(--text-primary); 
+  background-color: #0a0a1a !important;
+  color: #f0f0ff !important;
   position: relative;
   overflow-x: clip;
   font-family: 'Inter', system-ui, sans-serif;

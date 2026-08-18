@@ -1,12 +1,20 @@
+# pyrefly: ignore [missing-import]
 from django.contrib import admin
+# pyrefly: ignore [missing-import]
 from django.urls import path, include
+# pyrefly: ignore [missing-import]
 from django.conf import settings
+# pyrefly: ignore [missing-import]
 from django.conf.urls.static import static
+# pyrefly: ignore [missing-import]
 from django.views.generic import RedirectView
-
+# pyrefly: ignore [missing-import]
 from rest_framework import permissions
+# pyrefly: ignore [missing-import]
 from rest_framework_simplejwt.views import TokenVerifyView
+# pyrefly: ignore [missing-import]
 from drf_yasg.views import get_schema_view
+# pyrefly: ignore [missing-import]
 from drf_yasg import openapi
 
 from accounts.permissions import IsAdmin
@@ -47,6 +55,9 @@ urlpatterns = [
 
     # ── Authentication APIs ──
     path('api/auth/', include('accounts.urls')),
+
+    # ── Enterprise Theme Management APIs ──
+    path('api/themes/', include('accounts.urls_themes')),
 
     # ── Course Hierarchy APIs ──
     path('api/', include('courses.urls')),

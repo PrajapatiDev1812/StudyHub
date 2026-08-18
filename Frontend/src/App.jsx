@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './theme/ThemeProvider';
 import { AuthProvider } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
+import AdminLayout from './pages/admin/AdminLayout';
 import BadgeUnlockPopup from './components/gamification/BadgeUnlockPopup';
+
 
 // Public Pages
 import Landing from './pages/Landing';
@@ -52,6 +54,8 @@ import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminAI from './pages/admin/AdminAI';
 import AdminAnnouncements from './pages/admin/AdminAnnouncements';
 import TeacherAiWorkspace from './pages/admin/ai/TeacherAiWorkspace';
+import AdminAppearance from './pages/admin/appearance/AdminAppearance';
+
 
 // Shared CSS
 import './pages/student/Student.css';
@@ -65,9 +69,10 @@ function StudentRoute({ children }) {
 }
 
 function AdminRoute({ children }) {
+  // Wrap admin routes in the new AdminLayout
   return (
     <ProtectedRoute role="admin">
-      <DashboardLayout>{children}</DashboardLayout>
+      <AdminLayout />
     </ProtectedRoute>
   );
 }
@@ -140,20 +145,26 @@ function App() {
             <Route path="/student/my-materials" element={<StudentRoute><MyMaterials /></StudentRoute>} />
 
             {/* Admin Routes */}
-            <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-            <Route path="/admin/curriculum" element={<AdminRoute><CurriculumManager /></AdminRoute>} />
-            <Route path="/admin/courses" element={<AdminRoute><CurriculumManager /></AdminRoute>} />
-            <Route path="/admin/tests" element={<AdminRoute><ManageTests /></AdminRoute>} />
-            <Route path="/admin/tests/:testId/questions" element={<AdminRoute><ManageQuestions /></AdminRoute>} />
-            <Route path="/admin/tests/:id/analytics" element={<AdminRoute><TestAnalytics /></AdminRoute>} />
-            <Route path="/admin/courses/:id/students" element={<AdminRoute><StudentList /></AdminRoute>} />
-            <Route path="/admin/profile" element={<AdminRoute><Profile /></AdminRoute>} />
-            <Route path="/admin/students" element={<AdminRoute><AdminStudents /></AdminRoute>} />
-            <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
-            <Route path="/admin/ai" element={<AdminRoute><AdminAI /></AdminRoute>} />
-            {/* Teacher AI Workspace — fullscreen, no DashboardLayout */}
-            <Route path="/admin/ai-chat" element={<AdminFullscreen><TeacherAiWorkspace /></AdminFullscreen>} />
-            <Route path="/admin/announcements" element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
+            <Route path="/admin" element={<AdminRoute />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="curriculum" element={<CurriculumManager />} />
+              <Route path="courses" element={<CurriculumManager />} />
+              <Route path="tests" element={<ManageTests />} />
+              <Route path="tests/:testId/questions" element={<ManageQuestions />} />
+              <Route path="tests/:id/analytics" element={<TestAnalytics />} />
+              <Route path="courses/:id/students" element={<StudentList />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="students" element={<AdminStudents />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="ai" element={<AdminAI />} />
+              <Route path="announcements" element={<AdminAnnouncements />} />
+              <Route path="appearance" element={<AdminAppearance />} />
+
+            </Route>
+            
+            {/* Admin Fullscreen / Special AI Tools */}
+            <Route path="/admin/ai/teacher-workspace" element={<AdminFullscreen><TeacherAiWorkspace /></AdminFullscreen>} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>
