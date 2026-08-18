@@ -61,6 +61,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('studyhub_access_token'); // legacy cleanup
     localStorage.removeItem('studyhub_theme_cache');
     setUser(null);
   };

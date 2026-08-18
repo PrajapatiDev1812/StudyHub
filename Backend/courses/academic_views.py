@@ -1,11 +1,19 @@
 import random
 from datetime import timedelta
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
+# pyrefly: ignore [missing-import]
 from django.db.models import Avg, Count, Q
+# pyrefly: ignore [missing-import]
 from rest_framework.views import APIView
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
+# pyrefly: ignore [missing-import]
 from rest_framework import status, permissions
+# pyrefly: ignore [missing-import]
 from django.contrib.auth import get_user_model
+# pyrefly: ignore [missing-import]
+from accounts.permissions import IsAdmin
 
 from .academic_models import (
     AcademicSession,
@@ -34,7 +42,7 @@ class AcademicFilterOptionsView(APIView):
     Teachers receive only assigned Programs, Years, Semesters, and Subjects.
     Admins receive all options.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get(self, request):
         user = request.user
@@ -83,7 +91,7 @@ class AcademicOverviewView(APIView):
     """
     Overview stats for class mode vs individual student mode.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get(self, request):
         student_id = request.query_param.get('student_id') or request.query_param.get('student')
@@ -152,7 +160,7 @@ class AcademicStudentsView(APIView):
     """
     Paginated student list with risk scores, progress, and quick filter.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get(self, request):
         students_qs = User.objects.filter(role='student')
@@ -183,7 +191,7 @@ class AcademicStudentDetailView(APIView):
     """
     Detailed profile view for a single student.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get(self, request, id):
         try:
@@ -238,7 +246,7 @@ class AcademicAttendanceView(APIView):
     """
     Get & POST attendance records.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get(self, request):
         return Response({
@@ -284,7 +292,7 @@ class AcademicAssignmentsView(APIView):
     """
     Get & POST assignments.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get(self, request):
         return Response({
@@ -336,7 +344,7 @@ class AcademicTestsView(APIView):
     """
     Get tests & performance stats.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get(self, request):
         return Response({
@@ -374,7 +382,7 @@ class AcademicAnalyticsView(APIView):
     """
     Full analytics dataset for Recharts graphs.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get(self, request):
         return Response({
@@ -409,7 +417,7 @@ class AcademicReportsView(APIView):
     """
     Report generation & download data.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get(self, request):
         report_type = request.query_param.get('type', 'class')
@@ -431,7 +439,7 @@ class AcademicAIInsightsView(APIView):
     """
     Intelligent insights & teacher prompt response.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get(self, request):
         return Response({
