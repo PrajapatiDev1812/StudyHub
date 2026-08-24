@@ -34,16 +34,18 @@
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 1.5rem;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
+  transition: var(--transition);
   position: relative;
   overflow: hidden;
 }
 
 .admin-widget:hover {
   border-color: var(--border-glow);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--accent-glow);
+  transform: translateY(-2px);
 }
 
 .admin-widget-header {
@@ -69,12 +71,10 @@
    ───────────────────────────────────────────────────────────── */
 
 .admin-header {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: linear-gradient(135deg, var(--accent-glow) 0%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid var(--accent-primary);
   border-radius: 20px;
-  padding: 2rem 2.5rem;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  padding: 1.75rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -84,16 +84,17 @@
   animation: adminSlideDown 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-/* Subtle decorative gradient stripe */
+/* Background orb (matching student panel) */
 .admin-header::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--accent-gradient);
-  border-radius: 20px 20px 0 0;
+  top: -30%;
+  right: -5%;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .admin-header-left {
@@ -307,9 +308,10 @@
   border: 1px solid var(--border-color);
   border-radius: 14px;
   padding: 1.25rem 1rem;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
+  transition: var(--transition);
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -320,7 +322,7 @@
 .admin-stat-card:hover {
   border-color: var(--border-glow);
   box-shadow: var(--accent-glow);
-  transform: translateY(-3px);
+  transform: translateY(-2px);
 }
 
 .admin-stat-top {

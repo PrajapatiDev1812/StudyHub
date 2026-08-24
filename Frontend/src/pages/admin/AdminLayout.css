@@ -14,11 +14,12 @@
 
 /* ── Sidebar ── */
 .admin-sidebar {
-  width: var(--sidebar-width);
+  width: var(--sidebar-width, 280px);
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-color);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.02);
   position: fixed;
   top: 0;
   bottom: 0;
@@ -54,24 +55,35 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
-  color: var(--sidebar-text, rgba(255,255,255,0.65));
-  border-radius: 12px;
+  padding: 10px 16px;
+  color: var(--text-secondary);
+  border-radius: 8px;
   font-weight: 500;
+  font-size: 0.9rem;
   transition: all 0.2s ease;
   text-decoration: none;
+  position: relative;
 }
 
 .admin-nav-item:hover {
-  background: var(--sidebar-hover-bg, rgba(255,255,255,0.1));
-  color: var(--sidebar-text-hover, #ffffff);
-  transform: translateX(4px);
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
 }
 
 .admin-nav-item.active {
-  background: var(--accent-gradient);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+  background: var(--bg-card-hover);
+  color: var(--accent-primary);
+}
+
+.admin-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -1rem; /* Reach edge of sidebar */
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--accent-primary);
+  border-radius: 0 4px 4px 0;
 }
 
 .admin-sidebar-footer {
@@ -82,7 +94,7 @@
 /* ── Main Content Area ── */
 .admin-main {
   flex: 1;
-  margin-left: var(--sidebar-width);
+  margin-left: var(--sidebar-width, 280px);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -90,10 +102,11 @@
 
 /* ── Header ── */
 .admin-topbar {
-  height: var(--navbar-height);
+  height: var(--navbar-height, 70px);
   background: var(--bg-card);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.02);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -194,7 +207,7 @@
 
 /* ── Content Wrapper ── */
 .admin-content-wrapper {
-  padding: 2rem;
+  padding: 1.5rem;
   flex: 1;
 }
 

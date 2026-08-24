@@ -61,6 +61,31 @@ class BadgeEngine:
                 _, created, xp = badge_service.award_badge(user, badge, stats=stats)
                 if created:
                     unlocked.append(badge)
+                    earned_badge_ids.add(badge.id)
+                    
+        # Check new dynamic Achievement Rules
+        from .models import AchievementRule
+        rules = AchievementRule.objects.filter(badge__status='active').select_related('badge')
+        for rule in rules:
+            if rule.badge.id in earned_badge_ids and not rule.badge.repeatable:
+                continue
+            
+            metric_val = getattr(stats, rule.metric, None)
+            if metric_val is None:
+                continue
+                
+            is_earned = False
+            if rule.operator == '>=' and metric_val >= rule.value: is_earned = True
+            elif rule.operator == '>' and metric_val > rule.value: is_earned = True
+            elif rule.operator == '==' and metric_val == rule.value: is_earned = True
+            elif rule.operator == '<=' and metric_val <= rule.value: is_earned = True
+            elif rule.operator == '<' and metric_val < rule.value: is_earned = True
+            
+            if is_earned:
+                _, created, xp = badge_service.award_badge(user, rule.badge, stats=stats)
+                if created:
+                    unlocked.append(rule.badge)
+                    earned_badge_ids.add(rule.badge.id)
                 
         return unlocked
         

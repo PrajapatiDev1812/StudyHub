@@ -1,8 +1,13 @@
+# pyrefly: ignore [missing-import]
 import datetime
+# pyrefly: ignore [missing-import]
 from django.db.models import Sum, Count, Avg, F, Q
+# pyrefly: ignore [missing-import]
+from django.db.models.functions import TruncDate
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
 from focus.models import FocusSession
-from tasks.models import Task
+from tasks.models import Task, TaskAssignment
 from courses.models import Progress, Course, Subject
 from ai.models import AIRequestLog
 
@@ -51,11 +56,20 @@ class StudentAnalyticsService:
         sessions_completed = focus_stats['sessions_count'] or 0
 
         # 2. Tasks Completed
-        t_q = self._get_date_filter('completed_at')
-        tasks_completed = Task.objects.filter(
+        # Personal tasks: STUDENT_CREATED + COMPLETED
+        t_q_personal = self._get_date_filter('updated_at')
+        personal_completed = Task.objects.filter(
             user=self.user,
-            completed=True
-        ).filter(t_q).count()
+            source='STUDENT_CREATED',
+            status='COMPLETED',
+        ).filter(t_q_personal).count()
+        # Academic tasks: ADMIN_ASSIGNED + VERIFIED (use verified_at for date filter)
+        t_q_verified = self._get_date_filter('verified_at')
+        academic_verified = TaskAssignment.objects.filter(
+            student=self.user,
+            status='VERIFIED',
+        ).filter(t_q_verified).count()
+        tasks_completed = personal_completed + academic_verified
         
         # 3. Content Completed (from Progress)
         p_q = self._get_date_filter('completed_at')
@@ -99,13 +113,25 @@ class StudentAnalyticsService:
         )
         focus_map = {row['day']: row['total'] for row in focus_rows}
 
-        task_rows = (
-            Task.objects.filter(user=self.user, completed=True).filter(self._get_date_filter('completed_at'))
-            .annotate(day=TruncDate('completed_at'))
+        # Personal completed tasks
+        personal_task_rows = (
+            Task.objects.filter(user=self.user, source='STUDENT_CREATED', status='COMPLETED')
+            .filter(self._get_date_filter('updated_at'))
+            .annotate(day=TruncDate('updated_at'))
             .values('day')
             .annotate(count=Count('id'))
         )
-        task_map = {row['day']: row['count'] for row in task_rows}
+        # Admin-verified tasks
+        verified_task_rows = (
+            TaskAssignment.objects.filter(student=self.user, status='VERIFIED')
+            .filter(self._get_date_filter('verified_at'))
+            .annotate(day=TruncDate('verified_at'))
+            .values('day')
+            .annotate(count=Count('id'))
+        )
+        task_map = {row['day']: row['count'] for row in personal_task_rows}
+        for row in verified_task_rows:
+            task_map[row['day']] = task_map.get(row['day'], 0) + row['count']
 
         prog_rows = (
             Progress.objects.filter(student=self.user).filter(self._get_date_filter('completed_at'))
@@ -163,7 +189,9 @@ class StudentAnalyticsService:
 
     def get_time_of_day_analysis(self):
         """Aggregates focus sessions into Morning, Afternoon, Evening, Night."""
+        # pyrefly: ignore [missing-import]
         from django.db.models.functions import ExtractHour
+        # pyrefly: ignore [missing-import]
         from django.db.models import Sum
 
         fs_q = self._get_date_filter('start_time')

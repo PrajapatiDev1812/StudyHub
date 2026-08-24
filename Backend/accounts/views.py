@@ -56,12 +56,14 @@ class ThemeListView(generics.ListAPIView):
     Pagination is disabled so the frontend always receives a plain array.
     """
     serializer_class = ThemeSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     pagination_class = None  # Return all themes as a plain JSON array
 
     def get_queryset(self):
         user = self.request.user
-        return Theme.objects.filter(Q(theme_type='builtin') | Q(created_by=user)).order_by('-created_at')
+        if user.is_authenticated:
+            return Theme.objects.filter(Q(theme_type='builtin') | Q(created_by=user)).order_by('-created_at')
+        return Theme.objects.filter(theme_type='builtin').order_by('-created_at')
 
 
 class CreateCustomThemeView(generics.CreateAPIView):

@@ -1,8 +1,11 @@
+# pyrefly: ignore [missing-import]
 import datetime
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
+# pyrefly: ignore [missing-import]
 from django.db.models import Sum, Count
 from focus.models import FocusSession
-from tasks.models import Task
+from tasks.models import Task, TaskAssignment
 from courses.models import Course, Progress
 from ai.models import AIRequestLog
 
@@ -26,12 +29,18 @@ class DashboardService:
         ).aggregate(total_sec=Sum('total_focus_seconds'))['total_sec'] or 0
         study_time_hours = round(weekly_focus / 3600, 1)
         
-        # Tasks Completed (This Week)
-        tasks_completed = Task.objects.filter(
-            user=self.user,
-            completed=True,
-            completed_at__gte=self.week_start
-        ).count()
+        # Tasks Completed (This Week) — personal COMPLETED + academic VERIFIED
+        tasks_completed = (
+            Task.objects.filter(
+                user=self.user, source='STUDENT_CREATED', status='COMPLETED',
+                updated_at__gte=self.week_start,
+            ).count()
+            +
+            TaskAssignment.objects.filter(
+                student=self.user, status='VERIFIED',
+                verified_at__gte=self.week_start,
+            ).count()
+        )
         
         # Current Streak (from UserStats if gamification exists, otherwise calculate from FocusSession)
         # Using gamification.UserStats
@@ -57,7 +66,9 @@ class DashboardService:
 
     def get_weekly_activity(self):
         """Returns a small graph data for the last 7 days."""
+        # pyrefly: ignore [missing-import]
         from django.db.models.functions import TruncDate
+        # pyrefly: ignore [missing-import]
         from django.db.models import Sum
 
         days = 7
@@ -89,7 +100,22 @@ class DashboardService:
     def get_recent_activity(self):
         """Returns the single most recent Focus Session, Task, and AI Interaction."""
         last_focus = FocusSession.objects.filter(student=self.user).order_by('-start_time').first()
-        last_task = Task.objects.filter(user=self.user, completed=True).order_by('-completed_at').first()
+        last_task = (
+            Task.objects.filter(
+                user=self.user, source='STUDENT_CREATED', status='COMPLETED'
+            ).order_by('-updated_at').first()
+        )
+        last_verified_assignment = (
+            TaskAssignment.objects.filter(
+                student=self.user, status='VERIFIED'
+            ).order_by('-verified_at').first()
+        )
+        # Use the more recent of the two
+        if last_verified_assignment and last_task:
+            if (last_verified_assignment.verified_at or timezone.datetime.min.replace(tzinfo=timezone.utc)) > (last_task.updated_at or timezone.datetime.min.replace(tzinfo=timezone.utc)):
+                last_task = None  # prefer assignment below
+            else:
+                last_verified_assignment = None
         last_ai = AIRequestLog.objects.filter(user=self.user).order_by('-timestamp').first()
         
         def format_focus(f):
@@ -99,14 +125,23 @@ class DashboardService:
             
         def format_task(t):
             if not t: return None
-            return {'title': t.title, 'time': t.completed_at.isoformat(), 'type': 'task'}
-            
+            return {'title': t.title, 'time': t.updated_at.isoformat(), 'type': 'task'}
+
+        def format_verified_assignment(a):
+            if not a: return None
+            return {'title': a.task.title, 'time': a.verified_at.isoformat(), 'type': 'task'}
+
         def format_ai(a):
             if not a: return None
             topic = a.detected_topic or 'General Query'
             return {'title': f"AI Chat: {topic}", 'time': a.timestamp.isoformat(), 'type': 'ai'}
 
-        activities = [a for a in [format_focus(last_focus), format_task(last_task), format_ai(last_ai)] if a]
+        activities = [a for a in [
+            format_focus(last_focus),
+            format_task(last_task),
+            format_verified_assignment(last_verified_assignment),
+            format_ai(last_ai)
+        ] if a]
         activities.sort(key=lambda x: x['time'], reverse=True)
         
         return activities

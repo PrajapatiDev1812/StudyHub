@@ -40,8 +40,10 @@ export default function ForgotUsername() {
         {!message && (
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label>Email Address</label>
+              <label htmlFor="fu-email">Email Address</label>
               <input
+                id="fu-email"
+                name="email"
                 type="email"
                 className="form-input"
                 placeholder="email@example.com"

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, Users, BarChart3, LogOut,
-  Search, Bell, Sparkles, Menu, X, ClipboardCheck, Megaphone, Palette
+  Search, Bell, Sparkles, Menu, X, ClipboardCheck, Megaphone, Palette, Trophy, ClipboardList
 } from 'lucide-react';
 import { useTheme } from '../../theme/useTheme';
 import api from '../../services/api';
@@ -46,6 +46,8 @@ export default function AdminLayout() {
     { path: '/admin/curriculum', icon: BookOpen, label: 'Curriculum' },
     { path: '/admin/students', icon: Users, label: 'Students' },
     { path: '/admin/tests', icon: ClipboardCheck, label: 'Tests' },
+    { path: '/admin/tasks', icon: ClipboardList, label: 'Tasks' },
+    { path: '/admin/achievements', icon: Trophy, label: 'Achievements' },
     { path: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
     { path: '/admin/ai', icon: Sparkles, label: 'AI Tools' },
     { path: '/admin/announcements', icon: Megaphone, label: 'Announcements' },

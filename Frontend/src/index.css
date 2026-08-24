@@ -47,6 +47,9 @@
   --border-color: rgba(255, 255, 255, 0.08);
   --border-glow: rgba(108, 99, 255, 0.3);
 
+  /* Active State */
+  --bg-active: rgba(108, 99, 255, 0.12);
+
   /* Misc */
   --radius: 12px;
   --radius-sm: 8px;

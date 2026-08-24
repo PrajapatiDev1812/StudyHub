@@ -1,0 +1,526 @@
+/* Admin Task Manager CSS — uses existing AdminLayout CSS variables */
+
+.atm-page {
+  padding: 1.5rem 2rem;
+  max-width: 1400px;
+}
+
+/* Header */
+.atm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.atm-header h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 0 0 0.25rem;
+  color: var(--text-primary, #fff);
+  letter-spacing: -0.5px;
+}
+
+.atm-header p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary, rgba(255,255,255,0.6));
+}
+
+/* Stats */
+.atm-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.atm-stat {
+  background: var(--admin-card-bg, rgba(255,255,255,0.05));
+  border: 1px solid var(--admin-border, rgba(255,255,255,0.1));
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.atm-stat:hover, .atm-stat.active {
+  border-color: var(--accent-primary, #6c63ff);
+  background: rgba(var(--accent-primary-rgb, 108,99,255), 0.12);
+}
+
+.atm-stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-primary, #fff);
+  line-height: 1;
+}
+
+.atm-stat-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary, rgba(255,255,255,0.5));
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+
+.atm-stat.submitted .atm-stat-value { color: #f59e0b; }
+.atm-stat.verified .atm-stat-value { color: #22c55e; }
+
+/* Toolbar */
+.atm-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.atm-search {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+
+.atm-search svg {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary, rgba(255,255,255,0.4));
+  pointer-events: none;
+}
+
+.atm-search input {
+  width: 100%;
+  padding: 0.6rem 0.75rem 0.6rem 2.25rem;
+  background: var(--admin-card-bg, rgba(255,255,255,0.06));
+  border: 1px solid var(--admin-border, rgba(255,255,255,0.12));
+  border-radius: 10px;
+  color: var(--text-primary, #fff);
+  font-size: 0.9rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.atm-search input:focus {
+  border-color: var(--accent-primary, #6c63ff);
+}
+
+.atm-select {
+  padding: 0.6rem 0.9rem;
+  background: var(--admin-card-bg, rgba(255,255,255,0.06));
+  border: 1px solid var(--admin-border, rgba(255,255,255,0.12));
+  border-radius: 10px;
+  color: var(--text-primary, #fff);
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.atm-select:focus { border-color: var(--accent-primary, #6c63ff); }
+
+/* Tabs */
+.atm-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--admin-border, rgba(255,255,255,0.1));
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.atm-tab {
+  padding: 0.6rem 1rem;
+  border: none;
+  background: none;
+  color: var(--text-secondary, rgba(255,255,255,0.5));
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all 0.2s;
+  margin-bottom: -1px;
+}
+
+.atm-tab:hover { color: var(--text-primary, #fff); }
+.atm-tab.active { color: var(--accent-primary, #6c63ff); border-bottom-color: var(--accent-primary, #6c63ff); }
+
+/* Table */
+.atm-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--admin-border, rgba(255,255,255,0.1));
+}
+
+.atm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.atm-table th {
+  background: var(--admin-card-bg, rgba(255,255,255,0.05));
+  color: var(--text-secondary, rgba(255,255,255,0.5));
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--admin-border, rgba(255,255,255,0.1));
+  white-space: nowrap;
+}
+
+.atm-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--admin-border, rgba(255,255,255,0.06));
+  color: var(--text-primary, #fff);
+  vertical-align: middle;
+}
+
+.atm-table tr:last-child td { border-bottom: none; }
+
+.atm-table tr:hover td {
+  background: rgba(var(--accent-primary-rgb, 108,99,255), 0.04);
+}
+
+.atm-task-title {
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.atm-task-title:hover { color: var(--accent-primary, #6c63ff); }
+
+/* Badges — reuse same pattern as student */
+.atm-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.atm-badge-todo      { background: rgba(100,116,139,0.15); color: #94a3b8; }
+.atm-badge-progress  { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.atm-badge-submitted { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.atm-badge-verified  { background: rgba(34,197,94,0.15); color: #22c55e; }
+.atm-badge-completed { background: rgba(34,197,94,0.15); color: #22c55e; }
+.atm-badge-revision  { background: rgba(249,115,22,0.15); color: #f97316; }
+.atm-badge-high      { background: rgba(239,68,68,0.12); color: #ef4444; }
+.atm-badge-medium    { background: rgba(245,158,11,0.12); color: #f59e0b; }
+.atm-badge-low       { background: rgba(34,197,94,0.12); color: #22c55e; }
+
+/* Buttons */
+.atm-btn {
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.atm-btn-primary {
+  background: var(--accent-primary, #6c63ff);
+  color: #fff;
+}
+
+.atm-btn-primary:hover { opacity: 0.85; }
+
+.atm-btn-ghost {
+  background: transparent;
+  color: var(--text-secondary, rgba(255,255,255,0.5));
+  border: 1px solid var(--admin-border, rgba(255,255,255,0.12));
+}
+
+.atm-btn-ghost:hover {
+  color: var(--text-primary, #fff);
+  border-color: var(--text-primary, #fff);
+}
+
+.atm-btn-success {
+  background: rgba(34,197,94,0.12);
+  color: #22c55e;
+  border: 1px solid rgba(34,197,94,0.25);
+}
+
+.atm-btn-success:hover { background: #22c55e; color: #fff; }
+
+.atm-btn-warn {
+  background: rgba(249,115,22,0.12);
+  color: #f97316;
+  border: 1px solid rgba(249,115,22,0.25);
+}
+
+.atm-btn-warn:hover { background: #f97316; color: #fff; }
+
+.atm-btn-danger {
+  background: rgba(239,68,68,0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239,68,68,0.25);
+}
+
+.atm-btn-danger:hover { background: #ef4444; color: #fff; }
+
+.atm-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.atm-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+/* Modal */
+.atm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: atm-fade 0.15s ease;
+}
+
+@keyframes atm-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.atm-modal {
+  background: var(--admin-card-bg, #1e1e3a);
+  border: 1px solid var(--admin-border, rgba(255,255,255,0.12));
+  border-radius: 18px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+  animation: atm-up 0.2s ease;
+}
+
+.atm-modal-lg { max-width: 720px; }
+
+@keyframes atm-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.atm-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--admin-border, rgba(255,255,255,0.1));
+}
+
+.atm-modal-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+}
+
+.atm-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary, rgba(255,255,255,0.5));
+  cursor: pointer;
+  font-size: 1.1rem;
+  border-radius: 6px;
+  padding: 0.25rem;
+  transition: all 0.15s;
+}
+
+.atm-modal-close:hover { color: var(--text-primary, #fff); }
+
+.atm-modal-body { padding: 1.25rem 1.5rem; }
+
+.atm-modal-footer {
+  padding: 1rem 1.5rem 1.25rem;
+  border-top: 1px solid var(--admin-border, rgba(255,255,255,0.1));
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* Form */
+.atm-form-group { margin-bottom: 1rem; }
+
+.atm-form-group label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary, rgba(255,255,255,0.5));
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.atm-form-group input,
+.atm-form-group textarea,
+.atm-form-group select {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--admin-border, rgba(255,255,255,0.12));
+  border-radius: 10px;
+  color: var(--text-primary, #fff);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.atm-form-group textarea { resize: vertical; min-height: 80px; }
+
+.atm-form-group input:focus,
+.atm-form-group textarea:focus,
+.atm-form-group select:focus {
+  border-color: var(--accent-primary, #6c63ff);
+}
+
+.atm-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+/* Detail View */
+.atm-detail-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.atm-info-block {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--admin-border, rgba(255,255,255,0.1));
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  flex: 1;
+  min-width: 140px;
+}
+
+.atm-info-label {
+  font-size: 0.68rem;
+  color: var(--text-secondary, rgba(255,255,255,0.45));
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.atm-info-value {
+  font-size: 0.875rem;
+  color: var(--text-primary, #fff);
+  font-weight: 500;
+}
+
+/* Student list in create modal */
+.atm-student-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--admin-border, rgba(255,255,255,0.12));
+  border-radius: 10px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.atm-student-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.atm-student-item:hover { background: rgba(255,255,255,0.06); }
+
+.atm-student-item label {
+  font-size: 0.875rem;
+  color: var(--text-primary, #fff);
+  cursor: pointer;
+  flex: 1;
+  margin: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+/* Submission detail */
+.atm-submission-box {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--admin-border, rgba(255,255,255,0.1));
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-primary, #fff);
+  line-height: 1.6;
+}
+
+.atm-feedback-input textarea {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(249,115,22,0.35);
+  border-radius: 10px;
+  color: var(--text-primary, #fff);
+  font-size: 0.875rem;
+  outline: none;
+  resize: vertical;
+  min-height: 80px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.atm-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-secondary, rgba(255,255,255,0.4));
+}
+
+.atm-empty h3 { color: var(--text-primary, #fff); margin: 0.75rem 0 0.5rem; }
+.atm-empty p { font-size: 0.875rem; margin: 0; }
+
+.atm-loading {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-secondary, rgba(255,255,255,0.4));
+}
+
+.atm-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255,255,255,0.1);
+  border-top-color: var(--accent-primary, #6c63ff);
+  border-radius: 50%;
+  animation: atm-spin 0.8s linear infinite;
+  margin: 0 auto 0.75rem;
+}
+
+@keyframes atm-spin { to { transform: rotate(360deg); } }
+
+.atm-divider {
+  border: none;
+  border-top: 1px solid var(--admin-border, rgba(255,255,255,0.1));
+  margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+  .atm-page { padding: 1rem; }
+  .atm-form-row { grid-template-columns: 1fr; }
+  .atm-stats { grid-template-columns: repeat(3, 1fr); }
+}

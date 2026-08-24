@@ -58,6 +58,11 @@ class FocusSession(SoftDeleteModel):
         Content, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='focus_sessions',
     )
+    task = models.ForeignKey(
+        'tasks.Task', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='focus_sessions',
+        help_text='Optional: task being worked on during this session.',
+    )
 
     # ─── Session Config ───
     session_goal = models.CharField(max_length=500)

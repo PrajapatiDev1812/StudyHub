@@ -117,6 +117,17 @@ export function ThemeProvider({ children }) {
       // Leaving admin: clear admin-scoped inline vars
       if (prev.startsWith('/admin') && !curr.startsWith('/admin')) {
         clearAdminScopedVars();
+        
+        // Re-apply student theme to :root since it was removed when entering admin
+        const cached = localStorage.getItem('studyhub_theme_cache');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            applyThemeVariables(parsed.config, parsed.background_image_url || parsed.background_image);
+          } catch (e) {
+            console.error('Failed to parse cached theme on navigation:', e);
+          }
+        }
       }
     };
 
@@ -141,7 +152,7 @@ export function ThemeProvider({ children }) {
       history.pushState = origPush;
       history.replaceState = origReplace;
     };
-  }, []);
+  }, [applyThemeVariables]);
 
   /**
    * Resolves OS color scheme preference when in 'system' mode.
@@ -227,13 +238,22 @@ export function ThemeProvider({ children }) {
         const savedMode = user?.appearance?.mode_preference || resolved.mode_preference || 'system';
         setThemeModeState(savedMode);
 
+        // If it's a builtin theme, merge with local CSS tokens to ensure we have the latest variables
+        const localMatch = BUILTIN_THEMES.find(t => t.id === resolved.slug || t.slug === resolved.slug);
+        const mergedConfig = (resolved.theme_type === 'builtin' && localMatch) 
+          ? { ...resolved.config, ...localMatch.config } 
+          : resolved.config;
+
         if (savedMode === 'system' && resolved.resolution_source === 'system_default') {
           resolveSystemTheme();
         } else {
           setActiveTheme(resolved);
-          applyThemeVariables(resolved.config, resolved.background_image_url || resolved.background_image);
+          applyThemeVariables(mergedConfig, resolved.background_image_url || resolved.background_image);
         }
-        localStorage.setItem('studyhub_theme_cache', JSON.stringify(resolved));
+        localStorage.setItem('studyhub_theme_cache', JSON.stringify({
+          ...resolved,
+          config: mergedConfig
+        }));
       }
     } catch (e) {
       console.warn('Fallback to local theme cache:', e?.message || e);

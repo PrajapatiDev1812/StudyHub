@@ -41,6 +41,7 @@ import AchievementsPage from './pages/student/AchievementsPage';
 import MyMaterials from './pages/student/MyMaterials';
 import StudentAnalyticsPage from './pages/student/StudentAnalyticsPage';
 import LmsPanel from './pages/student/LmsPanel';
+import TaskManager from './pages/student/TaskManager';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -55,6 +56,15 @@ import AdminAI from './pages/admin/AdminAI';
 import AdminAnnouncements from './pages/admin/AdminAnnouncements';
 import TeacherAiWorkspace from './pages/admin/ai/TeacherAiWorkspace';
 import AdminAppearance from './pages/admin/appearance/AdminAppearance';
+import AchievementsLayout from './pages/admin/achievements/AchievementsLayout';
+import AchievementOverview from './pages/admin/achievements/AchievementOverview';
+import BadgeManagement from './pages/admin/achievements/BadgeManagement';
+import RuleBuilder from './pages/admin/achievements/RuleBuilder';
+import StudentAchievements from './pages/admin/achievements/StudentAchievements';
+import XPLevels from './pages/admin/achievements/XPLevels';
+import AchievementAnalytics from './pages/admin/achievements/AchievementAnalytics';
+import AuditLogs from './pages/admin/achievements/AuditLogs';
+import AdminTaskManager from './pages/admin/tasks/AdminTaskManager';
 
 
 // Shared CSS
@@ -143,6 +153,8 @@ function App() {
             <Route path="/student/focus" element={<StudentRoute><FocusLanding /></StudentRoute>} />
             <Route path="/student/focus/history" element={<StudentRoute><FocusHistory /></StudentRoute>} />
             <Route path="/student/my-materials" element={<StudentRoute><MyMaterials /></StudentRoute>} />
+            <Route path="/student/tasks" element={<StudentRoute><TaskManager /></StudentRoute>} />
+
 
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminRoute />}>
@@ -160,6 +172,17 @@ function App() {
               <Route path="ai" element={<AdminAI />} />
               <Route path="announcements" element={<AdminAnnouncements />} />
               <Route path="appearance" element={<AdminAppearance />} />
+              <Route path="tasks" element={<AdminTaskManager />} />
+              
+              <Route path="achievements" element={<AchievementsLayout />}>
+                <Route index element={<AchievementOverview />} />
+                <Route path="badges" element={<BadgeManagement />} />
+                <Route path="rules" element={<RuleBuilder />} />
+                <Route path="students" element={<StudentAchievements />} />
+                <Route path="xp" element={<XPLevels />} />
+                <Route path="analytics" element={<AchievementAnalytics />} />
+                <Route path="audit" element={<AuditLogs />} />
+              </Route>
 
             </Route>
             

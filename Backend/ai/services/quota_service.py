@@ -373,8 +373,9 @@ class QuotaService:
         if tokens_used > 0:
             cls._increment_token_count(user, tokens_used, window_hours, window_type)
 
-        # ── Record burst timestamp ────────────────────────────────────────────
-        cls._record_burst_timestamp(user)
+        # ── Record burst timestamp (use policy's burst window) ─────────────────────
+        burst_window = policy.get('burst_window_seconds', 60)
+        cls._record_burst_timestamp(user, burst_window)
 
         # ── Update persistent AIUsageRecord ───────────────────────────────────
         cls._update_usage_record(user, tokens_used)
@@ -543,17 +544,17 @@ class QuotaService:
             return True  # Fail-open on cache errors
 
     @staticmethod
-    def _record_burst_timestamp(user) -> None:
-        """Record a burst-window request."""
+    def _record_burst_timestamp(user, burst_window_seconds: int = 60) -> None:
+        """Record a burst-window request using the policy's configured window."""
         key = _key('burst', user.pk)
         try:
             cache.incr(key)
             try:
-                cache.expire(key, 60)  # Default burst window
+                cache.expire(key, burst_window_seconds)
             except AttributeError:
                 pass
         except ValueError:
-            cache.set(key, 1, timeout=60)
+            cache.set(key, 1, timeout=burst_window_seconds)
 
     # ── Concurrent Request Tracking ───────────────────────────────────────────
 

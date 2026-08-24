@@ -175,15 +175,13 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
 
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle',
-    ],
-
-    # ── AI-specific rate limits (change values here to adjust limits) ──
+    # ── Throttle rates (used by views that declare explicit throttle_classes) ──
+    # NOTE: No DEFAULT_THROTTLE_CLASSES — throttling is applied per-view only.
+    # This prevents Swagger, health checks, and other utility endpoints from
+    # being accidentally rate-limited as anonymous requests.
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-        'user': '1000/day',
+        'anon': '1000/min',
+        'user': '10000/min',
         'ai_daily': '50/day',    # Authenticated students: 50 messages/day
         'ai_burst': '5/min',     # Authenticated students: 5 messages/minute
         'ai_anon':  '5/day',     # Anonymous users: 5 messages/day

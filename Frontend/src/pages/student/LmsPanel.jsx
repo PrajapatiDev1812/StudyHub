@@ -1547,6 +1547,21 @@ export default function LmsPanel() {
               </div>
             </div>
           )}
+
+          {/* NOTES / TEXT VIEWER */}
+          {(mat.type === 'notes' || mat.type === 'text') && (
+            <div className="p-8 bg-[var(--bg-primary)]/10">
+              <div className="bg-[var(--bg-card)] border lms-border-color rounded-xl p-8 shadow-sm">
+                <h3 className="font-bold lms-text-primary mb-6 pb-4 border-b lms-border-color flex items-center gap-2">
+                  <FileText size={20} className="text-lms-accent" />
+                  Notes Content
+                </h3>
+                <div className="whitespace-pre-wrap lms-text-secondary text-base leading-relaxed">
+                  {mat.text_content || mat.content || 'No text content provided.'}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

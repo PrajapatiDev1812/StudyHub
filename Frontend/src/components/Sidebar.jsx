@@ -15,6 +15,7 @@ export default function Sidebar() {
   const studentLinks = [
     { to: '/student/dashboard',   icon: '📊', label: 'Dashboard' },
     { to: '/student/analytics',   icon: '📈', label: 'Analytics' },
+    { to: '/student/tasks',       icon: '✅', label: 'Tasks' },
     { to: '/student/courses',     icon: '📚', label: 'Browse Courses' },
     { to: '/student/my-courses',  icon: '🎓', label: 'My Courses' },
     { to: '/student/focus',       icon: '🎯', label: 'Focus Mode' },

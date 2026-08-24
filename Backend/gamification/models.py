@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 from django.db import models
+# pyrefly: ignore [missing-import]
 from django.conf import settings
 
 User = settings.AUTH_USER_MODEL
@@ -28,6 +30,14 @@ class Badge(models.Model):
         ('legendary', 'Legendary'),
     ]
 
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+        ('archived', 'Archived'),
+    ]
+
     name = models.CharField(max_length=200)
     description = models.TextField()
     icon = models.ImageField(upload_to='badges/', blank=True, null=True)
@@ -41,6 +51,7 @@ class Badge(models.Model):
     repeatable = models.BooleanField(default=False)
     tier = models.CharField(max_length=20, choices=TIER_CHOICES, default='none')
     milestone_value = models.IntegerField(default=0, help_text="Threshold count for tiered badges")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -75,3 +86,64 @@ class UserStats(models.Model):
 
     def __str__(self):
         return f"Stats for {self.user.username} (Lvl {self.level})"
+
+class AchievementRule(models.Model):
+    OPERATOR_CHOICES = [
+        ('>=', 'Greater than or equal'),
+        ('>', 'Greater than'),
+        ('==', 'Equal to'),
+        ('<=', 'Less than or equal'),
+        ('<', 'Less than'),
+    ]
+    badge = models.ForeignKey(Badge, on_delete=models.CASCADE, related_name='rules')
+    metric = models.CharField(max_length=50) # e.g., 'focus_sessions', 'test_score', 'tasks_completed'
+    operator = models.CharField(max_length=5, choices=OPERATOR_CHOICES, default='>=')
+    value = models.FloatField()
+    required_occurrences = models.IntegerField(default=1, help_text="Number of times this rule must be met")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.badge.name}: {self.metric} {self.operator} {self.value}"
+
+class XPTransaction(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='xp_transactions')
+    amount = models.IntegerField()
+    reason = models.CharField(max_length=255)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} {'+' if self.amount > 0 else ''}{self.amount} XP - {self.reason}"
+
+class LevelConfiguration(models.Model):
+    level = models.IntegerField(unique=True)
+    xp_threshold = models.IntegerField()
+    title = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        ordering = ['level']
+
+    def __str__(self):
+        return f"Level {self.level} ({self.xp_threshold} XP)"
+
+class AchievementAuditLog(models.Model):
+    ACTION_CHOICES = [
+        ('badge_created', 'Badge Created'),
+        ('badge_updated', 'Badge Updated'),
+        ('rule_modified', 'Rule Modified'),
+        ('manual_award', 'Manual Award'),
+        ('manual_revoke', 'Manual Revoke'),
+        ('xp_modified', 'XP Modified'),
+        ('status_change', 'Status Changed'),
+    ]
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='achievement_actions_performed')
+    target_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='achievement_actions_received')
+    action = models.CharField(max_length=50, choices=ACTION_CHOICES)
+    reason = models.TextField(blank=True, null=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.actor} - {self.action} - {self.timestamp}"

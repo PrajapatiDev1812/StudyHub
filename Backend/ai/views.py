@@ -30,7 +30,7 @@ from .retrieval import retrieve_relevant_chunks
 from .prompts import BASE_SYSTEM_INSTRUCTION, build_rag_prompt, MODE_PROMPTS, FOCUS_STRICT_INSTRUCTION, FOCUS_NORMAL_INSTRUCTION
 from .gemini_client import generate_response, is_configured
 from .embeddings import embed_admin_content, embed_student_note
-from .throttles import AIDailyThrottle, AIBurstThrottle, AIAnonThrottle
+from .throttles import AIQuotaThrottle, AIAnonThrottle  # AIDailyThrottle/AIBurstThrottle were duplicate aliases for AIQuotaThrottle
 from .services.ai_usage import increment_usage, get_usage_summary
 from .services.ai_prompt_builder import build_prompt
 from .services.moderation import classify_content, moderate_response, is_academic
@@ -80,7 +80,7 @@ class ChatbotView(APIView):
       - Anonymous: 5 req/day
     """
     permission_classes = [IsAuthenticated]
-    throttle_classes = [AIDailyThrottle, AIBurstThrottle, AIAnonThrottle]
+    throttle_classes = [AIQuotaThrottle, AIAnonThrottle]  # Single quota check — burst+daily handled inside QuotaService
 
     def post(self, request):
         # ── Capture request start time for response_time_ms logging ──
