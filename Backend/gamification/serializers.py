@@ -24,7 +24,8 @@ class UserStatsSerializer(serializers.ModelSerializer):
         fields = [
             'tasks_completed', 'total_focus_minutes', 'tests_attempted', 
             'average_score', 'streak_days', 'last_activity_date', 
-            'ai_usage_count', 'xp', 'level'
+            'ai_usage_count', 'admin_tasks_completed', 'hard_admin_tasks_completed',
+            'xp', 'level'
         ]
 
 class AchievementRuleSerializer(serializers.ModelSerializer):

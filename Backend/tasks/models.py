@@ -168,6 +168,9 @@ class TaskAssignment(SoftDeleteModel):
     verified_at = models.DateTimeField(null=True, blank=True)
     revision_feedback = models.TextField(blank=True)
 
+    # ── Achievement Credit ─────────────────────────────────────────────────────
+    achievement_credited = models.BooleanField(default=False)
+
     # ── Timestamps ────────────────────────────────────────────────────────────
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

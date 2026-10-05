@@ -90,6 +90,61 @@ class BadgeEngine:
         return unlocked
         
 
+def credit_admin_task_achievement(assignment_id):
+    """
+    Atomically credits an Admin/Teacher task for academic achievements.
+    Must only be called when an assignment is verified.
+    """
+    from django.db import transaction
+    from tasks.models import TaskAssignment
+    
+    unlocked_badges = []
+    
+    with transaction.atomic():
+        try:
+            assignment = TaskAssignment.objects.select_for_update().select_related('student', 'task').get(id=assignment_id)
+        except TaskAssignment.DoesNotExist:
+            return []
+            
+        if assignment.achievement_credited:
+            return []
+            
+        if assignment.status != 'VERIFIED' or assignment.task.source != 'ADMIN_ASSIGNED':
+            return []
+            
+        # Credit the achievement
+        assignment.achievement_credited = True
+        assignment.save(update_fields=['achievement_credited'])
+        
+        student = assignment.student
+        stats, _ = UserStats.objects.get_or_create(user=student)
+        
+        stats.admin_tasks_completed += 1
+        
+        is_hard = assignment.task.priority == 'high'
+        if is_hard:
+            stats.hard_admin_tasks_completed += 1
+            
+        stats.save(update_fields=['admin_tasks_completed', 'hard_admin_tasks_completed'])
+        
+        # Check milestones for admin_tasks_completed
+        new_count, _ = badge_service.increment_repeatable_badge(student, 'admin_tasks_completed')
+        milestone_badges = badge_service.check_milestones(student, 'admin_tasks_completed', stats.admin_tasks_completed)
+        unlocked_badges.extend(milestone_badges)
+        
+        # Check milestones for hard_admin_tasks_completed
+        if is_hard:
+            new_hard_count, _ = badge_service.increment_repeatable_badge(student, 'hard_admin_tasks_completed')
+            hard_milestone_badges = badge_service.check_milestones(student, 'hard_admin_tasks_completed', stats.hard_admin_tasks_completed)
+            unlocked_badges.extend(hard_milestone_badges)
+            
+        # Check one-time rules that might rely on the new stats
+        one_time_unlocked = BadgeEngine.check_badges(student, stats)
+        unlocked_badges.extend(one_time_unlocked)
+        
+    return unlocked_badges
+
+
 def track_event(user, event_type, value=None):
     """
     Central function to track events.

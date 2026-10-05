@@ -318,8 +318,9 @@ class TaskAssignmentViewSet(viewsets.ReadOnlyModelViewSet):
 
         # Fire gamification event for academic task verification
         try:
-            from gamification.services import track_event
+            from gamification.services import track_event, credit_admin_task_achievement
             track_event(assignment.student, 'task_complete')
+            credit_admin_task_achievement(assignment.id)
         except Exception:
             pass
 

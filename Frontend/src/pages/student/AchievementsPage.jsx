@@ -75,6 +75,18 @@ const AchievementsPage = () => {
                         <h3>Badges Earned</h3>
                         <div className="stat-value">{userBadges.length} / {allBadges.length}</div>
                     </div>
+                    
+                    {/* Academic Achievements Section */}
+                    <div className="stat-card academic-card">
+                        <h3>🏆 Academic Achievements</h3>
+                        <div className="stat-value">{stats.admin_tasks_completed || 0}</div>
+                        <div className="stat-sub">Verified Admin/Teacher Tasks</div>
+                    </div>
+                    <div className="stat-card challenge-card">
+                        <h3>🔥 Challenge Progress</h3>
+                        <div className="stat-value">{stats.hard_admin_tasks_completed || 0}</div>
+                        <div className="stat-sub">Verified Hard Admin Tasks</div>
+                    </div>
                 </div>
             )}
 

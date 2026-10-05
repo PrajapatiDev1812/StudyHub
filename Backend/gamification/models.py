@@ -20,6 +20,8 @@ class Badge(models.Model):
         ('test_score', 'Test Score'),
         ('streak_days', 'Streak Days'),
         ('ai_usage', 'AI Usage Count'),
+        ('admin_tasks_completed', 'Verified Admin Tasks Completed'),
+        ('hard_admin_tasks_completed', 'Verified Hard Admin Tasks Completed'),
     ]
 
     TIER_CHOICES = [
@@ -81,6 +83,8 @@ class UserStats(models.Model):
     streak_days = models.IntegerField(default=0)
     last_activity_date = models.DateField(null=True, blank=True)
     ai_usage_count = models.IntegerField(default=0)
+    admin_tasks_completed = models.IntegerField(default=0)
+    hard_admin_tasks_completed = models.IntegerField(default=0)
     xp = models.IntegerField(default=0)
     level = models.IntegerField(default=1)
 
