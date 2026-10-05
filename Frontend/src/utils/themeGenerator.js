@@ -131,21 +131,21 @@ export const generateThemeFromImage = (file) => {
             '--backgroundOverlay': hslToRgbStr(baseH, baseS, isDark ? 8 : 95, 0.75), 
             
             // Surfaces
-            '--bg-surface': hslToRgbStr(baseH, baseS, surfaceL, 0.85),
-            '--surfaceSecondary': hslToRgbStr(baseH, baseS, cardL, 0.85),
-            '--bg-sidebar': hslToRgbStr(baseH, baseS, isDark ? 10 : 98, 0.90),
-            '--bg-navbar': hslToRgbStr(baseH, baseS, isDark ? 12 : 96, 0.85),
-            '--bg-panel': hslToRgbStr(baseH, baseS, cardL, 0.90),
+            '--bg-surface': hslToRgbStr(baseH, baseS, surfaceL, 0.45),
+            '--surfaceSecondary': hslToRgbStr(baseH, baseS, cardL, 0.40),
+            '--bg-sidebar': hslToRgbStr(baseH, baseS, isDark ? 10 : 98, 0.45),
+            '--bg-navbar': hslToRgbStr(baseH, baseS, isDark ? 12 : 96, 0.45),
+            '--bg-panel': hslToRgbStr(baseH, baseS, cardL, 0.45),
             
             // Cards
-            '--bg-card': hslToRgbStr(baseH, baseS, cardL, 0.65), 
-            '--bg-card-hover': hslToRgbStr(baseH, baseS, hoverL, 0.75),
+            '--bg-card': hslToRgbStr(baseH, baseS, cardL, 0.40), 
+            '--bg-card-hover': hslToRgbStr(baseH, baseS, hoverL, 0.50),
             
             // Glass specific
             '--glassTint': isDark ? `hsla(${baseH}, ${baseS}%, 50%, 0.05)` : `hsla(${baseH}, ${baseS}%, 50%, 0.1)`,
             '--glassBorder': isDark ? `hsla(${baseH}, ${baseS}%, 80%, 0.1)` : `hsla(${baseH}, ${baseS}%, 20%, 0.1)`,
             '--bg-glass': isDark ? `hsla(${baseH}, ${baseS}%, 80%, 0.06)` : `hsla(${baseH}, ${baseS}%, 20%, 0.04)`,
-            '--bg-input': hslToRgbStr(baseH, baseS, isDark ? 22 : 85, 0.6),
+            '--bg-input': hslToRgbStr(baseH, baseS, isDark ? 22 : 85, 0.4),
 
             // Text
             '--text-primary': textPrimary,

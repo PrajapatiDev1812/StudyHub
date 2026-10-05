@@ -1,8 +1,13 @@
+# pyrefly: ignore [missing-import]
 import datetime
+# pyrefly: ignore [missing-import]
 from django.db.models import Sum, Count, Avg, F, Q
+# pyrefly: ignore [missing-import]
+from django.db.models.functions import TruncDate
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
 from focus.models import FocusSession
-from tasks.models import Task
+from tasks.models import Task, TaskAssignment
 from courses.models import Progress, Course, Subject
 from ai.models import AIRequestLog
 
@@ -51,11 +56,20 @@ class StudentAnalyticsService:
         sessions_completed = focus_stats['sessions_count'] or 0
 
         # 2. Tasks Completed
-        t_q = self._get_date_filter('completed_at')
-        tasks_completed = Task.objects.filter(
+        # Personal tasks: STUDENT_CREATED + COMPLETED
+        t_q_personal = self._get_date_filter('updated_at')
+        personal_completed = Task.objects.filter(
             user=self.user,
-            completed=True
-        ).filter(t_q).count()
+            source='STUDENT_CREATED',
+            status='COMPLETED',
+        ).filter(t_q_personal).count()
+        # Academic tasks: ADMIN_ASSIGNED + VERIFIED (use verified_at for date filter)
+        t_q_verified = self._get_date_filter('verified_at')
+        academic_verified = TaskAssignment.objects.filter(
+            student=self.user,
+            status='VERIFIED',
+        ).filter(t_q_verified).count()
+        tasks_completed = personal_completed + academic_verified
         
         # 3. Content Completed (from Progress)
         p_q = self._get_date_filter('completed_at')
@@ -89,34 +103,53 @@ class StudentAnalyticsService:
         labels = []
         study_hours = []
         tasks = []
+
+        fs_q = self._get_date_filter('start_time')
+        focus_rows = (
+            FocusSession.objects.filter(student=self.user, status='completed').filter(fs_q)
+            .annotate(day=TruncDate('start_time'))
+            .values('day')
+            .annotate(total=Sum('total_focus_seconds'))
+        )
+        focus_map = {row['day']: row['total'] for row in focus_rows}
+
+        # Personal completed tasks
+        personal_task_rows = (
+            Task.objects.filter(user=self.user, source='STUDENT_CREATED', status='COMPLETED')
+            .filter(self._get_date_filter('updated_at'))
+            .annotate(day=TruncDate('updated_at'))
+            .values('day')
+            .annotate(count=Count('id'))
+        )
+        # Admin-verified tasks
+        verified_task_rows = (
+            TaskAssignment.objects.filter(student=self.user, status='VERIFIED')
+            .filter(self._get_date_filter('verified_at'))
+            .annotate(day=TruncDate('verified_at'))
+            .values('day')
+            .annotate(count=Count('id'))
+        )
+        task_map = {row['day']: row['count'] for row in personal_task_rows}
+        for row in verified_task_rows:
+            task_map[row['day']] = task_map.get(row['day'], 0) + row['count']
+
+        prog_rows = (
+            Progress.objects.filter(student=self.user).filter(self._get_date_filter('completed_at'))
+            .annotate(day=TruncDate('completed_at'))
+            .values('day')
+            .annotate(count=Count('id'))
+        )
+        prog_map = {row['day']: row['count'] for row in prog_rows}
         
         for i in range(days + 1):
             current_date = start + datetime.timedelta(days=i)
             labels.append(current_date.strftime('%b %d'))
             
-            # This is not highly optimized for large date ranges, 
-            # but works well for 7-30 days. For production, we'd use trunc_date.
-            dt_start = timezone.make_aware(datetime.datetime.combine(current_date, datetime.time.min))
-            dt_end = timezone.make_aware(datetime.datetime.combine(current_date, datetime.time.max))
-            
-            # Focus Time
-            f_sec = FocusSession.objects.filter(
-                student=self.user,
-                status='completed',
-                start_time__range=(dt_start, dt_end)
-            ).aggregate(total=Sum('total_focus_seconds'))['total'] or 0
+            f_sec = focus_map.get(current_date, 0) or 0
             study_hours.append(round(f_sec / 3600, 2))
             
-            # Tasks + Content
-            t_count = Task.objects.filter(
-                user=self.user,
-                completed=True,
-                completed_at__range=(dt_start, dt_end)
-            ).count()
-            c_count = Progress.objects.filter(
-                student=self.user,
-                completed_at__range=(dt_start, dt_end)
-            ).count()
+            t_count = task_map.get(current_date, 0) or 0
+            c_count = prog_map.get(current_date, 0) or 0
             tasks.append(t_count + c_count)
             
         return {
@@ -156,11 +189,18 @@ class StudentAnalyticsService:
 
     def get_time_of_day_analysis(self):
         """Aggregates focus sessions into Morning, Afternoon, Evening, Night."""
+        # pyrefly: ignore [missing-import]
+        from django.db.models.functions import ExtractHour
+        # pyrefly: ignore [missing-import]
+        from django.db.models import Sum
+
         fs_q = self._get_date_filter('start_time')
-        sessions = FocusSession.objects.filter(
-            student=self.user,
-            status='completed'
-        ).filter(fs_q)
+        rows = (
+            FocusSession.objects.filter(student=self.user, status='completed').filter(fs_q)
+            .annotate(hour=ExtractHour('start_time'))
+            .values('hour')
+            .annotate(total=Sum('total_focus_seconds'))
+        )
         
         distribution = {
             'Morning (6 AM - 12 PM)': 0,
@@ -169,12 +209,9 @@ class StudentAnalyticsService:
             'Night (10 PM - 6 AM)': 0
         }
         
-        for session in sessions:
-            # Use local time if possible, here using UTC hour for simplicity, 
-            # ideally we'd use timezone.localtime(session.start_time)
-            local_time = timezone.localtime(session.start_time)
-            hour = local_time.hour
-            sec = session.total_focus_seconds
+        for row in rows:
+            hour = row['hour']
+            sec = row['total'] or 0
             
             if 6 <= hour < 12:
                 distribution['Morning (6 AM - 12 PM)'] += sec
@@ -185,13 +222,14 @@ class StudentAnalyticsService:
             else:
                 distribution['Night (10 PM - 6 AM)'] += sec
                 
-        # Convert to hours
-        for k in distribution:
-            distribution[k] = round(distribution[k] / 3600, 2)
-            
         return {
             'labels': list(distribution.keys()),
-            'values': list(distribution.values())
+            'values': [
+                round(distribution['Morning (6 AM - 12 PM)'] / 3600, 2),
+                round(distribution['Afternoon (12 PM - 5 PM)'] / 3600, 2),
+                round(distribution['Evening (5 PM - 10 PM)'] / 3600, 2),
+                round(distribution['Night (10 PM - 6 AM)'] / 3600, 2)
+            ]
         }
 
     def get_focus_mode_analytics(self):

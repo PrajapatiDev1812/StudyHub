@@ -12,7 +12,7 @@ export default function useFilters(defaults = {}, debounceMs = 400) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // ── Initialise from URL ────────────────────────────────────────────────
-  const parseFromUrl = useCallback(() => {
+  const [filters, setFilters] = useState(() => {
     const result = { ...defaults };
     for (const key of Object.keys(defaults)) {
       const raw = searchParams.get(key);
@@ -28,9 +28,7 @@ export default function useFilters(defaults = {}, debounceMs = 400) {
       }
     }
     return result;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const [filters, setFilters] = useState(parseFromUrl);
+  });
 
   // Internal live search value (not debounced)
   const [searchInput, setSearchInput] = useState(filters.search || '');

@@ -145,43 +145,55 @@
 
 .cm-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+  padding: 0 16px 16px 16px;
 }
 
-.cm-table thead th {
-  padding: 14px 18px;
+.cm-table th {
   text-align: left;
-  font-size: 0.75rem;
-  font-weight: 700;
+  padding: 16px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.85rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  background: var(--bg-secondary, rgba(0,0,0,0.15));
+  letter-spacing: 0.05em;
   border-bottom: 1px solid var(--border-color);
-}
-
-.cm-table thead th:first-child {
-  border-radius: 0;
-}
-
-.cm-table tbody tr {
-  border-bottom: 1px solid var(--border-color);
-  transition: background 0.15s ease;
-}
-
-.cm-table tbody tr:last-child {
-  border-bottom: none;
-}
-
-.cm-table tbody tr:hover {
-  background: var(--bg-card-hover, rgba(255,255,255,0.04));
 }
 
 .cm-table td {
-  padding: 14px 18px;
-  font-size: 0.88rem;
-  color: var(--text-primary);
+  padding: 16px;
   vertical-align: middle;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.cm-table td:first-child {
+  border-left: 1px solid var(--border-color);
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+
+.cm-table td:last-child {
+  border-right: 1px solid var(--border-color);
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.cm-table tbody tr {
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.cm-table tbody tr:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(108, 99, 255, 0.15);
+}
+
+.cm-table tbody tr:hover td {
+  border-color: var(--accent-primary);
+  background: var(--bg-card-hover);
 }
 
 /* ── Cell Variants ────────────────────────────────────────────────────────── */
@@ -434,20 +446,22 @@
 
 .cm-modal {
   background: var(--bg-card, #1a1a2e);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
+  border-left: 1px solid var(--border-color);
   padding: 32px;
   width: 100%;
-  max-width: 560px;
-  max-height: 90vh;
+  max-width: 500px;
+  height: 100vh;
+  position: absolute;
+  right: 0;
+  top: 0;
   overflow-y: auto;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.5);
-  animation: slideUp 0.25s ease;
+  box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
 }
 
 .cm-modal-header {

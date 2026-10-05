@@ -6,15 +6,19 @@ const BadgeUnlockPopup = ({ badge, onClose }) => {
 
   useEffect(() => {
     if (badge) {
-      setVisible(true);
+      // Use setTimeout to allow mounting first before triggering animation
+      const animTimer = setTimeout(() => setVisible(true), 10);
       // Auto-hide after 5 seconds
       const timer = setTimeout(() => {
         setVisible(false);
         setTimeout(onClose, 300); // Wait for transition before unmounting
       }, 5000);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(animTimer);
+        clearTimeout(timer);
+      };
     }
-  }, [badge]);
+  }, [badge, onClose]);
 
   if (!badge) return null;
 
@@ -22,7 +26,7 @@ const BadgeUnlockPopup = ({ badge, onClose }) => {
   const isRepeatableIncrement = badge.repeatable_earned;
 
   return (
-    <div className={`badge-popup-overlay ${visible ? 'show' : ''} tier-${badge.tier || 'none'}`} onClick={(e) => {
+    <div className={`badge-popup-overlay ${visible ? 'show' : ''} tier-${badge.tier || 'none'}`} onClick={() => {
         setVisible(false);
         setTimeout(onClose, 300);
     }}>

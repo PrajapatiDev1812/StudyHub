@@ -55,8 +55,6 @@ export default function GlobalSettingsButton() {
   const buttonRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  // Only render for students
-  if (user?.role !== 'student') return null;
 
   const closeMenu = useCallback(() => setOpen(false), []);
 
@@ -82,6 +80,9 @@ export default function GlobalSettingsButton() {
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [open, closeMenu]);
+
+  // Only render for students
+  if (user?.role !== 'student') return null;
 
   const handleItemClick = (tab) => {
     closeMenu();

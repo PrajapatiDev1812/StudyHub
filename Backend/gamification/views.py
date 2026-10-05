@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import viewsets, permissions, views, status
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
 from .models import Badge, UserBadge, UserStats
 from .serializers import BadgeSerializer, UserBadgeSerializer, UserStatsSerializer
@@ -19,7 +21,7 @@ class UserBadgeViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return UserBadge.objects.filter(user=self.request.user)
+        return UserBadge.objects.filter(user=self.request.user).select_related('badge')
 
 class UserStatsView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]

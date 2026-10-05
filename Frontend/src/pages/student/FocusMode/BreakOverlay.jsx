@@ -34,8 +34,9 @@ export default function BreakOverlay({
   onExtend,
   onEnd,
 }) {
+  // eslint-disable-next-line react-hooks/purity
   const [quoteIdx, setQuoteIdx] = useState(Math.floor(Math.random() * QUOTES.length));
-  const [breathPhase, setBreathPhase] = useState(0);
+  // breathPhase removed
   const [breathScale, setBreathScale] = useState(1.0);
   const [breathLabel, setBreathLabel] = useState('Breathe In');
 
@@ -49,20 +50,20 @@ export default function BreakOverlay({
 
   // Breathing animation
   useEffect(() => {
-    let cancelled = false;
-    const cycle = async () => {
-      for (let i = 0; i < BREATHING_PHASES.length; i++) {
-        if (cancelled) return;
-        const phase = BREATHING_PHASES[i];
-        setBreathPhase(i);
-        setBreathScale(phase.scale);
-        setBreathLabel(phase.label);
-        await new Promise((r) => setTimeout(r, phase.duration));
-      }
-      if (!cancelled) cycle();
+    let timer;
+    let phase = 0;
+    const runLoop = () => {
+      return setTimeout(() => {
+        phase = (phase + 1) % BREATHING_PHASES.length;
+        const p = BREATHING_PHASES[phase];
+        setBreathScale(p.scale);
+        setBreathLabel(p.label);
+        timer = runLoop();
+      }, BREATHING_PHASES[phase].duration);
     };
-    cycle();
-    return () => { cancelled = true; };
+
+    timer = runLoop();
+    return () => clearTimeout(timer);
   }, []);
 
   const quote = QUOTES[quoteIdx];

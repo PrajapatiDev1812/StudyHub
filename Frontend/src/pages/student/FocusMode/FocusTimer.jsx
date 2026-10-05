@@ -4,7 +4,7 @@
  * Circular SVG countdown timer that shows remaining time
  * and an animated progress stroke.
  */
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 
 const SIZE = 140;
 const STROKE = 8;

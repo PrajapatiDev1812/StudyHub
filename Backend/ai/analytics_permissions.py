@@ -16,6 +16,7 @@ IDOR Prevention:
     professor's courses inside the analytics service, never trusted from the request.
 """
 
+# pyrefly: ignore [missing-import]
 from rest_framework.permissions import BasePermission
 
 
@@ -30,7 +31,7 @@ class IsMainAdmin(BasePermission):
         return bool(
             request.user
             and request.user.is_authenticated
-            and request.user.is_superuser
+            and (request.user.is_superuser or getattr(request.user, 'role', '') == 'admin')
         )
 
 

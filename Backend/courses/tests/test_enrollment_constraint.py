@@ -2,10 +2,15 @@
 Verification test for unique_enrollment_per_user_course constraint.
 Run: python manage.py test courses.tests.test_enrollment_constraint --verbosity=2
 """
+# pyrefly: ignore [missing-import]
 from django.test import TestCase
+# pyrefly: ignore [missing-import]
 from django.db import IntegrityError, transaction
+# pyrefly: ignore [missing-import]
 from django.core.exceptions import ValidationError
+# pyrefly: ignore [missing-import]
 from accounts.models import User
+# pyrefly: ignore [missing-import]
 from courses.models import Course, Enrollment
 
 
@@ -115,9 +120,9 @@ class EnrollmentUniqueConstraintTest(TestCase):
         """The UniqueConstraint must exist in Meta.constraints with the correct name."""
         constraint_names = [c.name for c in Enrollment._meta.constraints]
         self.assertIn(
-            'unique_enrollment_per_user_course',
+            'unique_enrollment_per_user_course_active',
             constraint_names,
-            msg="Expected 'unique_enrollment_per_user_course' in Enrollment._meta.constraints"
+            msg="Expected 'unique_enrollment_per_user_course_active' in Enrollment._meta.constraints"
         )
         print("  PASS  Meta check: UniqueConstraint 'unique_enrollment_per_user_course' is present.")
 

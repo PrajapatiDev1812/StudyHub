@@ -16,6 +16,7 @@ export default function Landing() {
           <span>🎯</span> StudyHub
         </div>
         <div className="landing-actions">
+          <Link to="/learn-more" className="landing-btn" style={{padding: '10px 24px', fontSize: '0.95rem', color: '#4F46E5', background: 'transparent', border: '1.5px solid #4F46E5', borderRadius: '8px'}}>Learn More</Link>
           <Link to="/login" className="landing-btn landing-btn-secondary" style={{padding: '10px 24px', fontSize: '0.95rem'}}>Sign In</Link>
           <Link to="/register" className="landing-btn landing-btn-primary" style={{padding: '10px 24px', fontSize: '0.95rem'}}>Get Started</Link>
         </div>

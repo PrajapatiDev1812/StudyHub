@@ -147,7 +147,17 @@ class StudentMaterialViewSet(viewsets.ModelViewSet):
         }
         qs = qs.order_by(sort_map.get(sort, '-uploaded_at'))
 
-        return qs.select_related('student', 'deleted_by').prefetch_related('access_grants__user')
+        from django.db.models import Prefetch
+        from .models import MaterialUserNote
+
+        return qs.select_related('student', 'deleted_by').prefetch_related(
+            'access_grants__user',
+            Prefetch(
+                'user_notes',
+                queryset=MaterialUserNote.objects.filter(user=self.request.user),
+                to_attr='my_notes_cache'
+            ),
+        )
 
     def perform_create(self, serializer):
         serializer.save(student=self.request.user)

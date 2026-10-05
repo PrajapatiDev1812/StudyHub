@@ -1,22 +1,26 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import generics, permissions, status
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
 from .models import ManualRecoveryRequest, AccountRecoveryLog
 from .serializers_recovery import ManualRecoveryReviewSerializer, ManualRecoveryRequestSerializer
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
 from .services.email_service import send_recovery_email
+from accounts.permissions import IsAdmin
 
 class AdminManualRecoveryListView(generics.ListAPIView):
     """Admin view to list all pending manual recovery requests"""
     queryset = ManualRecoveryRequest.objects.all().order_by('-created_at')
     serializer_class = ManualRecoveryRequestSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdmin]
     filterset_fields = ['status', 'role_claimed']
 
 class AdminManualRecoveryDetailView(generics.RetrieveUpdateAPIView):
     """Admin view to approve or reject a manual recovery request"""
     queryset = ManualRecoveryRequest.objects.all()
     serializer_class = ManualRecoveryReviewSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdmin]
 
     def perform_update(self, serializer):
         instance = serializer.save(
@@ -26,6 +30,7 @@ class AdminManualRecoveryDetailView(generics.RetrieveUpdateAPIView):
         
         # If approved, we could automatically trigger a password reset email if they didn't have a verified email
         if instance.status == 'approved' and instance.user:
+            # pyrefly: ignore [missing-import]
             from django.contrib.auth.tokens import default_token_generator
             token = default_token_generator.make_token(instance.user)
             send_recovery_email(instance.user, 'password_reset', token=token, request=self.request)
@@ -34,7 +39,7 @@ class AdminRecoveryLogListView(generics.ListAPIView):
     """Admin view to audit all recovery logs for security monitoring"""
     queryset = AccountRecoveryLog.objects.all().order_by('-created_at')
     # Simple read-only serializer for logs could be added or just use a generic one
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdmin]
     
     def list(self, request, *args, **kwargs):
         # Flattened list response for easier table rendering on frontend

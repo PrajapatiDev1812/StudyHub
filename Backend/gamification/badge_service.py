@@ -1,7 +1,7 @@
 from .models import Badge, UserBadge, UserStats
 from django.db.models import Q
 
-def award_badge(user, badge, count=1):
+def award_badge(user, badge, count=1, stats=None):
     """
     Actually assigns a badge to a user or updates their record.
     Returns (user_badge, was_created, xp_rewarded)
@@ -15,10 +15,11 @@ def award_badge(user, badge, count=1):
     xp_rewarded = 0
     if created:
         # First time earning this specific badge
-        stats, _ = UserStats.objects.get_or_create(user=user)
+        if stats is None:
+            stats, _ = UserStats.objects.get_or_create(user=user)
         stats.xp += badge.xp_reward
         stats.level = (stats.xp // 100) + 1
-        stats.save()
+        stats.save(update_fields=['xp', 'level'])
         xp_rewarded = badge.xp_reward
     elif badge.repeatable:
         # If it's the base repeatable badge and we're just and incrementing

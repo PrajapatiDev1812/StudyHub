@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './theme/ThemeProvider';
 import { AuthProvider } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
+import AdminLayout from './pages/admin/AdminLayout';
 import BadgeUnlockPopup from './components/gamification/BadgeUnlockPopup';
+
 
 // Public Pages
 import Landing from './pages/Landing';
+import LearnMorePage from './pages/LearnMorePage';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -38,6 +41,7 @@ import AchievementsPage from './pages/student/AchievementsPage';
 import MyMaterials from './pages/student/MyMaterials';
 import StudentAnalyticsPage from './pages/student/StudentAnalyticsPage';
 import LmsPanel from './pages/student/LmsPanel';
+import TaskManager from './pages/student/TaskManager';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -46,6 +50,22 @@ import ManageTests from './pages/admin/ManageTests';
 import ManageQuestions from './pages/admin/ManageQuestions';
 import TestAnalytics from './pages/admin/TestAnalytics';
 import StudentList from './pages/admin/StudentList';
+import AdminStudents from './pages/admin/AdminStudents';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminAI from './pages/admin/AdminAI';
+import AdminAnnouncements from './pages/admin/AdminAnnouncements';
+import TeacherAiWorkspace from './pages/admin/ai/TeacherAiWorkspace';
+import AdminAppearance from './pages/admin/appearance/AdminAppearance';
+import AchievementsLayout from './pages/admin/achievements/AchievementsLayout';
+import AchievementOverview from './pages/admin/achievements/AchievementOverview';
+import BadgeManagement from './pages/admin/achievements/BadgeManagement';
+import RuleBuilder from './pages/admin/achievements/RuleBuilder';
+import StudentAchievements from './pages/admin/achievements/StudentAchievements';
+import XPLevels from './pages/admin/achievements/XPLevels';
+import AchievementAnalytics from './pages/admin/achievements/AchievementAnalytics';
+import AuditLogs from './pages/admin/achievements/AuditLogs';
+import AdminTaskManager from './pages/admin/tasks/AdminTaskManager';
+
 
 // Shared CSS
 import './pages/student/Student.css';
@@ -59,9 +79,19 @@ function StudentRoute({ children }) {
 }
 
 function AdminRoute({ children }) {
+  // Wrap admin routes in the new AdminLayout
   return (
     <ProtectedRoute role="admin">
-      <DashboardLayout>{children}</DashboardLayout>
+      <AdminLayout />
+    </ProtectedRoute>
+  );
+}
+
+/** Full-screen admin route — no DashboardLayout (page provides its own layout) */
+function AdminFullscreen({ children }) {
+  return (
+    <ProtectedRoute role="admin">
+      {children}
     </ProtectedRoute>
   );
 }
@@ -85,6 +115,7 @@ function App() {
           <Routes>
             {/* Public */}
             <Route path="/" element={<Landing />} />
+            <Route path="/learn-more" element={<LearnMorePage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -122,15 +153,41 @@ function App() {
             <Route path="/student/focus" element={<StudentRoute><FocusLanding /></StudentRoute>} />
             <Route path="/student/focus/history" element={<StudentRoute><FocusHistory /></StudentRoute>} />
             <Route path="/student/my-materials" element={<StudentRoute><MyMaterials /></StudentRoute>} />
+            <Route path="/student/tasks" element={<StudentRoute><TaskManager /></StudentRoute>} />
+
 
             {/* Admin Routes */}
-            <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-            <Route path="/admin/courses" element={<AdminRoute><CurriculumManager /></AdminRoute>} />
-            <Route path="/admin/tests" element={<AdminRoute><ManageTests /></AdminRoute>} />
-            <Route path="/admin/tests/:testId/questions" element={<AdminRoute><ManageQuestions /></AdminRoute>} />
-            <Route path="/admin/tests/:id/analytics" element={<AdminRoute><TestAnalytics /></AdminRoute>} />
-            <Route path="/admin/courses/:id/students" element={<AdminRoute><StudentList /></AdminRoute>} />
-            <Route path="/admin/profile" element={<AdminRoute><Profile /></AdminRoute>} />
+            <Route path="/admin" element={<AdminRoute />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="curriculum" element={<CurriculumManager />} />
+              <Route path="courses" element={<CurriculumManager />} />
+              <Route path="tests" element={<ManageTests />} />
+              <Route path="tests/:testId/questions" element={<ManageQuestions />} />
+              <Route path="tests/:id/analytics" element={<TestAnalytics />} />
+              <Route path="courses/:id/students" element={<StudentList />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="students" element={<AdminStudents />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="ai" element={<AdminAI />} />
+              <Route path="announcements" element={<AdminAnnouncements />} />
+              <Route path="appearance" element={<AdminAppearance />} />
+              <Route path="tasks" element={<AdminTaskManager />} />
+              
+              <Route path="achievements" element={<AchievementsLayout />}>
+                <Route index element={<AchievementOverview />} />
+                <Route path="badges" element={<BadgeManagement />} />
+                <Route path="rules" element={<RuleBuilder />} />
+                <Route path="students" element={<StudentAchievements />} />
+                <Route path="xp" element={<XPLevels />} />
+                <Route path="analytics" element={<AchievementAnalytics />} />
+                <Route path="audit" element={<AuditLogs />} />
+              </Route>
+
+            </Route>
+            
+            {/* Admin Fullscreen / Special AI Tools */}
+            <Route path="/admin/ai/teacher-workspace" element={<AdminFullscreen><TeacherAiWorkspace /></AdminFullscreen>} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>

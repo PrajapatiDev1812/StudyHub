@@ -1,5 +1,8 @@
+# pyrefly: ignore [missing-import]
 from django.contrib.auth.models import AbstractUser
+# pyrefly: ignore [missing-import]
 from django.db import models
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
 import uuid
 
@@ -146,24 +149,60 @@ class PasswordHistory(models.Model):
 
 class Theme(models.Model):
     """
-    Stores built-in and user-created themes.
-    Config JSON contains the CSS variable mappings.
+    Stores built-in, university, and user-created themes.
+    Supports dynamic color tokens, scheduling, and multi-tenant scoping.
     """
     THEME_TYPES = (
         ('builtin', 'Built-in'),
+        ('university', 'University'),
+        ('custom', 'Custom'),
+    )
+    MODE_CHOICES = (
+        ('light', 'Light'),
+        ('dark', 'Dark'),
         ('custom', 'Custom'),
     )
 
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True)
+    description = models.TextField(blank=True, default="")
     theme_type = models.CharField(max_length=20, choices=THEME_TYPES, default='builtin')
-    config = models.JSONField(help_text="JSON object of CSS variables and values")
+    mode = models.CharField(max_length=20, choices=MODE_CHOICES, default='dark')
+    
+    # Brand colors
+    primary_color = models.CharField(max_length=30, blank=True, default="#6c63ff")
+    secondary_color = models.CharField(max_length=30, blank=True, default="#3b82f6")
+    accent_color = models.CharField(max_length=30, blank=True, default="#a78bfa")
+    
+    # Generated palettes & CSS token mapping
+    generated_colors = models.JSONField(default=dict, blank=True)
+    config = models.JSONField(default=dict, blank=True, help_text="JSON object of CSS variables and values")
+    
+    # Brand Assets
     background_image = models.ImageField(upload_to='themes/backgrounds/', null=True, blank=True)
+    logo = models.ImageField(upload_to='themes/logos/', null=True, blank=True)
+    favicon = models.ImageField(upload_to='themes/favicons/', null=True, blank=True)
     
-    # For custom themes
+    # Multi-tenant and Ownership
+    university = models.ForeignKey(
+        'ai.University',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="themes"
+    )
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='created_themes')
-    is_public = models.BooleanField(default=True)
     
+    # Visibility and Activation
+    is_public = models.BooleanField(default=True)
+    is_global = models.BooleanField(default=False, help_text="True for core StudyHub platform themes")
+    is_active = models.BooleanField(default=True)
+    
+    # Scheduling
+    schedule_start = models.DateTimeField(null=True, blank=True, help_text="Start time for scheduled activation")
+    schedule_end = models.DateTimeField(null=True, blank=True, help_text="End time for scheduled activation")
+    is_mandatory_schedule = models.BooleanField(default=False, help_text="If True, overrides user personal preference during active schedule window")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -171,12 +210,43 @@ class Theme(models.Model):
         return self.name
 
 
+class ThemeVersion(models.Model):
+    """
+    Stores version history snapshots for enterprise theme auditing and rollback.
+    """
+    theme = models.ForeignKey(Theme, on_delete=models.CASCADE, related_name='versions')
+    version_number = models.PositiveIntegerField()
+    name = models.CharField(max_length=100)
+    mode = models.CharField(max_length=20, default='dark')
+    primary_color = models.CharField(max_length=30, blank=True)
+    secondary_color = models.CharField(max_length=30, blank=True)
+    accent_color = models.CharField(max_length=30, blank=True)
+    generated_colors = models.JSONField(default=dict, blank=True)
+    config = models.JSONField(default=dict, blank=True)
+    comment = models.CharField(max_length=255, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-version_number']
+        unique_together = ('theme', 'version_number')
+
+    def __str__(self):
+        return f"{self.theme.name} - v{self.version_number}"
+
+
 class UserAppearance(models.Model):
     """
     Stores a user's selected theme and other UI preferences.
     """
+    MODE_PREF_CHOICES = (
+        ('system', 'System Default'),
+        ('light', 'Light Mode'),
+        ('dark', 'Dark Mode'),
+    )
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='appearance')
     selected_theme = models.ForeignKey(Theme, on_delete=models.SET_NULL, null=True, related_name='users_selected')
+    mode_preference = models.CharField(max_length=20, choices=MODE_PREF_CHOICES, default='system')
     
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -262,7 +332,9 @@ class ActiveSession(models.Model):
 
 
 # --- Signals ---
+# pyrefly: ignore [missing-import]
 from django.db.models.signals import post_save
+# pyrefly: ignore [missing-import]
 from django.dispatch import receiver
 
 @receiver(post_save, sender=User)

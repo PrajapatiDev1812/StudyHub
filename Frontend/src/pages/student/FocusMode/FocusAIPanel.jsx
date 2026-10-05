@@ -47,6 +47,7 @@ export default function FocusAIPanel({ session, onClose }) {
       if (!chatSessionId) setChatSessionId(res.data.session_id);
       setMessages(m => [...m, { role: 'ai', content: res.data.reply }]);
     } catch (e) {
+      console.error(e);
       setMessages(m => [...m, { role: 'ai', content: '⚠️ Failed to get a response. Please try again.' }]);
     } finally {
       setLoading(false);

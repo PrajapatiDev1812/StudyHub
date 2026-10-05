@@ -1,12 +1,20 @@
+# pyrefly: ignore [missing-import]
 from django.contrib import admin
+# pyrefly: ignore [missing-import]
 from django.urls import path, include
+# pyrefly: ignore [missing-import]
 from django.conf import settings
+# pyrefly: ignore [missing-import]
 from django.conf.urls.static import static
+# pyrefly: ignore [missing-import]
 from django.views.generic import RedirectView
-
+# pyrefly: ignore [missing-import]
 from rest_framework import permissions
+# pyrefly: ignore [missing-import]
 from rest_framework_simplejwt.views import TokenVerifyView
+# pyrefly: ignore [missing-import]
 from drf_yasg.views import get_schema_view
+# pyrefly: ignore [missing-import]
 from drf_yasg import openapi
 
 from accounts.permissions import IsAdmin
@@ -48,6 +56,9 @@ urlpatterns = [
     # ── Authentication APIs ──
     path('api/auth/', include('accounts.urls')),
 
+    # ── Enterprise Theme Management APIs ──
+    path('api/themes/', include('accounts.urls_themes')),
+
     # ── Course Hierarchy APIs ──
     path('api/', include('courses.urls')),
 
@@ -65,6 +76,7 @@ urlpatterns = [
 
     # ── Gamification APIs ──
     path('api/gamification/', include('gamification.urls')),
+    path('api/admin/achievements/', include('gamification.admin_urls')),
 
     # ── Student Materials APIs ──
     path('api/', include('materials.urls')),
@@ -74,6 +86,9 @@ urlpatterns = [
 
     # ── Student Analytics APIs ──
     path('api/student/analytics/', include('analytics.urls')),
+
+    # ── Task Manager APIs ──
+    path('api/', include('tasks.urls')),
 
     # ── Token Verify ──
     path('api/auth/token/verify/', TokenVerifyView.as_view(), name='auth-token-verify'),

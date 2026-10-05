@@ -234,7 +234,7 @@ export default function FocusHistory() {
       await focusApi.clearHistory(modeFilter === 'all' ? null : modeFilter);
       setSessions([]);
       loadStats();
-    } catch {}
+    } catch (e) { console.error(e); }
     setClearing(false);
     setShowClearConfirm(false);
   };

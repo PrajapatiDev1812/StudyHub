@@ -1,12 +1,30 @@
+/* ── Force dark theme for auth pages — uses !important to beat ThemeProvider :root overrides ── */
 .auth-page {
+  --bg-primary:    #0a0a1a !important;
+  --bg-secondary:  #111128 !important;
+  --bg-card:       rgba(25, 25, 60, 0.75) !important;
+  --bg-card-hover: rgba(35, 35, 80, 0.9) !important;
+  --bg-input:      rgba(255, 255, 255, 0.06) !important;
+  --border-color:  rgba(255, 255, 255, 0.08) !important;
+  --border-glow:   rgba(108, 99, 255, 0.3) !important;
+  --text-primary:  #f0f0ff !important;
+  --text-secondary:#a0a0c0 !important;
+  --text-muted:    #606080 !important;
+  --accent-primary:#6c63ff !important;
+  --accent-gradient: linear-gradient(135deg, #6c63ff 0%, #3b82f6 100%) !important;
+  --accent-glow:   0 0 20px rgba(108, 99, 255, 0.3) !important;
+  --radius-lg:     16px;
+  --shadow:        0 8px 32px rgba(0, 0, 0, 0.3);
+
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-primary);
+  background: #0a0a1a !important;
   padding: 20px;
   position: relative;
   overflow: hidden;
+  color: #f0f0ff !important;
 }
 
 .auth-page::before {
@@ -34,10 +52,10 @@
 .auth-container {
   width: 100%;
   max-width: 420px;
-  background: var(--bg-card);
+  background: rgba(25, 25, 60, 0.85) !important;
   backdrop-filter: blur(20px);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px;
   padding: 40px 36px;
   position: relative;
   z-index: 1;
@@ -58,10 +76,11 @@
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 6px;
+  color: #f0f0ff !important;
 }
 
 .auth-header p {
-  color: var(--text-secondary);
+  color: #a0a0c0 !important;
   font-size: 0.9rem;
 }
 
@@ -74,11 +93,11 @@
   text-align: center;
   margin-top: 24px;
   font-size: 0.88rem;
-  color: var(--text-secondary);
+  color: #a0a0c0 !important;
 }
 
 .auth-footer a {
-  color: var(--accent-primary);
+  color: #6c63ff !important;
   font-weight: 600;
 }
 
@@ -100,7 +119,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--text-muted);
+  color: #606080;
   font-size: 1rem;
   line-height: 1;
   padding: 4px;
@@ -111,5 +130,23 @@
 }
 
 .pw-toggle:hover {
-  color: var(--accent-primary);
+  color: #6c63ff;
+}
+
+/* Force form inputs inside auth to use dark styles */
+.auth-page .form-input,
+.auth-page input {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #f0f0ff !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.auth-page .form-input::placeholder,
+.auth-page input::placeholder {
+  color: #606080 !important;
+}
+
+.auth-page label,
+.auth-page .form-label {
+  color: #a0a0c0 !important;
 }

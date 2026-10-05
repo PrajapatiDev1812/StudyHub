@@ -47,7 +47,7 @@ class TestViewSet(viewsets.ModelViewSet):
     filterset_fields = ['topic', 'is_active']
 
     def get_queryset(self):
-        qs = Test.objects.all()
+        qs = Test.objects.select_related('topic__subject', 'created_by')
         # Students only see active tests
         if self.request.user.role == 'student':
             qs = qs.filter(is_active=True)
@@ -92,7 +92,13 @@ class TestViewSet(viewsets.ModelViewSet):
             test=test,
         )
 
-        # ---- AUTO-GRADING ----
+        # Pre-fetch questions and options in bulk
+        question_ids = [a['question_id'] for a in submitted_answers]
+        option_ids = [a['selected_option_id'] for a in submitted_answers]
+        questions_map = {q.id: q for q in Question.objects.filter(id__in=question_ids, test=test)}
+        options_map = {o.id: o for o in Option.objects.filter(id__in=option_ids)}
+
+        answers_to_create = []
         total_marks_possible = 0
         total_marks_obtained = 0
 
@@ -100,14 +106,12 @@ class TestViewSet(viewsets.ModelViewSet):
             question_id = answer_data['question_id']
             selected_option_id = answer_data['selected_option_id']
 
-            try:
-                question = Question.objects.get(id=question_id, test=test)
-            except Question.DoesNotExist:
+            question = questions_map.get(question_id)
+            if not question:
                 continue  # Skip invalid question IDs
 
-            try:
-                selected_option = Option.objects.get(id=selected_option_id, question=question)
-            except Option.DoesNotExist:
+            selected_option = options_map.get(selected_option_id)
+            if not selected_option or selected_option.question_id != question.id:
                 continue  # Skip invalid option IDs
 
             is_correct = selected_option.is_correct
@@ -116,12 +120,15 @@ class TestViewSet(viewsets.ModelViewSet):
                 total_marks_obtained += question.marks
 
             # Save each answer
-            StudentAnswer.objects.create(
+            answers_to_create.append(StudentAnswer(
                 attempt=attempt,
                 question=question,
                 selected_option=selected_option,
                 is_correct=is_correct,
-            )
+            ))
+
+        if answers_to_create:
+            StudentAnswer.objects.bulk_create(answers_to_create)
 
         # Calculate score percentage
         if total_marks_possible > 0:
@@ -241,7 +248,7 @@ class MyAttemptsView(OwnedObjectMixin, generics.ListAPIView):
     """
     serializer_class = StudentAttemptListSerializer
     permission_classes = [IsAuthenticated]
-    queryset = StudentAttempt.objects.all()
+    queryset = StudentAttempt.objects.select_related('test', 'student')
 
     def get_queryset(self):
         return super().get_queryset().order_by('-started_at')
@@ -255,4 +262,7 @@ class AttemptDetailView(OwnedObjectMixin, generics.RetrieveAPIView):
     """
     serializer_class = StudentAttemptSerializer
     permission_classes = [IsAuthenticated]
-    queryset = StudentAttempt.objects.all()
+    queryset = StudentAttempt.objects.select_related('test', 'student').prefetch_related(
+        'answers__question__options',
+        'answers__selected_option',
+    )

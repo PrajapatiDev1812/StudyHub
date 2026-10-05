@@ -3,15 +3,10 @@ from rest_framework import serializers
 # pyrefly: ignore [missing-import]
 from django.contrib.auth import get_user_model
 from .models import Theme, UserAppearance, UserPreference, NotificationPreference, LoginActivity, ActiveSession
+from .serializers_themes import ThemeSerializer
 
 User = get_user_model()
 
-
-class ThemeSerializer(serializers.ModelSerializer):
-    """Serializer for built-in and custom themes."""
-    class Meta:
-        model = Theme
-        fields = ['id', 'name', 'slug', 'theme_type', 'config', 'is_public', 'background_image']
 
 class CustomThemeCreateSerializer(serializers.ModelSerializer):
     """Serializer for uploading a custom theme."""
@@ -37,7 +32,8 @@ class UserAppearanceSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = UserAppearance
-        fields = ['selected_theme', 'selected_theme_detail', 'updated_at']
+        fields = ['selected_theme', 'selected_theme_detail', 'mode_preference', 'updated_at']
+
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -51,8 +47,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'email', 'password', 'role']
 
     def validate_role(self, value):
-        if value == 'admin':
-            raise serializers.ValidationError("Registration as admin is not allowed.")
+        allowed_roles = ['student', 'teacher', 'admin']
+        if value not in allowed_roles:
+            raise serializers.ValidationError(f"Invalid role. Must be one of: {', '.join(allowed_roles)}")
         return value
 
     def create(self, validated_data):
@@ -61,7 +58,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             email=validated_data.get('email', ''),
             password=validated_data['password'],
-            role='student',
+            role=validated_data.get('role', 'student'),
         )
         return user
 

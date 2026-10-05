@@ -14,6 +14,7 @@ from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta
 import django_filters
+from django.db.models import Count, Q
 
 # pyrefly: ignore [missing-import]
 from accounts.permissions import IsAdmin, IsStudent, IsAdminOrReadOnly
@@ -58,7 +59,9 @@ class CourseFilter(django_filters.FilterSet):
 # ── CourseCategory ─────────────────────────────────────────────────────────────
 
 class CourseCategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = CourseCategory.objects.all()
+    queryset = CourseCategory.objects.annotate(
+        course_count=Count('courses', filter=Q(courses__is_published=True), distinct=True)
+    )
     serializer_class = CourseCategorySerializer
     permission_classes = [IsAuthenticated]
     pagination_class = None
@@ -82,7 +85,10 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Course.objects.select_related('category', 'created_by').prefetch_related('subjects', 'enrollments')
+        qs = Course.objects.select_related('category', 'created_by').prefetch_related('subjects', 'enrollments').annotate(
+            topics_count=Count('subjects__topics', distinct=True),
+            materials_count=Count('subjects__topics__materials', distinct=True),
+        )
 
         if user.role == 'student':
             qs = qs.filter(
@@ -128,7 +134,8 @@ class CourseViewSet(viewsets.ModelViewSet):
         enrollment = Enrollment.objects.filter(student=request.user, course=course).first()
         if not enrollment:
             return Response({'error': 'You are not enrolled in this course.'}, status=status.HTTP_400_BAD_REQUEST)
-        enrollment.delete()
+        # Soft-delete the enrollment so analytics history is preserved
+        enrollment.delete(soft=True, user=request.user)
         return Response({'message': f'Successfully unenrolled from {course.title}.'})
 
     @action(detail=True, methods=['get'], permission_classes=[IsAdmin])
@@ -137,6 +144,32 @@ class CourseViewSet(viewsets.ModelViewSet):
         enrollments = Enrollment.objects.filter(course=course).select_related('student')
         serializer = EnrollmentSerializer(enrollments, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAdmin])
+    def trash(self, request):
+        """GET /api/courses/trash/ — list all soft-deleted courses (admin only)."""
+        qs = Course.objects.deleted_only().select_related('category', 'created_by')
+        serializer = CourseListSerializer(qs, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
+    def restore(self, request, pk=None):
+        """POST /api/courses/{id}/restore/ — restore a soft-deleted course."""
+        course = Course.all_objects.filter(pk=pk, is_deleted=True).first()
+        if not course:
+            return Response({'error': 'Soft-deleted course not found.'}, status=status.HTTP_404_NOT_FOUND)
+        course.restore()
+        return Response({'message': f'"{course.title}" has been restored.'})
+
+    @action(detail=True, methods=['delete'], permission_classes=[IsAdmin])
+    def permanent_delete(self, request, pk=None):
+        """DELETE /api/courses/{id}/permanent_delete/ — irreversibly delete a course."""
+        course = Course.all_objects.filter(pk=pk).first()
+        if not course:
+            return Response({'error': 'Course not found.'}, status=status.HTTP_404_NOT_FOUND)
+        title = course.title
+        course.hard_delete()
+        return Response({'message': f'"{title}" has been permanently deleted.'})
 
 
 # ── Subject ───────────────────────────────────────────────────────────────────
@@ -147,7 +180,9 @@ class SubjectViewSet(viewsets.ModelViewSet):
     Filter: ?course=<id>
     Ordering: ?ordering=order
     """
-    queryset = Subject.objects.select_related('course').prefetch_related('topics').order_by('order', 'created_at')
+    queryset = Subject.objects.select_related('course').prefetch_related('topics').annotate(
+        materials_count=Count('topics__materials', distinct=True)
+    ).order_by('order', 'created_at')
     permission_classes = [IsAdminOrReadOnly]
     search_fields = ['title', 'description']
     ordering_fields = ['title', 'order', 'created_at']
@@ -192,7 +227,9 @@ class TopicViewSet(viewsets.ModelViewSet):
     CRUD for Topics.
     Filter: ?subject=<id>  ?course=<id> (cross-filter)
     """
-    queryset = Topic.objects.select_related('subject__course').prefetch_related('materials', 'contents').order_by('order', 'created_at')
+    queryset = Topic.objects.select_related('subject__course').prefetch_related('materials', 'contents').annotate(
+        materials_count=Count('materials', distinct=True)
+    ).order_by('order', 'created_at')
     permission_classes = [IsAdminOrReadOnly]
     search_fields = ['title', 'description']
     ordering_fields = ['title', 'order', 'created_at']
@@ -298,7 +335,7 @@ class MaterialViewSet(viewsets.ModelViewSet):
 
 class ContentViewSet(viewsets.ModelViewSet):
     """Legacy endpoint kept for backward compatibility."""
-    queryset = Content.objects.all().order_by('-created_at')
+    queryset = Content.objects.select_related('topic__subject__course').order_by('-created_at')
     serializer_class = ContentSerializer
     permission_classes = [IsAdminOrReadOnly]
     search_fields = ['title']
@@ -348,9 +385,19 @@ class MyCoursesView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Course.objects.filter(
-            enrollments__student=self.request.user
-        ).order_by('-enrollments__enrolled_at')
+        from django.db.models import Count, Q
+        user = self.request.user
+        return (
+            Course.objects
+            .filter(enrollments__student=user)
+            .select_related('category', 'created_by')
+            .prefetch_related('subjects', 'enrollments')
+            .annotate(
+                topics_count=Count('subjects__topics', distinct=True),
+                materials_count=Count('subjects__topics__materials', distinct=True),
+            )
+            .order_by('-enrollments__enrolled_at')
+        )
 
 
 class DashboardView(generics.RetrieveAPIView):
@@ -428,16 +475,32 @@ class ProgressHistoryView(generics.GenericAPIView):
         else:
             start_date = (now - timedelta(days=days)).date()
 
+        from django.db.models.functions import TruncDate
+        from django.db.models import Count
+
         total_content = Content.objects.filter(topic__subject__course__in=enrolled_courses).count()
 
+        # Query all progress counts grouped by day within range
+        daily_rows = (
+            all_progress
+            .filter(completed_at__date__gte=start_date, completed_at__date__lte=now.date())
+            .annotate(day=TruncDate('completed_at'))
+            .values('day')
+            .annotate(count=Count('id'))
+            .order_by('day')
+        )
+        day_count_map = {row['day']: row['count'] for row in daily_rows}
+
+        # Calculate start total (anything completed before start_date)
+        running_total = all_progress.filter(completed_at__date__lt=start_date).count()
+
         result = []
-        for i in range(days + 1):
-            d = start_date + timedelta(days=i)
-            if d > now.date():
-                break
-            completed_by_day = all_progress.filter(completed_at__date__lte=d).count()
-            pct = round((completed_by_day / total_content) * 100, 1) if total_content > 0 else 0
-            result.append({'date': d.isoformat(), 'progress': pct})
+        current = start_date
+        while current <= now.date():
+            running_total += day_count_map.get(current, 0)
+            pct = round((running_total / total_content) * 100, 1) if total_content > 0 else 0
+            result.append({'date': current.isoformat(), 'progress': pct})
+            current += timedelta(days=1)
 
         start_completions = all_progress.filter(completed_at__date__lt=start_date).count()
         end_completions = all_progress.count()

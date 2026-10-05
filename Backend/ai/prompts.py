@@ -120,6 +120,7 @@ def build_rag_prompt(
     level: str = 'beginner',
     subject: str = '',
     topic: str = '',
+    knowledge_priority: str = 'material_first',
 ) -> str:
     """
     Build the final prompt sent to Gemini by combining:
@@ -168,16 +169,18 @@ User question:
 {message}
 
 Instructions:
-- Use retrieved context as the main source if it is relevant.
-- If both admin and student context are relevant, combine them clearly.
-- Prioritize student notes first when the question is personal or based on saved notes.
-- Use admin material for syllabus, structured theory, and official study content.
-- If no relevant context is available, answer using general educational knowledge and clearly say so.
 - Explain in simple words first.
 - Be accurate and structured.
 - Tailor the response to the student level.
 
+HYBRID KNOWLEDGE & SOURCING RULES:
+You MUST follow the rules for the current Knowledge Priority setting: "{knowledge_priority}"
+1. If "material_only": You MUST NOT answer using general knowledge. If the answer is not in the retrieved context, you MUST start your response exactly with "[SOURCE: NOT_FOUND]" and say you don't know. If the answer IS in the context, start exactly with "[SOURCE: MATERIAL]".
+2. If "material_first": Prioritize the retrieved context. If the answer is found in the context, start your response exactly with "[SOURCE: MATERIAL]". If the context is missing or irrelevant, you may use general knowledge, but you MUST start your response exactly with "[SOURCE: GLOBAL]".
+3. If "global_first": Use your general academic knowledge freely, supplemented by the context. You MUST start your response exactly with "[SOURCE: GLOBAL]".
+
 CRITICAL OUTPUT FORMATTING RULES:
+- ALWAYS start your response with the [SOURCE: ...] tag as defined above.
 - NEVER start with "---" or horizontal rules.
 - NEVER include metadata like "Subject:", "Topic:", "Level:", "Mode:" in your response.
 - NEVER show the subject name, topic name, or level as a header or label in the response.

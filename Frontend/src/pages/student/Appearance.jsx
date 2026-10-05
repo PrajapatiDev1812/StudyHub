@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../theme/useTheme';
 import api from '../../services/api';
 import { generateThemeFromImage } from '../../utils/themeGenerator';
 
@@ -67,7 +67,7 @@ const ThemePreviewCard = ({ theme, isActive, onClick }) => {
 };
 
 export default function Appearance() {
-  const { activeTheme, previewTheme, saveTheme, resetToSaved, isSaving } = useTheme();
+  const { activeTheme, previewTheme, saveTheme, resetToSaved, themeMode, setThemeMode, resolutionSource } = useTheme();
   
   const [themes, setThemes] = useState([]);
   const [selectedForPreview, setSelectedForPreview] = useState(null);
@@ -225,11 +225,16 @@ export default function Appearance() {
       <div className="current-selection-banner glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="current-info">
           <label>Active Theme</label>
-          <div className="active-theme-name">
+          <div className="active-theme-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {activeTheme?.name || 'Default Light'} 
             <span className="theme-type-tag">
               {activeTheme?.theme_type === 'custom' ? 'Custom' : 'Built-in'}
             </span>
+            {resolutionSource && (
+              <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', fontWeight: 'bold', textTransform: 'capitalize' }}>
+                Source: {resolutionSource.replace('_', ' ')}
+              </span>
+            )}
           </div>
         </div>
         <div className="selection-actions">

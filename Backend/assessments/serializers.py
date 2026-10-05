@@ -115,9 +115,9 @@ class StudentAnswerSerializer(serializers.ModelSerializer):
         ]
 
     def get_correct_option(self, obj):
-        correct = obj.question.options.filter(is_correct=True).first()
-        if correct:
-            return {'id': correct.id, 'text': correct.text}
+        for opt in obj.question.options.all():
+            if opt.is_correct:
+                return {'id': opt.id, 'text': opt.text}
         return None
 
 

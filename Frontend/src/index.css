@@ -6,6 +6,14 @@
 
 /* ---------- CSS Variables ---------- */
 :root {
+  /* Adaptive Theme Default Tokens */
+  --theme-primary: #6366f1;
+  --theme-surface: rgba(30, 41, 59, 0.7);
+  --theme-border: #334155;
+  --theme-accent: #06b6d4;
+  --theme-muted: #475569;
+  --theme-text: #ffffff;
+
   /* Background */
   --bg-primary: #0a0a1a;
   --bg-secondary: #111128;
@@ -38,6 +46,9 @@
   /* Border */
   --border-color: rgba(255, 255, 255, 0.08);
   --border-glow: rgba(108, 99, 255, 0.3);
+
+  /* Active State */
+  --bg-active: rgba(108, 99, 255, 0.12);
 
   /* Misc */
   --radius: 12px;
@@ -314,7 +325,7 @@ select.form-input {
 }
 
 select.form-input option {
-  background: var(--bg-input, var(--bg-secondary));
+  background: var(--bg-secondary);
   color: var(--text-primary);
   padding: 8px;
 }
